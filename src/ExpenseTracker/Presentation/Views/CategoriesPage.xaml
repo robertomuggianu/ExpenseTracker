@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="ExpenseTracker.Presentation.Views.CategoriesPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Name="Page"
+    Title="Categorie">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="Categorie" Style="{StaticResource Headline}" HorizontalOptions="Start" />
+                <Button Grid.Column="1" Text="Nuova macro" Command="{Binding NewMacroCommand}" />
+            </Grid>
+
+            <Border Padding="12" IsVisible="{Binding IsMacroEditorVisible}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Macro-categoria" FontSize="20" FontAttributes="Bold" />
+                    <Entry Placeholder="Nome" Text="{Binding MacroName}" />
+                    <Picker ItemsSource="{Binding Types}" ItemDisplayBinding="{Binding Label}" SelectedItem="{Binding SelectedMacroType}" />
+                    <Entry Placeholder="Colore es. #512BD4" Text="{Binding MacroColor}" />
+                    <HorizontalStackLayout>
+                        <CheckBox IsChecked="{Binding MacroIsActive}" />
+                        <Label Text="Attiva" VerticalTextAlignment="Center" />
+                    </HorizontalStackLayout>
+                    <Button Text="Salva macro-categoria" Command="{Binding SaveMacroCommand}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Padding="12" IsVisible="{Binding IsCategoryEditorVisible}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Categoria" FontSize="20" FontAttributes="Bold" />
+                    <Picker Title="Macro-categoria"
+                            ItemsSource="{Binding MacroCategories}"
+                            ItemDisplayBinding="{Binding Name}"
+                            SelectedItem="{Binding SelectedParentMacro}" />
+                    <Entry Placeholder="Nome" Text="{Binding CategoryName}" />
+                    <HorizontalStackLayout>
+                        <CheckBox IsChecked="{Binding CategoryIsActive}" />
+                        <Label Text="Attiva" VerticalTextAlignment="Center" />
+                    </HorizontalStackLayout>
+                    <Button Text="Salva categoria" Command="{Binding SaveCategoryCommand}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Groups}">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate>
+                        <Border Padding="12" Margin="0,0,0,10">
+                            <VerticalStackLayout Spacing="8">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding MacroCategory.Name}" FontSize="19" FontAttributes="Bold" />
+                                        <Label Text="{Binding TypeLabel}" FontSize="12" />
+                                    </VerticalStackLayout>
+                                    <Button Grid.Column="1" Text="Categoria"
+                                            Command="{Binding Source={x:Reference Page}, Path=BindingContext.NewCategoryCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Grid.Column="2" Text="Modifica"
+                                            Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditMacroCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </Grid>
+                                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Categories}">
+                                    <BindableLayout.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid ColumnDefinitions="*,Auto" Padding="8,4">
+                                                <Label Text="{Binding Name}" VerticalTextAlignment="Center" />
+                                                <Button Grid.Column="1" Text="Modifica"
+                                                        Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditCategoryCommand}"
+                                                        CommandParameter="{Binding .}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </BindableLayout.ItemTemplate>
+                                </VerticalStackLayout>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+
+            <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

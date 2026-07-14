@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="ExpenseTracker.Presentation.Views.ExportPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Esportazione">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <Label Text="Esportazione CSV" Style="{StaticResource Headline}" HorizontalOptions="Start" />
+            <Label Text="Il file usa il separatore punto e virgola, date ISO 8601 e importi indipendenti dalla lingua del dispositivo." />
+            <HorizontalStackLayout>
+                <Switch IsToggled="{Binding ExportAll}" />
+                <Label Text="Esporta tutti i movimenti" VerticalTextAlignment="Center" />
+            </HorizontalStackLayout>
+
+            <Border Padding="12">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Filtri usati quando l'esportazione completa è disattivata" FontAttributes="Bold" />
+                    <Picker ItemsSource="{Binding Periods}" ItemDisplayBinding="{Binding Label}" SelectedItem="{Binding SelectedPeriod}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <DatePicker Date="{Binding CustomFrom}" />
+                        <DatePicker Grid.Column="1" Date="{Binding CustomTo}" />
+                    </Grid>
+                    <Picker ItemsSource="{Binding Accounts}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedAccount}" />
+                    <Picker ItemsSource="{Binding Types}" ItemDisplayBinding="{Binding Label}" SelectedItem="{Binding SelectedType}" />
+                    <Picker ItemsSource="{Binding MacroCategories}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedMacroCategory}" />
+                    <Picker ItemsSource="{Binding Categories}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedCategory}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="Crea e condividi CSV" Command="{Binding ExportCommand}" />
+            <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

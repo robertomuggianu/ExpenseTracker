@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="ExpenseTracker.Presentation.Views.AccountsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Name="Page"
+    Title="Conti">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="Conti" Style="{StaticResource Headline}" HorizontalOptions="Start" />
+                <Button Grid.Column="1" Text="Nuovo" Command="{Binding NewAccountCommand}" />
+            </Grid>
+
+            <Border Padding="14" IsVisible="{Binding IsEditorVisible}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Dati conto" FontSize="20" FontAttributes="Bold" />
+                    <Entry Placeholder="Nome" Text="{Binding Name}" />
+                    <Entry Placeholder="Saldo iniziale" Text="{Binding OpeningBalance}" Keyboard="Numeric" />
+                    <Entry Placeholder="Valuta" Text="{Binding Currency}" MaxLength="3" />
+                    <HorizontalStackLayout>
+                        <CheckBox IsChecked="{Binding IsPrimary}" />
+                        <Label Text="Conto principale" VerticalTextAlignment="Center" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout>
+                        <CheckBox IsChecked="{Binding IsActive}" />
+                        <Label Text="Attivo" VerticalTextAlignment="Center" />
+                    </HorizontalStackLayout>
+                    <Button Text="Salva conto" Command="{Binding SaveCommand}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Accounts}">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate>
+                        <Border Padding="12" Margin="0,0,0,8">
+                            <VerticalStackLayout Spacing="6">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Label Text="{Binding DisplayName}" FontSize="18" FontAttributes="Bold" />
+                                    <Label Grid.Column="1" Text="{Binding CurrentBalance, StringFormat='{0:C}'}" FontSize="18" />
+                                </Grid>
+                                <Label Text="{Binding Account.Currency, StringFormat='Valuta: {0}'}" />
+                                <Label Text="Conto disattivato" TextColor="{StaticResource Expense}" IsVisible="{Binding IsInactive}" />
+                                <HorizontalStackLayout Spacing="8">
+                                    <Button Text="Modifica"
+                                            Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Text="Principale"
+                                            IsEnabled="{Binding Account.IsActive}"
+                                            Command="{Binding Source={x:Reference Page}, Path=BindingContext.SetPrimaryCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Text="Attiva/Disattiva"
+                                            Command="{Binding Source={x:Reference Page}, Path=BindingContext.ToggleActiveCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+
+            <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

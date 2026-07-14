@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="ExpenseTracker.Presentation.Views.TransactionsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Name="Page"
+    Title="Movimenti">
+    <Grid RowDefinitions="Auto,*" Padding="12" RowSpacing="10">
+        <VerticalStackLayout Spacing="8">
+            <Label Text="Movimenti" Style="{StaticResource Headline}" HorizontalOptions="Start" />
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8">
+                <Picker ItemsSource="{Binding Periods}" ItemDisplayBinding="{Binding Label}" SelectedItem="{Binding SelectedPeriod}" />
+                <Picker Grid.Column="1" ItemsSource="{Binding Accounts}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedAccount}" />
+                <Picker Grid.Row="1" ItemsSource="{Binding Types}" ItemDisplayBinding="{Binding Label}" SelectedItem="{Binding SelectedType}" />
+                <Picker Grid.Row="1" Grid.Column="1" ItemsSource="{Binding MacroCategories}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedMacroCategory}" />
+                <Picker Grid.Row="2" ItemsSource="{Binding Categories}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedCategory}" />
+                <Button Grid.Row="2" Grid.Column="1" Text="Applica filtri" Command="{Binding ApplyFiltersCommand}" />
+            </Grid>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <DatePicker Date="{Binding CustomFrom}" />
+                <DatePicker Grid.Column="1" Date="{Binding CustomTo}" />
+            </Grid>
+            <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}" />
+        </VerticalStackLayout>
+
+        <Grid Grid.Row="1" RowDefinitions="*,Auto" RowSpacing="8">
+            <CollectionView ItemsSource="{Binding Transactions}" SelectionMode="None">
+                <CollectionView.EmptyView>
+                    <Label Text="Nessun movimento per i filtri selezionati." HorizontalTextAlignment="Center" Margin="20" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Padding="10" Margin="0,0,0,8">
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8">
+                                <Label Text="{Binding Transaction.Description, TargetNullValue='Senza descrizione'}" FontAttributes="Bold" />
+                                <Label Grid.Column="1" Text="{Binding SignedAmount, StringFormat='{0:C}'}" FontAttributes="Bold" />
+                                <Label Grid.Row="1" Text="{Binding AccountName}" FontSize="12" />
+                                <Label Grid.Row="1" Grid.Column="1" Text="{Binding Transaction.OccurredAtUtc, StringFormat='{0:dd/MM/yyyy HH:mm}'}" FontSize="12" />
+                                <HorizontalStackLayout Grid.Row="2" Grid.ColumnSpan="2" Spacing="6">
+                                    <Button Text="Dettaglio"
+                                            Command="{Binding Source={x:Reference Page}, Path=BindingContext.ShowDetailCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Text="Modifica"
+                                            Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Text="Elimina"
+                                            Command="{Binding Source={x:Reference Page}, Path=BindingContext.DeleteCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </HorizontalStackLayout>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Border Grid.Row="1" Padding="10" IsVisible="{Binding HasSelectedTransaction}">
+                <VerticalStackLayout>
+                    <Label Text="Dettaglio movimento" FontAttributes="Bold" />
+                    <Label Text="{Binding SelectedTransaction.TypeLabel}" />
+                    <Label Text="{Binding SelectedTransaction.AccountName, StringFormat='Conto: {0}'}" />
+                    <Label Text="{Binding SelectedTransaction.MacroCategoryName, StringFormat='Macro-categoria: {0}'}" />
+                    <Label Text="{Binding SelectedTransaction.CategoryName, StringFormat='Categoria: {0}'}" />
+                    <Label Text="{Binding SelectedTransaction.Transaction.Notes, TargetNullValue='Nessuna nota'}" />
+                </VerticalStackLayout>
+            </Border>
+            <ActivityIndicator Grid.RowSpan="2" IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" VerticalOptions="Center" />
+        </Grid>
+    </Grid>
+</ContentPage>

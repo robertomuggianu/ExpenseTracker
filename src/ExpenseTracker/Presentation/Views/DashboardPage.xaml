@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="ExpenseTracker.Presentation.Views.DashboardPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui"
+    x:Name="Page"
+    Title="Dashboard">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="14">
+            <Label Text="Dashboard" Style="{StaticResource Headline}" HorizontalOptions="Start" />
+            <Label Text="Una vista aggiornata delle tue finanze locali." />
+
+            <Picker ItemsSource="{Binding Periods}"
+                    ItemDisplayBinding="{Binding Label}"
+                    SelectedItem="{Binding SelectedPeriod}" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <DatePicker Date="{Binding CustomFrom}" />
+                <DatePicker Grid.Column="1" Date="{Binding CustomTo}" />
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                <Border Padding="12">
+                    <VerticalStackLayout>
+                        <Label Text="Conto principale" FontAttributes="Bold" />
+                        <Label Text="{Binding PrimaryBalance, StringFormat='{0:C}'}" FontSize="22" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="1" Padding="12">
+                    <VerticalStackLayout>
+                        <Label Text="Totale conti attivi" FontAttributes="Bold" />
+                        <Label Text="{Binding TotalBalance, StringFormat='{0:C}'}" FontSize="22" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Row="1" Padding="12">
+                    <VerticalStackLayout>
+                        <Label Text="Entrate periodo" FontAttributes="Bold" />
+                        <Label Text="{Binding Income, StringFormat='{0:C}'}" TextColor="{StaticResource Income}" FontSize="20" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Row="1" Grid.Column="1" Padding="12">
+                    <VerticalStackLayout>
+                        <Label Text="Uscite periodo" FontAttributes="Bold" />
+                        <Label Text="{Binding Expense, StringFormat='{0:C}'}" TextColor="{StaticResource Expense}" FontSize="20" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Row="2" Grid.ColumnSpan="2" Padding="12">
+                    <HorizontalStackLayout Spacing="12">
+                        <Label Text="Differenza" FontAttributes="Bold" />
+                        <Label Text="{Binding Difference, StringFormat='{0:C}'}" FontSize="20" />
+                    </HorizontalStackLayout>
+                </Border>
+            </Grid>
+
+            <Label Text="Uscite per macro-categoria" Style="{StaticResource SubHeadline}" HorizontalOptions="Start" />
+            <lvc:PieChart Series="{Binding ExpenseSeries}" HeightRequest="260" LegendPosition="Bottom" />
+
+            <Label Text="Ultimi movimenti" Style="{StaticResource SubHeadline}" HorizontalOptions="Start" />
+            <VerticalStackLayout BindableLayout.ItemsSource="{Binding RecentTransactions}">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate>
+                        <Border Padding="10" Margin="0,0,0,6">
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                <Label Text="{Binding Transaction.Description, TargetNullValue='Senza descrizione'}" FontAttributes="Bold" />
+                                <Label Grid.Column="1" Text="{Binding SignedAmount, StringFormat='{0:C}'}" FontAttributes="Bold" />
+                                <Label Grid.Row="1" Text="{Binding CategoryName}" FontSize="12" />
+                                <Label Grid.Row="1" Grid.Column="1" Text="{Binding Transaction.OccurredAtUtc, StringFormat='{0:dd/MM/yyyy}'}" FontSize="12" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+
+            <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

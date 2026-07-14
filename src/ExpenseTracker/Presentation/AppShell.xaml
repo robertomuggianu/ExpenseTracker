@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="ExpenseTracker.Presentation.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="ExpenseTracker"
+    FlyoutBehavior="Flyout">
+
+    <FlyoutItem Title="Dashboard" Route="Dashboard">
+        <ShellContent x:Name="DashboardContent" Title="Dashboard" />
+    </FlyoutItem>
+    <FlyoutItem Title="Movimenti" Route="Transactions">
+        <ShellContent x:Name="TransactionsContent" Title="Movimenti" />
+    </FlyoutItem>
+    <FlyoutItem Title="Nuovo movimento" Route="NewTransaction">
+        <ShellContent x:Name="NewTransactionContent" Title="Nuovo movimento" />
+    </FlyoutItem>
+    <FlyoutItem Title="Statistiche" Route="Statistics">
+        <ShellContent x:Name="StatisticsContent" Title="Statistiche" />
+    </FlyoutItem>
+    <FlyoutItem Title="Conti" Route="Accounts">
+        <ShellContent x:Name="AccountsContent" Title="Conti" />
+    </FlyoutItem>
+    <FlyoutItem Title="Categorie" Route="Categories">
+        <ShellContent x:Name="CategoriesContent" Title="Categorie" />
+    </FlyoutItem>
+    <FlyoutItem Title="Esportazione" Route="Export">
+        <ShellContent x:Name="ExportContent" Title="Esportazione" />
+    </FlyoutItem>
+
+</Shell>
