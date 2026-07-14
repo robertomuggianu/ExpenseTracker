@@ -4,10 +4,29 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="ExpenseTracker"
-    FlyoutBehavior="Flyout">
+    FlyoutBehavior="Flyout"
+    FlyoutHeaderBehavior="Fixed"
+    FlyoutWidth="310"
+    Shell.BackgroundColor="#101216"
+    Shell.ForegroundColor="#FFFFFF"
+    Shell.TitleColor="#FFFFFF"
+    Shell.UnselectedColor="#B9BDC4"
+    Shell.FlyoutBackgroundColor="#17191E">
 
-    <FlyoutItem Title="Dashboard" Route="Dashboard">
-        <ShellContent x:Name="DashboardContent" Title="Dashboard" />
+    <Shell.FlyoutHeader>
+        <Grid BackgroundColor="#B51F2A" Padding="24,28,24,22" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+            <Border WidthRequest="52" HeightRequest="52" Padding="0" HorizontalOptions="Start"
+                    BackgroundColor="#FFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 16">
+                <Label Text="ET" TextColor="#B51F2A" FontSize="20" FontAttributes="Bold"
+                       HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+            </Border>
+            <Label Grid.Row="1" Text="ExpenseTracker" TextColor="White" FontSize="24" FontAttributes="Bold" />
+            <Label Grid.Row="2" Text="Le tue finanze, senza distrazioni." TextColor="#FFD7D9" FontSize="13" />
+        </Grid>
+    </Shell.FlyoutHeader>
+
+    <FlyoutItem Title="Panoramica" Route="Dashboard">
+        <ShellContent x:Name="DashboardContent" Title="Panoramica" />
     </FlyoutItem>
     <FlyoutItem Title="Movimenti" Route="Transactions">
         <ShellContent x:Name="TransactionsContent" Title="Movimenti" />
@@ -24,8 +43,7 @@
     <FlyoutItem Title="Categorie" Route="Categories">
         <ShellContent x:Name="CategoriesContent" Title="Categorie" />
     </FlyoutItem>
-    <FlyoutItem Title="Esportazione" Route="Export">
-        <ShellContent x:Name="ExportContent" Title="Esportazione" />
+    <FlyoutItem Title="Esportazione CSV" Route="Export">
+        <ShellContent x:Name="ExportContent" Title="Esportazione CSV" />
     </FlyoutItem>
-
 </Shell>

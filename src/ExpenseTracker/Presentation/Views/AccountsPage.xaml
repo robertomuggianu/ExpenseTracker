@@ -5,62 +5,93 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Name="Page"
     Title="Conti">
-    <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="12">
-            <Grid ColumnDefinitions="*,Auto">
-                <Label Text="Conti" Style="{StaticResource Headline}" HorizontalOptions="Start" />
-                <Button Grid.Column="1" Text="Nuovo" Command="{Binding NewAccountCommand}" />
-            </Grid>
+    <Grid>
+        <ScrollView>
+            <VerticalStackLayout Spacing="0">
+                <Border Style="{StaticResource HeroCard}">
+                    <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                        <Label Text="I TUOI CONTI" TextColor="#FFD7D9" FontSize="12" FontAttributes="Bold" CharacterSpacing="1.8" />
+                        <Label Grid.Row="1" Text="{Binding TotalBalance, StringFormat='{0:C}'}" Style="{StaticResource HeroValue}" />
+                        <Label Grid.Row="2" Text="Saldo complessivo dei conti attivi" TextColor="#FFD7D9" />
+                    </Grid>
+                </Border>
 
-            <Border Padding="14" IsVisible="{Binding IsEditorVisible}">
-                <VerticalStackLayout Spacing="8">
-                    <Label Text="Dati conto" FontSize="20" FontAttributes="Bold" />
-                    <Entry Placeholder="Nome" Text="{Binding Name}" />
-                    <Entry Placeholder="Saldo iniziale" Text="{Binding OpeningBalance}" Keyboard="Numeric" />
-                    <Entry Placeholder="Valuta" Text="{Binding Currency}" MaxLength="3" />
-                    <HorizontalStackLayout>
-                        <CheckBox IsChecked="{Binding IsPrimary}" />
-                        <Label Text="Conto principale" VerticalTextAlignment="Center" />
-                    </HorizontalStackLayout>
-                    <HorizontalStackLayout>
-                        <CheckBox IsChecked="{Binding IsActive}" />
-                        <Label Text="Attivo" VerticalTextAlignment="Center" />
-                    </HorizontalStackLayout>
-                    <Button Text="Salva conto" Command="{Binding SaveCommand}" />
+                <VerticalStackLayout Padding="18,20,18,92" Spacing="16">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout>
+                            <Label Text="Conti" Style="{StaticResource SectionTitle}" />
+                            <Label Text="Gestisci disponibilità e conto principale" Style="{StaticResource MutedLabel}" FontSize="12" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="+  Nuovo" Command="{Binding NewAccountCommand}" />
+                    </Grid>
+
+                    <Border Style="{StaticResource Card}" IsVisible="{Binding IsEditorVisible}" Stroke="{StaticResource Primary}">
+                        <VerticalStackLayout Spacing="12">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                <Border WidthRequest="42" HeightRequest="42" Padding="0" BackgroundColor="#24E2383F" StrokeThickness="0" StrokeShape="RoundRectangle 13">
+                                    <Label Text="¤" TextColor="{StaticResource PrimaryGlow}" FontSize="23" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1">
+                                    <Label Text="Dati del conto" FontSize="19" FontAttributes="Bold" />
+                                    <Label Text="Le modifiche non alterano lo storico" Style="{StaticResource MutedLabel}" FontSize="12" />
+                                </VerticalStackLayout>
+                            </Grid>
+                            <Label Text="Nome" FontAttributes="Bold" FontSize="12" />
+                            <Border Style="{StaticResource InputCard}"><Entry Placeholder="Es. Conto principale" Text="{Binding Name}" /></Border>
+                            <Grid ColumnDefinitions="2*,*" ColumnSpacing="10">
+                                <VerticalStackLayout Spacing="5">
+                                    <Label Text="Saldo iniziale" FontAttributes="Bold" FontSize="12" />
+                                    <Border Style="{StaticResource InputCard}"><Entry Placeholder="0,00" Text="{Binding OpeningBalance}" Keyboard="Numeric" /></Border>
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="1" Spacing="5">
+                                    <Label Text="Valuta" FontAttributes="Bold" FontSize="12" />
+                                    <Border Style="{StaticResource InputCard}"><Entry Text="{Binding Currency}" MaxLength="3" /></Border>
+                                </VerticalStackLayout>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,*">
+                                <HorizontalStackLayout><CheckBox IsChecked="{Binding IsPrimary}" /><Label Text="Principale" VerticalTextAlignment="Center" /></HorizontalStackLayout>
+                                <HorizontalStackLayout Grid.Column="1"><CheckBox IsChecked="{Binding IsActive}" /><Label Text="Attivo" VerticalTextAlignment="Center" /></HorizontalStackLayout>
+                            </Grid>
+                            <Button Text="Salva conto" Command="{Binding SaveCommand}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Accounts}" Spacing="12">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource Card}">
+                                    <VerticalStackLayout Spacing="12">
+                                        <Grid ColumnDefinitions="50,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
+                                            <Border Grid.RowSpan="2" WidthRequest="50" HeightRequest="50" Padding="0" BackgroundColor="#24E2383F" StrokeThickness="0" StrokeShape="RoundRectangle 16">
+                                                <Label Text="€" TextColor="{StaticResource PrimaryGlow}" FontSize="23" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                            </Border>
+                                            <Label Grid.Column="1" Text="{Binding DisplayName}" FontSize="18" FontAttributes="Bold" />
+                                            <Label Grid.Column="2" Text="{Binding CurrentBalance, StringFormat='{0:C}'}" FontSize="19" FontAttributes="Bold" />
+                                            <Label Grid.Row="1" Grid.Column="1" Text="{Binding Account.Currency, StringFormat='Valuta {0}'}" Style="{StaticResource MutedLabel}" FontSize="12" />
+                                            <Label Grid.Row="1" Grid.Column="2" Text="Non attivo" TextColor="{StaticResource Expense}" FontSize="12" IsVisible="{Binding IsInactive}" />
+                                        </Grid>
+                                        <BoxView HeightRequest="1" BackgroundColor="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" />
+                                        <FlexLayout Direction="Row" Wrap="Wrap" JustifyContent="Start">
+                                            <Button Text="Modifica" Style="{StaticResource TextButton}" Margin="0,0,6,0"
+                                                    Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditCommand}" CommandParameter="{Binding .}" />
+                                            <Button Text="Rendi principale" Style="{StaticResource TextButton}" Margin="0,0,6,0"
+                                                    IsEnabled="{Binding Account.IsActive}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.SetPrimaryCommand}" CommandParameter="{Binding .}" />
+                                            <Button Text="Attiva / disattiva" Style="{StaticResource SecondaryButton}"
+                                                    Command="{Binding Source={x:Reference Page}, Path=BindingContext.ToggleActiveCommand}" CommandParameter="{Binding .}" />
+                                        </FlexLayout>
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+
+                    <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}" />
+                    <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
                 </VerticalStackLayout>
-            </Border>
-
-            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Accounts}">
-                <BindableLayout.ItemTemplate>
-                    <DataTemplate>
-                        <Border Padding="12" Margin="0,0,0,8">
-                            <VerticalStackLayout Spacing="6">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <Label Text="{Binding DisplayName}" FontSize="18" FontAttributes="Bold" />
-                                    <Label Grid.Column="1" Text="{Binding CurrentBalance, StringFormat='{0:C}'}" FontSize="18" />
-                                </Grid>
-                                <Label Text="{Binding Account.Currency, StringFormat='Valuta: {0}'}" />
-                                <Label Text="Conto disattivato" TextColor="{StaticResource Expense}" IsVisible="{Binding IsInactive}" />
-                                <HorizontalStackLayout Spacing="8">
-                                    <Button Text="Modifica"
-                                            Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditCommand}"
-                                            CommandParameter="{Binding .}" />
-                                    <Button Text="Principale"
-                                            IsEnabled="{Binding Account.IsActive}"
-                                            Command="{Binding Source={x:Reference Page}, Path=BindingContext.SetPrimaryCommand}"
-                                            CommandParameter="{Binding .}" />
-                                    <Button Text="Attiva/Disattiva"
-                                            Command="{Binding Source={x:Reference Page}, Path=BindingContext.ToggleActiveCommand}"
-                                            CommandParameter="{Binding .}" />
-                                </HorizontalStackLayout>
-                            </VerticalStackLayout>
-                        </Border>
-                    </DataTemplate>
-                </BindableLayout.ItemTemplate>
             </VerticalStackLayout>
-
-            <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}" />
-            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
-        </VerticalStackLayout>
-    </ScrollView>
+        </ScrollView>
+        <Button Style="{StaticResource FloatingActionButton}" Command="{Binding NewAccountCommand}"
+                HorizontalOptions="End" VerticalOptions="End" Margin="0,0,22,24"
+                SemanticProperties.Description="Aggiungi un nuovo conto" />
+    </Grid>
 </ContentPage>

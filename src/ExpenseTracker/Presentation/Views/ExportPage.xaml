@@ -3,34 +3,65 @@
     x:Class="ExpenseTracker.Presentation.Views.ExportPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="Esportazione">
+    Title="Esportazione CSV">
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="12">
-            <Label Text="Esportazione CSV" Style="{StaticResource Headline}" HorizontalOptions="Start" />
-            <Label Text="Il file usa il separatore punto e virgola, date ISO 8601 e importi indipendenti dalla lingua del dispositivo." />
-            <HorizontalStackLayout>
-                <Switch IsToggled="{Binding ExportAll}" />
-                <Label Text="Esporta tutti i movimenti" VerticalTextAlignment="Center" />
-            </HorizontalStackLayout>
-
-            <Border Padding="12">
-                <VerticalStackLayout Spacing="8">
-                    <Label Text="Filtri usati quando l'esportazione completa è disattivata" FontAttributes="Bold" />
-                    <Picker ItemsSource="{Binding Periods}" ItemDisplayBinding="{Binding Label}" SelectedItem="{Binding SelectedPeriod}" />
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                        <DatePicker Date="{Binding CustomFrom}" />
-                        <DatePicker Grid.Column="1" Date="{Binding CustomTo}" />
-                    </Grid>
-                    <Picker ItemsSource="{Binding Accounts}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedAccount}" />
-                    <Picker ItemsSource="{Binding Types}" ItemDisplayBinding="{Binding Label}" SelectedItem="{Binding SelectedType}" />
-                    <Picker ItemsSource="{Binding MacroCategories}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedMacroCategory}" />
-                    <Picker ItemsSource="{Binding Categories}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedCategory}" />
-                </VerticalStackLayout>
+        <VerticalStackLayout Spacing="0">
+            <Border Style="{StaticResource HeroCard}">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="I TUOI DATI" TextColor="#FFD7D9" FontSize="12" FontAttributes="Bold" CharacterSpacing="1.8" />
+                        <Label Text="Esporta CSV" TextColor="White" FontSize="30" FontAttributes="Bold" />
+                        <Label Text="Porta con te lo storico, senza vincoli." TextColor="#FFD7D9" />
+                    </VerticalStackLayout>
+                    <Border Grid.Column="1" WidthRequest="58" HeightRequest="58" Padding="0" VerticalOptions="Center" BackgroundColor="#33FFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 18">
+                        <Label Text="⇩" TextColor="White" FontSize="28" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                    </Border>
+                </Grid>
             </Border>
 
-            <Button Text="Crea e condividi CSV" Command="{Binding ExportCommand}" />
-            <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}" />
-            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            <VerticalStackLayout Padding="18,20,18,40" Spacing="16">
+                <Border Style="{StaticResource Card}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <VerticalStackLayout Spacing="3">
+                            <Label Text="Tutti i movimenti" FontSize="17" FontAttributes="Bold" />
+                            <Label Text="Disattiva per scegliere un intervallo e filtri specifici." Style="{StaticResource MutedLabel}" FontSize="12" />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" IsToggled="{Binding ExportAll}" VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Filtri esportazione" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Vengono usati quando l'esportazione completa è disattivata." Style="{StaticResource MutedLabel}" FontSize="12" />
+                        <Label Text="Periodo" FontAttributes="Bold" FontSize="12" />
+                        <Border Style="{StaticResource InputCard}"><Picker ItemsSource="{Binding Periods}" ItemDisplayBinding="{Binding Label}" SelectedItem="{Binding SelectedPeriod}" /></Border>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Border Style="{StaticResource InputCard}"><DatePicker Date="{Binding CustomFrom}" /></Border>
+                            <Border Grid.Column="1" Style="{StaticResource InputCard}"><DatePicker Date="{Binding CustomTo}" /></Border>
+                        </Grid>
+                        <Label Text="Conto e tipo" FontAttributes="Bold" FontSize="12" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Border Style="{StaticResource InputCard}"><Picker ItemsSource="{Binding Accounts}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedAccount}" /></Border>
+                            <Border Grid.Column="1" Style="{StaticResource InputCard}"><Picker ItemsSource="{Binding Types}" ItemDisplayBinding="{Binding Label}" SelectedItem="{Binding SelectedType}" /></Border>
+                        </Grid>
+                        <Label Text="Categorie" FontAttributes="Bold" FontSize="12" />
+                        <Border Style="{StaticResource InputCard}"><Picker ItemsSource="{Binding MacroCategories}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedMacroCategory}" /></Border>
+                        <Border Style="{StaticResource InputCard}"><Picker ItemsSource="{Binding Categories}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedCategory}" /></Border>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Style="{StaticResource Card}" BackgroundColor="#14E2383F" Stroke="#40E2383F">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Label Text="i" TextColor="{StaticResource PrimaryGlow}" FontSize="20" FontAttributes="Bold" />
+                        <Label Grid.Column="1" Text="Il CSV usa il punto e virgola, date ISO 8601 e importi indipendenti dalla lingua del dispositivo." Style="{StaticResource MutedLabel}" FontSize="12" />
+                    </Grid>
+                </Border>
+
+                <Button Text="Crea e condividi CSV" Command="{Binding ExportCommand}" FontSize="16" />
+                <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}" />
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            </VerticalStackLayout>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

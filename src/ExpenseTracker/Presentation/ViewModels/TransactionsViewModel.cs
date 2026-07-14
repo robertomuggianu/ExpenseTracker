@@ -72,6 +72,9 @@ public partial class TransactionsViewModel(
     private Task EditAsync(TransactionListItem item) => navigation.GoToTransactionEditorAsync(item.Transaction.Id);
 
     [RelayCommand]
+    private Task NewTransactionAsync() => navigation.GoToTransactionEditorAsync();
+
+    [RelayCommand]
     private Task DeleteAsync(TransactionListItem item) => RunAsync(async () =>
     {
         var confirmed = await dialogs.ConfirmAsync(

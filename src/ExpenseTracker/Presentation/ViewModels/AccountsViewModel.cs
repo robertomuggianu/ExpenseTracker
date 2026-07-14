@@ -13,6 +13,9 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
     public ObservableCollection<AccountSummary> Accounts { get; } = [];
 
     [ObservableProperty]
+    public partial decimal TotalBalance { get; set; }
+
+    [ObservableProperty]
     public partial bool IsEditorVisible { get; set; }
 
     [ObservableProperty]
@@ -43,6 +46,8 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
         {
             Accounts.Add(item);
         }
+
+        TotalBalance = Accounts.Where(item => item.Account.IsActive).Sum(item => item.CurrentBalance);
     }
 
     [RelayCommand]

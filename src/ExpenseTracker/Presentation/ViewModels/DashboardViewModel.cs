@@ -2,12 +2,15 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ExpenseTracker.Application;
+using ExpenseTracker.Presentation.Services;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 
 namespace ExpenseTracker.Presentation.ViewModels;
 
-public partial class DashboardViewModel(ReportingService reportingService) : ViewModelBase
+public partial class DashboardViewModel(
+    ReportingService reportingService,
+    IAppNavigationService navigation) : ViewModelBase
 {
     public IReadOnlyList<PeriodOption> Periods { get; } = PeriodOption.All;
 
@@ -64,6 +67,12 @@ public partial class DashboardViewModel(ReportingService reportingService) : Vie
             RecentTransactions.Add(item);
         }
     });
+
+    [RelayCommand]
+    private Task NewTransactionAsync() => navigation.GoToTransactionEditorAsync();
+
+    [RelayCommand]
+    private Task ShowTransactionsAsync() => navigation.GoToTransactionsAsync();
 
     partial void OnSelectedPeriodChanged(PeriodOption value) => _ = LoadAsync();
 

@@ -27,7 +27,7 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
     public partial TransactionTypeOption SelectedMacroType { get; set; } = TransactionTypeOption.Required[1];
 
     [ObservableProperty]
-    public partial string MacroColor { get; set; } = "#512BD4";
+    public partial string MacroColor { get; set; } = "#E2383F";
 
     [ObservableProperty]
     public partial bool MacroIsActive { get; set; } = true;
@@ -71,7 +71,7 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
         EditingMacroId = null;
         MacroName = string.Empty;
         SelectedMacroType = TransactionTypeOption.Required[1];
-        MacroColor = "#512BD4";
+        MacroColor = "#E2383F";
         MacroIsActive = true;
         IsMacroEditorVisible = true;
         IsCategoryEditorVisible = false;
