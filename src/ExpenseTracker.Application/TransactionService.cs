@@ -83,7 +83,7 @@ public sealed class TransactionService(IExpenseRepository repository)
             {
                 var account = accountMap[item.AccountId];
                 var category = categoryMap[item.CategoryId];
-                return new TransactionListItem(item, account.Name, category.Name, category.Color);
+                return new TransactionListItem(item, account.Name, category.Name, category.Color, category.Icon);
             })
             .ToArray();
     }

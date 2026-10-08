@@ -7,13 +7,13 @@
     x:Name="Page"
     Title="Movimenti">
     <Grid RowDefinitions="Auto,Auto,*">
-        <Border Style="{StaticResource HeroCard}" Padding="16,14,16,18">
+        <Border Style="{StaticResource HeroCard}" Margin="16,16,16,0" Padding="18">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                 <Button Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}" />
                 <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
-                    <Label Text="CRONOLOGIA" TextColor="#FFD7D9" FontSize="11" FontAttributes="Bold" CharacterSpacing="1.5" />
+                    <Label Text="CRONOLOGIA" TextColor="{StaticResource DarkTextMuted}" FontSize="11" FontAttributes="Bold" CharacterSpacing="1.5" />
                     <Label Text="Movimenti" TextColor="White" FontSize="25" FontAttributes="Bold" />
-                    <Label Text="Cerca e controlla ogni operazione." TextColor="#FFD7D9" FontSize="12" />
+                    <Label Text="Cerca e controlla ogni operazione." TextColor="{StaticResource DarkTextMuted}" FontSize="12" />
                 </VerticalStackLayout>
             </Grid>
         </Border>
@@ -21,16 +21,16 @@
         <Border Grid.Row="1" Style="{StaticResource Card}" Margin="16,12,16,10" Padding="12">
             <VerticalStackLayout Spacing="10">
                 <Grid ColumnDefinitions="*,Auto">
-                    <Label Text="Filtri" FontSize="17" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                    <Button Text="Filtri ⌄" Style="{StaticResource TextButton}" Command="{Binding ToggleFiltersCommand}" HorizontalOptions="Start" />
                     <Button Grid.Column="1" Text="Applica" Command="{Binding ApplyFiltersCommand}" Padding="16,8" MinimumHeightRequest="40" />
                 </Grid>
-                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+                <Grid IsVisible="{Binding FiltersVisible}" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
                     <controls:ChoiceField ItemsSource="{Binding Periods}" SelectedItem="{Binding SelectedPeriod}" DisplayMemberPath="Label" Title="Periodo" />
                     <controls:ChoiceField Grid.Column="1" ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount}" DisplayMemberPath="Name" Title="Conto" />
                     <controls:ChoiceField Grid.Row="1" ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType}" DisplayMemberPath="Label" Title="Tipo" />
                     <controls:ChoiceField Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" DisplayMemberPath="Name" Title="Categoria" />
                 </Grid>
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <Grid IsVisible="{Binding IsCustomPeriod}" ColumnDefinitions="*,*" ColumnSpacing="8">
                     <Border Style="{StaticResource InputCard}"><DatePicker Date="{Binding CustomFrom}" /></Border>
                     <Border Grid.Column="1" Style="{StaticResource InputCard}"><DatePicker Date="{Binding CustomTo}" /></Border>
                 </Grid>
@@ -39,7 +39,8 @@
         </Border>
 
         <Grid Grid.Row="2" RowDefinitions="*,Auto" Margin="16,0,16,76" RowSpacing="8">
-            <CollectionView ItemsSource="{Binding Transactions}" SelectionMode="None">
+            <CollectionView ItemsSource="{Binding Groups}" IsGrouped="True" SelectionMode="None">
+                <CollectionView.GroupHeaderTemplate><DataTemplate><Label Text="{Binding Title}" Style="{StaticResource MutedLabel}" Margin="4,8,0,12" FontAttributes="Bold" /></DataTemplate></CollectionView.GroupHeaderTemplate>
                 <CollectionView.EmptyView>
                     <VerticalStackLayout Padding="24" Spacing="8" HorizontalOptions="Center" VerticalOptions="Center">
                         <Label Text="◎" TextColor="{StaticResource PrimaryGlow}" FontSize="42" HorizontalTextAlignment="Center" />
@@ -52,13 +53,20 @@
                         <Border Style="{StaticResource Card}" Padding="14" Margin="0,0,0,10">
                             <VerticalStackLayout Spacing="10">
                                 <Grid ColumnDefinitions="44,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
-                                    <Border Grid.RowSpan="2" WidthRequest="44" HeightRequest="44" Padding="0" StrokeThickness="0" BackgroundColor="#24E2383F" StrokeShape="RoundRectangle 14">
-                                        <Label Text="↗" TextColor="{StaticResource PrimaryGlow}" FontSize="20" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                    <Border Grid.RowSpan="2" WidthRequest="44" HeightRequest="44" Padding="0" StrokeThickness="0" BackgroundColor="{Binding CategoryColor}" StrokeShape="RoundRectangle 14">
+                                        <Image Source="{Binding IconSource}" WidthRequest="24" HeightRequest="24" />
                                     </Border>
-                                    <Label Grid.Column="1" Text="{Binding Transaction.Description, TargetNullValue='Senza descrizione'}" FontAttributes="Bold" LineBreakMode="TailTruncation" />
-                                    <Label Grid.Column="2" Text="{Binding SignedAmount, StringFormat='{0:C}'}" FontSize="17" FontAttributes="Bold" />
+                                    <Label Grid.Column="1" Text="{Binding DisplayDescription}" FontAttributes="Bold" LineBreakMode="TailTruncation" />
+                                    <Label Grid.Column="2" FontSize="17" FontAttributes="Bold" >
+                        <Label.Text>
+                            <MultiBinding Converter="{StaticResource MoneyConverter}">
+                                <Binding Path="SignedAmount" />
+                                <Binding Path="Transaction.Currency" />
+                            </MultiBinding>
+                        </Label.Text>
+                    </Label>
                                     <Label Grid.Row="1" Grid.Column="1" Text="{Binding AccountName}" Style="{StaticResource MutedLabel}" FontSize="12" />
-                                    <Label Grid.Row="1" Grid.Column="2" Text="{Binding Transaction.OccurredAtUtc, StringFormat='{0:dd MMM yyyy}'}" Style="{StaticResource MutedLabel}" FontSize="12" />
+                                    <Label Grid.Row="1" Grid.Column="2" Text="{Binding LocalDate, StringFormat='{0:dd MMM yyyy}'}" Style="{StaticResource MutedLabel}" FontSize="12" />
                                 </Grid>
                                 <FlexLayout Direction="Row" Wrap="Wrap">
                                     <Button Text="Dettaglio" Style="{StaticResource TextButton}" Margin="0,0,4,0" Command="{Binding Source={x:Reference Page}, Path=BindingContext.ShowDetailCommand}" CommandParameter="{Binding .}" />

@@ -13,6 +13,9 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
     public ObservableCollection<AccountSummary> Accounts { get; } = [];
 
     [ObservableProperty]
+    public partial string? BalanceCurrency { get; set; } = "EUR";
+
+    [ObservableProperty]
     public partial decimal TotalBalance { get; set; }
 
     [ObservableProperty]
@@ -47,6 +50,7 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
             Accounts.Add(item);
         }
 
+        BalanceCurrency = CurrencySelection.SingleOrDefault(Accounts.Where(item => item.Account.IsActive).Select(item => item.Account.Currency));
         TotalBalance = Accounts.Where(item => item.Account.IsActive).Sum(item => item.CurrentBalance);
     }
 

@@ -20,8 +20,9 @@
                             <Border Padding="12,11" Margin="0,0,0,6" StrokeThickness="0"
                                     BackgroundColor="{AppThemeBinding Light={StaticResource LightSurfaceAlt}, Dark={StaticResource DarkSurfaceAlt}}"
                                     StrokeShape="RoundRectangle 14">
-                                <Grid ColumnDefinitions="32,*" ColumnSpacing="10">
-                                    <Label Text="{Binding Indicator}" TextColor="{StaticResource Primary}" FontSize="20"
+                                <Grid ColumnDefinitions="Auto,*,32" ColumnSpacing="10">
+                                    <Border IsVisible="{Binding HasIcon}" WidthRequest="36" HeightRequest="36" Padding="8" BackgroundColor="{Binding IconColor}"><Image Source="{Binding IconSource}" /></Border>
+                                    <Label Grid.Column="2" Text="{Binding Indicator}" TextColor="{StaticResource Primary}" FontSize="20"
                                            VerticalTextAlignment="Center" HorizontalTextAlignment="Center" />
                                     <Label Grid.Column="1" Text="{Binding Label}" FontSize="16" VerticalTextAlignment="Center" />
                                     <Grid.GestureRecognizers>

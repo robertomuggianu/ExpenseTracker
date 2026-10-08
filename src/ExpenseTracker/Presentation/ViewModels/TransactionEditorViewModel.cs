@@ -12,16 +12,26 @@ public partial class TransactionEditorViewModel(
     AccountService accountService,
     CategoryService categoryService,
     TransactionService transactionService,
-    IUserDialogService dialogs,
     IAppNavigationService navigation) : ViewModelBase
 {
     private IReadOnlyList<Category> _allCategories = [];
+    private Dictionary<Guid, int> _categoryUsage = [];
+
+    [ObservableProperty]
+    public partial bool ShowDetails { get; set; }
+
+    [RelayCommand]
+    private void ToggleDetails() => ShowDetails = !ShowDetails;
+
+    [RelayCommand]
+    private void ChooseCategory(Category category) => SelectedCategory = category;
 
     public IReadOnlyList<TransactionTypeOption> Types { get; } = TransactionTypeOption.Required;
 
     public ObservableCollection<AccountSummary> Accounts { get; } = [];
 
     public ObservableCollection<Category> Categories { get; } = [];
+    public ObservableCollection<Category> QuickCategories { get; } = [];
 
     [ObservableProperty]
     public partial Guid? EditingId { get; set; }
@@ -68,6 +78,9 @@ public partial class TransactionEditorViewModel(
         }
 
         _allCategories = (await categoryService.GetCategoriesAsync(activeOnly: true)).ToArray();
+        _categoryUsage = (await transactionService.GetTransactionsAsync())
+            .GroupBy(item => item.Transaction.CategoryId).ToDictionary(group => group.Key, group => group.Count());
+        ShowDetails = transactionId.HasValue;
 
         if (transactionId.HasValue)
         {
@@ -122,14 +135,13 @@ public partial class TransactionEditorViewModel(
             Description,
             Notes));
 
-        await dialogs.ShowMessageAsync("Movimento salvato", "I dati sono stati salvati sul dispositivo.");
         await navigation.GoToTransactionsAsync();
     });
 
     partial void OnSelectedTypeChanged(TransactionTypeOption value)
     {
         RefreshCategories();
-        SelectedCategory = Categories.FirstOrDefault();
+        SelectedCategory = null;
     }
 
     private void ResetForm()
@@ -137,7 +149,7 @@ public partial class TransactionEditorViewModel(
         SelectedType = Types[1];
         SelectedAccount = Accounts.FirstOrDefault(item => item.Account.IsPrimary) ?? Accounts.FirstOrDefault();
         RefreshCategories();
-        SelectedCategory = Categories.FirstOrDefault();
+        SelectedCategory = null;
         Date = DateTime.Today;
         Time = DateTime.Now.TimeOfDay;
         Amount = string.Empty;
@@ -150,12 +162,21 @@ public partial class TransactionEditorViewModel(
     {
         var selectedId = SelectedCategory?.Id;
         Categories.Clear();
-        foreach (var item in _allCategories.Where(item => item.Type == SelectedType.Value))
+        foreach (var item in _allCategories.Where(item => item.Type == SelectedType.Value)
+                     .OrderByDescending(item => _categoryUsage.GetValueOrDefault(item.Id)).ThenBy(item => item.Name))
         {
             Categories.Add(item);
         }
 
+        QuickCategories.Clear();
+        foreach (var item in Categories.Take(8)) QuickCategories.Add(item);
+
         SelectedCategory = Categories.FirstOrDefault(item => item.Id == selectedId);
+    }
+
+    partial void OnSelectedAccountChanged(AccountSummary? value)
+    {
+        if (EditingId is null) Currency = value?.Account.Currency ?? "EUR";
     }
 
     private static bool TryParseDecimal(string value, out decimal result) =>

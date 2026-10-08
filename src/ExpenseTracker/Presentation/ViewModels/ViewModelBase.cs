@@ -14,7 +14,10 @@ public abstract partial class ViewModelBase : ObservableObject
     public partial string? ErrorMessage { get; set; }
 
     [RelayCommand]
-    private void OpenMenu() => Shell.Current.FlyoutIsPresented = true;
+    private Task OpenMenuAsync() => Shell.Current.GoToAsync("//Main/More");
+
+    [RelayCommand]
+    private Task BackAsync() => Shell.Current.GoToAsync("..");
 
     protected async Task RunAsync(Func<Task> action)
     {

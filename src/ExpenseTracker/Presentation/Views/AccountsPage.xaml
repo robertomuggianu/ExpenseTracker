@@ -8,14 +8,21 @@
     <Grid>
         <ScrollView>
             <VerticalStackLayout Spacing="0">
-                <Border Style="{StaticResource HeroCard}" Padding="16,14,16,18">
+                <Border Style="{StaticResource HeroCard}" Margin="16,16,16,0" Padding="18">
                     <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                            <Button Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}" />
-                            <Label Grid.Column="1" Text="I TUOI CONTI" TextColor="#FFD7D9" FontSize="12" FontAttributes="Bold" CharacterSpacing="1.8" VerticalTextAlignment="Center" />
+                            <Button Style="{StaticResource HeaderMenuButton}" Text="‹" Command="{Binding BackCommand}" />
+                            <Label Grid.Column="1" Text="I TUOI CONTI" TextColor="{StaticResource DarkTextMuted}" FontSize="12" FontAttributes="Bold" CharacterSpacing="1.8" VerticalTextAlignment="Center" />
                         </Grid>
-                        <Label Grid.Row="1" Text="{Binding TotalBalance, StringFormat='{0:C}'}" Style="{StaticResource HeroValue}" FontSize="34" />
-                        <Label Grid.Row="2" Text="Saldo complessivo dei conti attivi" TextColor="#FFD7D9" />
+                        <Label Grid.Row="1" Style="{StaticResource HeroValue}" FontSize="34" >
+                        <Label.Text>
+                            <MultiBinding Converter="{StaticResource MoneyConverter}">
+                                <Binding Path="TotalBalance" />
+                                <Binding Path="BalanceCurrency" />
+                            </MultiBinding>
+                        </Label.Text>
+                    </Label>
+                        <Label Grid.Row="2" Text="Saldo complessivo dei conti attivi" TextColor="{StaticResource DarkTextMuted}" />
                     </Grid>
                 </Border>
 
@@ -69,7 +76,14 @@
                                                 <Label Text="€" TextColor="{StaticResource PrimaryGlow}" FontSize="23" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
                                             </Border>
                                             <Label Grid.Column="1" Text="{Binding DisplayName}" FontSize="18" FontAttributes="Bold" />
-                                            <Label Grid.Column="2" Text="{Binding CurrentBalance, StringFormat='{0:C}'}" FontSize="19" FontAttributes="Bold" />
+                                            <Label Grid.Column="2" FontSize="19" FontAttributes="Bold" >
+                        <Label.Text>
+                            <MultiBinding Converter="{StaticResource MoneyConverter}">
+                                <Binding Path="CurrentBalance" />
+                                <Binding Path="Account.Currency" />
+                            </MultiBinding>
+                        </Label.Text>
+                    </Label>
                                             <Label Grid.Row="1" Grid.Column="1" Text="{Binding Account.Currency, StringFormat='Valuta {0}'}" Style="{StaticResource MutedLabel}" FontSize="12" />
                                             <Label Grid.Row="1" Grid.Column="2" Text="Non attivo" TextColor="{StaticResource Expense}" FontSize="12" IsVisible="{Binding IsInactive}" />
                                         </Grid>

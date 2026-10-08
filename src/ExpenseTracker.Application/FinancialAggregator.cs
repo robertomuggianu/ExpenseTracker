@@ -40,7 +40,7 @@ public static class FinancialAggregator
 
         return transactions
             .Where(item => range.Contains(item.OccurredAtUtc))
-            .GroupBy(item => item.OccurredAtUtc.Date)
+            .GroupBy(item => item.OccurredAtUtc.ToLocalTime().Date)
             .OrderBy(group => group.Key)
             .Select(group => new TrendPoint(
                 group.Key,

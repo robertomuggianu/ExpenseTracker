@@ -20,7 +20,12 @@ public sealed class ReportingService(IExpenseRepository repository)
             accounts.Where(item => item.IsActive).Sum(item => item.CalculateCurrentBalance(allTransactions)),
             FinancialAggregator.CalculateTotals(allTransactions, range),
             FinancialAggregator.GroupExpensesByCategory(allTransactions, categories, range),
-            joined.Take(8).ToArray());
+            joined.Take(8).ToArray())
+        {
+            BalanceCurrency = CurrencySelection.SingleOrDefault(accounts.Where(item => item.IsActive).Select(item => item.Currency)),
+            PrimaryCurrency = primary?.Currency ?? "EUR",
+            ReportCurrency = CurrencySelection.SingleOrDefault(filtered.Select(item => item.Currency))
+        };
     }
 
     public async Task<AnalyticsSummary> GetAnalyticsAsync(
@@ -35,6 +40,9 @@ public sealed class ReportingService(IExpenseRepository repository)
         return new AnalyticsSummary(
             FinancialAggregator.CalculateTotals(transactions, range),
             FinancialAggregator.BuildDailyTrend(transactions, range),
-            FinancialAggregator.GroupExpensesByCategory(transactions, categories, range));
+            FinancialAggregator.GroupExpensesByCategory(transactions, categories, range))
+        {
+            ReportCurrency = CurrencySelection.SingleOrDefault(transactions.Select(item => item.Currency))
+        };
     }
 }

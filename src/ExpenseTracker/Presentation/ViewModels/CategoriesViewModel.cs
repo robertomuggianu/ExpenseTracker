@@ -11,6 +11,11 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
     public ObservableCollection<Category> Categories { get; } = [];
 
     public IReadOnlyList<TransactionTypeOption> Types { get; } = TransactionTypeOption.Required;
+    public IReadOnlyList<CategoryIcon> Icons => CategoryAppearance.Icons;
+    public IReadOnlyList<string> Palette => CategoryAppearance.Palette;
+
+    [ObservableProperty]
+    public partial CategoryIcon SelectedIcon { get; set; } = CategoryAppearance.Icons[^1];
 
     [ObservableProperty]
     public partial bool IsEditorVisible { get; set; }
@@ -48,7 +53,8 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
         EditingCategoryId = null;
         CategoryName = string.Empty;
         SelectedCategoryType = Types[1];
-        CategoryColor = "#E2383F";
+        CategoryColor = CategoryAppearance.SuggestColor(Categories.Select(item => item.Color));
+        SelectedIcon = Icons[^1];
         CategoryIsActive = true;
         IsEditorVisible = true;
     }
@@ -60,6 +66,7 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
         CategoryName = category.Name;
         SelectedCategoryType = Types.Single(option => option.Value == category.Type);
         CategoryColor = category.Color;
+        SelectedIcon = Icons.Single(item => item.Key == category.Icon);
         CategoryIsActive = category.IsActive;
         IsEditorVisible = true;
     }
@@ -72,8 +79,18 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
             CategoryName,
             SelectedCategoryType.Value!.Value,
             CategoryColor,
-            CategoryIsActive));
+            CategoryIsActive,
+            SelectedIcon.Key));
         IsEditorVisible = false;
         await LoadCoreAsync();
     });
+
+    [RelayCommand]
+    private void SelectColor(string color) => CategoryColor = color;
+
+    [RelayCommand]
+    private void SelectIcon(CategoryIcon icon) => SelectedIcon = icon;
+
+    [RelayCommand]
+    private void CancelEdit() => IsEditorVisible = false;
 }

@@ -23,6 +23,17 @@ public partial class TransactionsViewModel(
     public ObservableCollection<CategoryFilterOption> Categories { get; } = [];
 
     public ObservableCollection<TransactionListItem> Transactions { get; } = [];
+    public ObservableCollection<TransactionDayGroup> Groups { get; } = [];
+
+    [ObservableProperty]
+    public partial bool FiltersVisible { get; set; }
+
+    public bool IsCustomPeriod => SelectedPeriod.Value == DateRangePreset.Custom;
+
+    [RelayCommand]
+    private void ToggleFilters() => FiltersVisible = !FiltersVisible;
+
+    partial void OnSelectedPeriodChanged(PeriodOption value) => OnPropertyChanged(nameof(IsCustomPeriod));
 
     [ObservableProperty]
     public partial PeriodOption SelectedPeriod { get; set; } = PeriodOption.All[1];
@@ -72,7 +83,7 @@ public partial class TransactionsViewModel(
     {
         var confirmed = await dialogs.ConfirmAsync(
             "Elimina movimento",
-            $"Eliminare definitivamente il movimento da {item.Transaction.Amount:C}?",
+            $"Eliminare definitivamente il movimento da {MoneyFormatter.Format(item.Transaction.Amount, item.Transaction.Currency)}?",
             "Elimina",
             "Annulla");
         if (!confirmed)
@@ -126,5 +137,15 @@ public partial class TransactionsViewModel(
         {
             Transactions.Add(item);
         }
+        Groups.Clear();
+        foreach (var group in items.GroupBy(item => item.LocalDate.Date).OrderByDescending(group => group.Key))
+            Groups.Add(new TransactionDayGroup(group.Key, group));
     }
+}
+
+public sealed class TransactionDayGroup(DateTime date, IEnumerable<TransactionListItem> items)
+    : ObservableCollection<TransactionListItem>(items)
+{
+    public string Title => date == DateTime.Today ? "Oggi" : date == DateTime.Today.AddDays(-1)
+        ? "Ieri" : date.ToString("dddd d MMMM", System.Globalization.CultureInfo.GetCultureInfo("it-IT"));
 }

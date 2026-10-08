@@ -4,10 +4,12 @@ public partial class App : Microsoft.Maui.Controls.Application
 {
     private readonly AppShell _appShell;
 
-    public App(AppShell appShell)
+    public App(IServiceProvider services)
     {
         InitializeComponent();
-        _appShell = appShell;
+        UserAppTheme = AppTheme.Dark;
+        // Shell XAML uses application resources, so resolve it after they are loaded.
+        _appShell = services.GetRequiredService<AppShell>();
     }
 
     protected override Window CreateWindow(IActivationState? activationState)

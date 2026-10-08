@@ -1,0 +1,4 @@
+{
+  "dotnet.debug.hotReloadXAML": true,
+  "maui.configuration.useLaunchJsonConfigurations": true
+}

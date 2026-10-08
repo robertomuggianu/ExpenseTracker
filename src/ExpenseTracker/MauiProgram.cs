@@ -7,6 +7,7 @@ using ExpenseTracker.Presentation.Services;
 using ExpenseTracker.Presentation.ViewModels;
 using ExpenseTracker.Presentation.Views;
 using LiveChartsCore.SkiaSharpView.Maui;
+using LiveChartsCore.SkiaSharpView;
 using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 
@@ -20,7 +21,7 @@ public static class MauiProgram
 		builder
 			.UseMauiApp<App>()
 			.UseSkiaSharp()
-			.UseLiveCharts()
+			.UseLiveCharts(settings => settings.AddDarkTheme())
 			.ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -56,6 +57,7 @@ public static class MauiProgram
 		builder.Services.AddTransient<AccountsPage>();
 		builder.Services.AddTransient<CategoriesPage>();
 		builder.Services.AddTransient<ExportPage>();
+		builder.Services.AddTransient<MorePage>();
 		builder.Services.AddSingleton<AppShell>();
 
 #if DEBUG

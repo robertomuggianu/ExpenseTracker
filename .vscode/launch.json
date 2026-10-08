@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "ExpenseTracker Android (Debug + Hot Reload)",
+      "type": "maui",
+      "request": "launch",
+      "project": "${workspaceFolder}/src/ExpenseTracker/ExpenseTracker.csproj",
+      "configuration": "Debug",
+      "targetFramework": "net10.0-android",
+      "preLaunchTask": "maui: Build"
+    }
+  ]
+}

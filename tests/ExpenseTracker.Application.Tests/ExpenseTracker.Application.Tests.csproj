@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Compile Include="..\..\src\ExpenseTracker\Presentation\Services\MoneyFormatter.cs" Link="Presentation\MoneyFormatter.cs" />
   </ItemGroup>
 
   <ItemGroup>

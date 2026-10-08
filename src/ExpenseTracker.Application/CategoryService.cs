@@ -23,7 +23,7 @@ public sealed class CategoryService(IExpenseRepository repository)
         var item = input.Id.HasValue
             ? await repository.GetCategoryAsync(input.Id.Value, cancellationToken)
                 ?? throw new DomainValidationException("La categoria da modificare non esiste.")
-            : new Category(Guid.NewGuid(), input.Name, input.Type, input.Color);
+            : new Category(Guid.NewGuid(), input.Name, input.Type, input.Color, icon: input.Icon);
 
         if (input.Id.HasValue)
         {
@@ -37,7 +37,7 @@ public sealed class CategoryService(IExpenseRepository repository)
                 }
             }
 
-            item.Update(input.Name, input.Type, input.Color);
+            item.Update(input.Name, input.Type, input.Color, input.Icon);
         }
 
         item.SetActive(input.IsActive);
