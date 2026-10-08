@@ -7,22 +7,13 @@
     Title="Dati">
     <ScrollView>
         <VerticalStackLayout Spacing="0">
-            <Border Style="{StaticResource HeroCard}" Margin="16,16,16,0" Padding="18">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                    <Button Style="{StaticResource HeaderMenuButton}" Text="‹" Command="{Binding BackCommand}" />
-                    <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
-                        <Label Text="I TUOI DATI" TextColor="{StaticResource DarkTextMuted}" FontSize="11" FontAttributes="Bold" CharacterSpacing="1.5" />
-                        <Label Text="Importa ed esporta" TextColor="White" FontSize="25" FontAttributes="Bold" />
-                        <Label Text="Migra lo storico o crea il tuo backup CSV." TextColor="{StaticResource DarkTextMuted}" FontSize="12" />
-                    </VerticalStackLayout>
-                </Grid>
-            </Border>
+            <controls:PageHeader Heading="Esporta e importa" Subtitle="Porta con te i tuoi dati"/>
 
             <VerticalStackLayout Padding="16,14,16,32" Spacing="12">
                 <Border Style="{StaticResource Card}" Stroke="{StaticResource Primary}" Padding="16">
                     <VerticalStackLayout Spacing="12">
                         <Grid ColumnDefinitions="48,*" ColumnSpacing="12">
-                            <Border WidthRequest="48" HeightRequest="48" Padding="0" BackgroundColor="#24E2383F" StrokeThickness="0" StrokeShape="RoundRectangle 15">
+                            <Border WidthRequest="48" HeightRequest="48" Padding="0" BackgroundColor="#2642C6A5" StrokeThickness="0" StrokeShape="RoundRectangle 15">
                                 <Label Text="⇧" TextColor="{StaticResource PrimaryGlow}" FontSize="25" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">

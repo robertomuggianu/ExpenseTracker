@@ -1,81 +1,82 @@
-<?xml version='1.0' encoding='utf-8'?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui" x:Class="ExpenseTracker.Presentation.Views.DashboardPage" Title="Mese">
+<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui" x:Class="ExpenseTracker.Presentation.Views.DashboardPage" Title="Home">
   <Grid>
     <ScrollView>
-      <VerticalStackLayout Padding="20,22,20,100" Spacing="18">
-        <Grid ColumnDefinitions="*,Auto">
-          <VerticalStackLayout Spacing="2">
-            <Label Text="IL TUO MESE" Style="{StaticResource Eyebrow}"/>
-            <Label Text="{Binding MonthLabel}" Style="{StaticResource PageTitle}" TextTransform="None"/>
-          </VerticalStackLayout>
-          <Button Grid.Column="1" Text="Oggi" Command="{Binding CurrentMonthCommand}" Style="{StaticResource TextButton}"/>
-        </Grid>
-        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-          <Button Text="‹" Command="{Binding PreviousMonthCommand}" Style="{StaticResource SecondaryButton}" SemanticProperties.Description="Mese precedente"/>
-          <Label Grid.Column="1" Text="{Binding MonthLabel}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontAttributes="Bold"/>
-          <Button Grid.Column="2" Text="›" Command="{Binding NextMonthCommand}" Style="{StaticResource SecondaryButton}" SemanticProperties.Description="Mese successivo"/>
-        </Grid>
-        <Border Style="{StaticResource HeroCard}">
-          <VerticalStackLayout Spacing="8">
-            <Label Text="Spese del mese" TextColor="{StaticResource DarkTextMuted}"/>
-            <Label Style="{StaticResource HeroValue}">
-              <Label.Text>
-                <MultiBinding Converter="{StaticResource MoneyConverter}">
-                  <Binding Path="Expense"/>
-                  <Binding Path="ReportCurrency"/>
-                </MultiBinding>
-              </Label.Text>
-            </Label>
-            <Label Text="{Binding ComparisonText}" TextColor="{StaticResource PrimaryGlow}" FontSize="13"/>
-          </VerticalStackLayout>
-        </Border>
-        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-          <Border Style="{StaticResource Card}">
-            <VerticalStackLayout Spacing="6">
-              <Label Text="Entrate" TextColor="{StaticResource Income}"/>
-              <Label FontSize="23" FontAttributes="Bold">
-                <Label.Text>
-                  <MultiBinding Converter="{StaticResource MoneyConverter}">
-                    <Binding Path="Income"/>
-                    <Binding Path="ReportCurrency"/>
-                  </MultiBinding>
-                </Label.Text>
+      <VerticalStackLayout Spacing="0">
+        <Border Style="{StaticResource HeaderCard}" Padding="18,14,18,38">
+          <VerticalStackLayout Spacing="12">
+            <Grid ColumnDefinitions="46,*,46">
+              <Button Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}" SemanticProperties.Description="Apri menu"/>
+              <Label Grid.Column="1" Text="ExpenseTracker" FontSize="21" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+              <Image Grid.Column="2" Source="brand_mark.png" WidthRequest="46" HeightRequest="46"/>
+            </Grid>
+            <VerticalStackLayout Spacing="3">
+              <Label Text="SALDO DEI CONTI" Style="{StaticResource Eyebrow}" HorizontalTextAlignment="Center" TextColor="{StaticResource DarkTextMuted}" FontSize="10"/>
+              <Label Style="{StaticResource HeroValue}" FontSize="34" HorizontalTextAlignment="Center">
+                <Label.Text><MultiBinding Converter="{StaticResource MoneyConverter}"><Binding Path="TotalBalance"/><Binding Path="BalanceCurrency"/></MultiBinding></Label.Text>
               </Label>
             </VerticalStackLayout>
-          </Border>
-          <Border Grid.Column="1" Style="{StaticResource Card}">
-            <VerticalStackLayout Spacing="6">
-              <Label Text="Differenza" TextColor="{StaticResource PrimaryGlow}"/>
-              <Label FontSize="23" FontAttributes="Bold">
-                <Label.Text>
-                  <MultiBinding Converter="{StaticResource MoneyConverter}">
-                    <Binding Path="Difference"/>
-                    <Binding Path="ReportCurrency"/>
-                  </MultiBinding>
-                </Label.Text>
-              </Label>
-              <Label Text="Entrate − spese" Style="{StaticResource MutedLabel}" FontSize="11"/>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+              <Button Text="SPESE" Style="{StaticResource ReportTab}" Command="{Binding SelectExpensesCommand}">
+                <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsExpenseSelected}" Value="True"><Setter Property="TextColor" Value="{StaticResource DarkText}"/><Setter Property="BackgroundColor" Value="#3442C6A5"/></DataTrigger></Button.Triggers>
+              </Button>
+              <Button Grid.Column="1" Text="ENTRATE" Style="{StaticResource ReportTab}" Command="{Binding SelectIncomeCommand}">
+                <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsIncomeSelected}" Value="True"><Setter Property="TextColor" Value="{StaticResource DarkText}"/><Setter Property="BackgroundColor" Value="#3442C6A5"/></DataTrigger></Button.Triggers>
+              </Button>
+            </Grid>
+          </VerticalStackLayout>
+        </Border>
+        <VerticalStackLayout Padding="18,0,18,100" Spacing="12">
+          <Border Style="{StaticResource Card}" Margin="0,-20,0,0" Padding="14,18">
+            <VerticalStackLayout Spacing="14">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <Label Text="Mese" TextColor="{StaticResource PrimaryGlow}" FontAttributes="Bold" VerticalTextAlignment="Center"/>
+                <Label Grid.Column="1" Text="Riepilogo per categoria" Style="{StaticResource MutedLabel}" FontSize="12" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+                <Button Grid.Column="2" Text="Oggi" Command="{Binding CurrentMonthCommand}" Style="{StaticResource TextButton}"/>
+              </Grid>
+              <Grid ColumnDefinitions="44,*,44">
+                <Button Text="‹" Command="{Binding PreviousMonthCommand}" Style="{StaticResource TextButton}" FontSize="30" Padding="0" SemanticProperties.Description="Mese precedente"/>
+                <Label Grid.Column="1" Text="{Binding MonthLabel}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="17" FontAttributes="Bold" TextTransform="None"/>
+                <Button Grid.Column="2" Text="›" Command="{Binding NextMonthCommand}" Style="{StaticResource TextButton}" FontSize="30" Padding="0" SemanticProperties.Description="Mese successivo"/>
+              </Grid>
+              <Grid HeightRequest="260">
+                <Border IsVisible="{Binding HasNoChartData}" WidthRequest="210" HeightRequest="210" HorizontalOptions="Center" VerticalOptions="Center" BackgroundColor="Transparent" Stroke="{StaticResource DarkBorder}" StrokeThickness="18" StrokeShape="Ellipse"/>
+                <lvc:PieChart BackgroundColor="{StaticResource DarkSurface}" Series="{Binding ChartSeries}" LegendPosition="Hidden" IsVisible="{Binding HasChartData}"/>
+                <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="4" InputTransparent="True" WidthRequest="175">
+                  <Label Text="{Binding ChartLabel}" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" FontSize="12"/>
+                  <Label FontSize="28" FontAttributes="Bold" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation">
+                    <Label.Text><MultiBinding Converter="{StaticResource MoneyConverter}"><Binding Path="ChartTotal"/><Binding Path="ReportCurrency"/></MultiBinding></Label.Text>
+                  </Label>
+                </VerticalStackLayout>
+              </Grid>
+              <Label Text="{Binding EmptyChartText}" IsVisible="{Binding HasNoChartData}" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center"/>
             </VerticalStackLayout>
           </Border>
-        </Grid>
-        <Grid ColumnDefinitions="*,Auto">
-          <Label Text="Saldo dei conti" Style="{StaticResource MutedLabel}" VerticalTextAlignment="Center"/>
-          <Label Grid.Column="1" FontAttributes="Bold">
-            <Label.Text>
-              <MultiBinding Converter="{StaticResource MoneyConverter}">
-                <Binding Path="TotalBalance"/>
-                <Binding Path="BalanceCurrency"/>
-              </MultiBinding>
-            </Label.Text>
-          </Label>
-        </Grid>
-        <Label Text="Dove hai speso" Style="{StaticResource SectionTitle}"/>
-        <Border Style="{StaticResource Card}" IsVisible="{Binding HasExpenseData}">
-          <lvc:PieChart Series="{Binding ExpenseSeries}" HeightRequest="260" LegendPosition="Bottom"/>
-        </Border>
-        <Border Style="{StaticResource Card}" IsVisible="{Binding HasNoExpenseData}">
-          <Label Text="Le categorie compariranno qui quando registri la prima spesa del mese." Style="{StaticResource MutedLabel}"/>
-        </Border>
+          <VerticalStackLayout BindableLayout.ItemsSource="{Binding CategoryBreakdown}" Spacing="10">
+            <BindableLayout.ItemTemplate>
+              <DataTemplate>
+                <Border Style="{StaticResource Card}" Padding="12,14">
+                  <Grid ColumnDefinitions="42,*,Auto,Auto" ColumnSpacing="10">
+                    <Border WidthRequest="42" HeightRequest="42" Padding="10" BackgroundColor="{Binding Color}" StrokeShape="Ellipse"><Image Source="{Binding IconSource}"/></Border>
+                    <Label Grid.Column="1" Text="{Binding Name}" FontSize="15" FontAttributes="Bold" VerticalTextAlignment="Center" LineBreakMode="TailTruncation"/>
+                    <Label Grid.Column="2" Text="{Binding Percentage}" Style="{StaticResource MutedLabel}" FontSize="13" VerticalTextAlignment="Center"/>
+                    <Label Grid.Column="3" FontSize="15" FontAttributes="Bold" VerticalTextAlignment="Center">
+                      <Label.Text><MultiBinding Converter="{StaticResource MoneyConverter}"><Binding Path="Total"/><Binding Path="Currency"/></MultiBinding></Label.Text>
+                    </Label>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </BindableLayout.ItemTemplate>
+          </VerticalStackLayout>
+          <Label Text="{Binding ComparisonText}" Style="{StaticResource MutedLabel}" FontSize="12" Margin="2,4"/>
+          <Border Style="{StaticResource Card}" Padding="16">
+            <Grid ColumnDefinitions="*,Auto">
+              <VerticalStackLayout Spacing="3"><Label Text="Differenza del mese" FontAttributes="Bold"/><Label Text="Entrate − spese" Style="{StaticResource MutedLabel}" FontSize="12"/></VerticalStackLayout>
+              <Label Grid.Column="1" TextColor="{StaticResource PrimaryGlow}" FontSize="20" FontAttributes="Bold" VerticalTextAlignment="Center">
+                <Label.Text><MultiBinding Converter="{StaticResource MoneyConverter}"><Binding Path="Difference"/><Binding Path="ReportCurrency"/></MultiBinding></Label.Text>
+              </Label>
+            </Grid>
+          </Border>
         <Grid ColumnDefinitions="*,Auto">
           <Label Text="Ultimi movimenti" Style="{StaticResource SectionTitle}" VerticalTextAlignment="Center"/>
           <Button Grid.Column="1" Text="Tutti ›" Style="{StaticResource TextButton}" Command="{Binding ShowTransactionsCommand}"/>
@@ -106,10 +107,11 @@
         </VerticalStackLayout>
         <Label Text="Nessun movimento in questo mese." IsVisible="{Binding HasNoRecentTransactions}" Style="{StaticResource MutedLabel}"/>
         <Button Text="Esporta questo mese in CSV" Style="{StaticResource SecondaryButton}" Command="{Binding ExportMonthCommand}"/>
-        <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
-        <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
+          <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
+          <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
+        </VerticalStackLayout>
       </VerticalStackLayout>
     </ScrollView>
-    <Button Style="{StaticResource FloatingActionButton}" Command="{Binding NewTransactionCommand}" HorizontalOptions="End" VerticalOptions="End" Margin="0,0,22,20" SemanticProperties.Description="Aggiungi una spesa"/>
+    <Button Style="{StaticResource FloatingActionButton}" Command="{Binding NewTransactionCommand}" HorizontalOptions="End" VerticalOptions="End" Margin="0,0,22,24" SemanticProperties.Description="Aggiungi un movimento"/>
   </Grid>
 </ContentPage>

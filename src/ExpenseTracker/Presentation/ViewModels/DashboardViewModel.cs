@@ -13,6 +13,39 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
     ICsvExportService csvExportService, IFileShareService fileShareService) : ViewModelBase
 {
     public ObservableCollection<TransactionListItem> RecentTransactions { get; } = [];
+    public ObservableCollection<CategoryBreakdownItem> CategoryBreakdown { get; } = [];
+    private IReadOnlyList<ExpenseGroup> expenseGroups = [];
+    private IReadOnlyList<ExpenseGroup> incomeGroups = [];
+    [ObservableProperty] public partial bool IsIncomeSelected { get; set; }
+    public bool IsExpenseSelected => !IsIncomeSelected;
+    public decimal ChartTotal => IsIncomeSelected ? Income : Expense;
+    public string ChartLabel => IsIncomeSelected ? "Entrate del mese" : "Spese del mese";
+    public string EmptyChartText => IsIncomeSelected ? "Nessuna entrata in questo mese" : "Nessuna spesa in questo mese";
+    [RelayCommand] private void SelectExpenses() { IsIncomeSelected = false; UpdateChart(); }
+    [RelayCommand] private void SelectIncome() { IsIncomeSelected = true; UpdateChart(); }
+    partial void OnIsIncomeSelectedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsExpenseSelected));
+        OnPropertyChanged(nameof(ChartTotal));
+        OnPropertyChanged(nameof(ChartLabel));
+        OnPropertyChanged(nameof(EmptyChartText));
+    }
+    private void UpdateChart()
+    {
+        var groups = IsIncomeSelected ? incomeGroups : expenseGroups;
+        ChartSeries = groups.Select(item => (ISeries)new PieSeries<decimal>
+        {
+            Name = item.Name, Values = [item.Total], InnerRadius = 75, MaxRadialColumnWidth = 42,
+            Fill = new SolidColorPaint(SKColor.Parse(item.Color)),
+            Stroke = new SolidColorPaint(SKColor.Parse("#26342F"), 3)
+        }).ToArray();
+        HasChartData = groups.Count > 0;
+        CategoryBreakdown.Clear();
+        foreach (var item in groups)
+            CategoryBreakdown.Add(new CategoryBreakdownItem(item.Name, item.Color, $"category_{item.Icon}.png", item.Total,
+                ChartTotal == 0 ? "0%" : (item.Total / ChartTotal).ToString("P0", CultureInfo.GetCultureInfo("it-IT")), ReportCurrency));
+        OnPropertyChanged(nameof(ChartTotal));
+    }
     [ObservableProperty] public partial DateTime SelectedMonth { get; set; } = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     public string MonthLabel => SelectedMonth.ToString("MMMM yyyy", CultureInfo.GetCultureInfo("it-IT"));
     [ObservableProperty] public partial string? BalanceCurrency { get; set; } = "EUR";
@@ -22,10 +55,10 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
     [ObservableProperty] public partial decimal Expense { get; set; }
     [ObservableProperty] public partial decimal Difference { get; set; }
     [ObservableProperty] public partial string ComparisonText { get; set; } = string.Empty;
-    [ObservableProperty] public partial IEnumerable<ISeries> ExpenseSeries { get; set; } = [];
-    [ObservableProperty] public partial bool HasExpenseData { get; set; }
+    [ObservableProperty] public partial IEnumerable<ISeries> ChartSeries { get; set; } = [];
+    [ObservableProperty] public partial bool HasChartData { get; set; }
     [ObservableProperty] public partial bool HasRecentTransactions { get; set; }
-    public bool HasNoExpenseData => !HasExpenseData;
+    public bool HasNoChartData => !HasChartData;
     public bool HasNoRecentTransactions => !HasRecentTransactions;
     [RelayCommand] public Task LoadAsync() => RunAsync(LoadCoreAsync);
     private async Task LoadCoreAsync()
@@ -44,14 +77,11 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
         var period = comparison.Partial ? "allo stesso punto del mese scorso" : "al mese precedente";
         ComparisonText = current.ReportCurrency is not null && current.ReportCurrency == previous.ReportCurrency
             ? delta == 0 ? $"Spese uguali rispetto {period}."
-              : $"{MoneyFormatter.Format(Math.Abs(delta), current.ReportCurrency)} in {(delta > 0 ? "più" : "meno")} rispetto {period}."
+              : $"Spese: {MoneyFormatter.Format(Math.Abs(delta), current.ReportCurrency)} in {(delta > 0 ? "più" : "meno")} rispetto {period}."
             : "Confronto non disponibile tra valute diverse.";
-        ExpenseSeries = summary.ExpensesByCategory.Select(item => (ISeries)new PieSeries<decimal>
-        {
-            Name = item.Name, Values = [item.Total], InnerRadius = 65,
-            Fill = new SolidColorPaint(SKColor.Parse(item.Color)), Stroke = null
-        }).ToArray();
-        HasExpenseData = summary.ExpensesByCategory.Count > 0;
+        expenseGroups = summary.ExpensesByCategory;
+        incomeGroups = summary.IncomeByCategory;
+        UpdateChart();
         RecentTransactions.Clear();
         foreach (var item in summary.RecentTransactions) RecentTransactions.Add(item);
         HasRecentTransactions = RecentTransactions.Count > 0;
@@ -67,6 +97,8 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
     [RelayCommand] private Task NewTransactionAsync() => navigation.GoToTransactionEditorAsync();
     [RelayCommand] private Task ShowTransactionsAsync() => navigation.GoToTransactionsAsync();
     partial void OnSelectedMonthChanged(DateTime value) => OnPropertyChanged(nameof(MonthLabel));
-    partial void OnHasExpenseDataChanged(bool value) => OnPropertyChanged(nameof(HasNoExpenseData));
+    partial void OnHasChartDataChanged(bool value) => OnPropertyChanged(nameof(HasNoChartData));
     partial void OnHasRecentTransactionsChanged(bool value) => OnPropertyChanged(nameof(HasNoRecentTransactions));
 }
+
+public sealed record CategoryBreakdownItem(string Name, string Color, string IconSource, decimal Total, string Percentage, string? Currency);

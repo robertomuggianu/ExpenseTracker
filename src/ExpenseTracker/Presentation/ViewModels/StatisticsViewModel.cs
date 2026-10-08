@@ -48,6 +48,8 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
     [ObservableProperty]
     public partial IEnumerable<Axis> XAxes { get; set; } = [new Axis()];
 
+    public IEnumerable<Axis> YAxes { get; } = [new Axis { LabelsPaint = new SolidColorPaint(SKColor.Parse("#B2C4B8")), SeparatorsPaint = new SolidColorPaint(SKColor.Parse("#3C5147")), MinLimit = 0 }];
+
     [ObservableProperty]
     public partial IEnumerable<ISeries> ExpenseSeries { get; set; } = [];
 
@@ -87,10 +89,10 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
             }).ToArray();
             TrendSeries =
             [
-                new ColumnSeries<decimal> { Name = "Entrate", Values = monthly.Select(item => item.Income).ToArray(), Fill = new SolidColorPaint(SKColor.Parse("#34D399")) },
-                new ColumnSeries<decimal> { Name = "Spese", Values = monthly.Select(item => item.Expense).ToArray(), Fill = new SolidColorPaint(SKColor.Parse("#A78BFA")) }
+                new ColumnSeries<decimal> { Name = "Entrate", Values = monthly.Select(item => item.Income).ToArray(), Fill = new SolidColorPaint(SKColor.Parse("#80D9BE")) },
+                new ColumnSeries<decimal> { Name = "Spese", Values = monthly.Select(item => item.Expense).ToArray(), Fill = new SolidColorPaint(SKColor.Parse("#F4C66A")) }
             ];
-            XAxes = [new Axis { Labels = monthly.Select(item => item.Date.ToString("MMM", System.Globalization.CultureInfo.GetCultureInfo("it-IT"))).ToArray() }];
+            XAxes = [new Axis { LabelsPaint = new SolidColorPaint(SKColor.Parse("#B2C4B8")), TextSize = 11, Labels = monthly.Select(item => item.Date.ToString("MMM", System.Globalization.CultureInfo.GetCultureInfo("it-IT"))).ToArray() }];
         }
         else
         {
@@ -99,13 +101,13 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
                 days.Add(summary.Trend.FirstOrDefault(item => item.Date == day) ?? new TrendPoint(day, 0, 0));
             TrendSeries =
             [
-                new LineSeries<decimal> { Name = "Entrate", Values = days.Select(item => item.Income).ToArray(), Stroke = new SolidColorPaint(SKColor.Parse("#34D399"), 3), Fill = null },
-                new LineSeries<decimal> { Name = "Spese", Values = days.Select(item => item.Expense).ToArray(), Stroke = new SolidColorPaint(SKColor.Parse("#A78BFA"), 3), Fill = null }
+                new ColumnSeries<decimal> { Name = "Entrate", Values = days.Select(item => item.Income).ToArray(), Fill = new SolidColorPaint(SKColor.Parse("#80D9BE")) },
+                new ColumnSeries<decimal> { Name = "Spese", Values = days.Select(item => item.Expense).ToArray(), Fill = new SolidColorPaint(SKColor.Parse("#F4C66A")) }
             ];
-            XAxes = [new Axis { Labels = days.Select(item => item.Date.ToString("dd/MM")).ToArray() }];
+            XAxes = [new Axis { LabelsPaint = new SolidColorPaint(SKColor.Parse("#B2C4B8")), TextSize = 11, Labels = days.Select(item => item.Date.ToString("dd/MM")).ToArray() }];
         }
         ExpenseSeries = summary.ExpensesByCategory
-            .Select(item => (ISeries)new PieSeries<decimal> { Name = item.Name, Values = [item.Total], InnerRadius = 65, Fill = new SolidColorPaint(SKColor.Parse(item.Color)), Stroke = null })
+            .Select(item => (ISeries)new PieSeries<decimal> { Name = item.Name, Values = [item.Total], InnerRadius = 75, MaxRadialColumnWidth = 42, Fill = new SolidColorPaint(SKColor.Parse(item.Color)), Stroke = null })
             .ToArray();
     }
 }

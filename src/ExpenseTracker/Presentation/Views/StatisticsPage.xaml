@@ -2,16 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui" x:Class="ExpenseTracker.Presentation.Views.StatisticsPage" Title="Statistiche">
   <ScrollView>
     <VerticalStackLayout Spacing="0">
-      <Border Style="{StaticResource HeroCard}" Margin="16,16,16,0" Padding="18">
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-          <Button Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}"/>
-          <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
-            <Label Text="ANALISI" TextColor="{StaticResource DarkTextMuted}" FontSize="11" FontAttributes="Bold" CharacterSpacing="1.5"/>
-            <Label Text="Statistiche" TextColor="White" FontSize="25" FontAttributes="Bold"/>
-            <Label Text="Numeri chiari, decisioni più semplici." TextColor="{StaticResource DarkTextMuted}" FontSize="12"/>
-          </VerticalStackLayout>
-        </Grid>
-      </Border>
+      <controls:PageHeader Heading="Statistiche" Subtitle="Uno sguardo al tuo bilancio"/>
       <VerticalStackLayout Padding="16,14,16,32" Spacing="12">
         <Border Style="{StaticResource Card}" Padding="14">
           <VerticalStackLayout Spacing="10">
@@ -50,7 +41,7 @@
           <Border Grid.Column="1" Style="{StaticResource Card}" Stroke="#40FF5960">
             <VerticalStackLayout>
               <Label Text="USCITE" Style="{StaticResource Eyebrow}"/>
-              <Label Style="{StaticResource MetricValue}" TextColor="{StaticResource Expense}" FontSize="22">
+              <Label Style="{StaticResource MetricValue}" TextColor="{StaticResource Warning}" FontSize="22">
                 <Label.Text>
                   <MultiBinding Converter="{StaticResource MoneyConverter}">
                     <Binding Path="Expense"/>
@@ -79,11 +70,11 @@
         </Grid>
         <Label Text="Andamento temporale" Style="{StaticResource SectionTitle}"/>
         <Border Style="{StaticResource Card}" Padding="10,16">
-          <lvc:CartesianChart Series="{Binding TrendSeries}" XAxes="{Binding XAxes}" HeightRequest="310" LegendPosition="Bottom"/>
+          <lvc:CartesianChart BackgroundColor="{StaticResource DarkSurface}" Series="{Binding TrendSeries}" XAxes="{Binding XAxes}" YAxes="{Binding YAxes}" HeightRequest="310" LegendPosition="Bottom"/>
         </Border>
         <Label Text="Distribuzione uscite" Style="{StaticResource SectionTitle}"/>
         <Border Style="{StaticResource Card}" Padding="10,16">
-          <lvc:PieChart Series="{Binding ExpenseSeries}" HeightRequest="300" LegendPosition="Bottom"/>
+          <lvc:PieChart BackgroundColor="{StaticResource DarkSurface}" Series="{Binding ExpenseSeries}" HeightRequest="300" LegendPosition="Bottom"/>
         </Border>
         <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
         <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
