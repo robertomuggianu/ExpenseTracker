@@ -3,42 +3,27 @@
     x:Class="ExpenseTracker.Presentation.Views.AccountsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
     x:Name="Page"
     Title="Conti">
     <Grid>
         <ScrollView>
             <VerticalStackLayout Spacing="0">
-                <Border Style="{StaticResource HeroCard}" Margin="16,16,16,0" Padding="18">
-                    <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                            <Button Style="{StaticResource HeaderMenuButton}" Text="‹" Command="{Binding BackCommand}" />
-                            <Label Grid.Column="1" Text="I TUOI CONTI" TextColor="{StaticResource DarkTextMuted}" FontSize="12" FontAttributes="Bold" CharacterSpacing="1.8" VerticalTextAlignment="Center" />
-                        </Grid>
-                        <Label Grid.Row="1" Style="{StaticResource HeroValue}" FontSize="34" >
-                        <Label.Text>
-                            <MultiBinding Converter="{StaticResource MoneyConverter}">
-                                <Binding Path="TotalBalance" />
-                                <Binding Path="BalanceCurrency" />
-                            </MultiBinding>
-                        </Label.Text>
+                <controls:PageHeader Heading="Conti" Subtitle="Le tue disponibilità, in un solo posto"/>
+                <VerticalStackLayout Spacing="6" Padding="20,30,20,22">
+                    <Label Text="Saldo totale" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" FontSize="16"/>
+                    <Label Style="{StaticResource HeroValue}" HorizontalTextAlignment="Center">
+                        <Label.Text><MultiBinding Converter="{StaticResource MoneyConverter}"><Binding Path="TotalBalance"/><Binding Path="BalanceCurrency"/></MultiBinding></Label.Text>
                     </Label>
-                        <Label Grid.Row="2" Text="Saldo complessivo dei conti attivi" TextColor="{StaticResource DarkTextMuted}" />
-                    </Grid>
-                </Border>
+                </VerticalStackLayout>
 
                 <VerticalStackLayout Padding="16,14,16,76" Spacing="12">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <VerticalStackLayout>
-                            <Label Text="Conti" Style="{StaticResource SectionTitle}" />
-                            <Label Text="Gestisci disponibilità e conto principale" Style="{StaticResource MutedLabel}" FontSize="12" />
-                        </VerticalStackLayout>
-                        <Button Grid.Column="1" Text="+  Nuovo" Command="{Binding NewAccountCommand}" />
-                    </Grid>
+
 
                     <Border Style="{StaticResource Card}" IsVisible="{Binding IsEditorVisible}" Stroke="{StaticResource Primary}">
                         <VerticalStackLayout Spacing="12">
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                <Border WidthRequest="42" HeightRequest="42" Padding="0" BackgroundColor="#24E2383F" StrokeThickness="0" StrokeShape="RoundRectangle 13">
+                                <Border WidthRequest="42" HeightRequest="42" Padding="0" BackgroundColor="{StaticResource PrimaryDark}" StrokeThickness="0" StrokeShape="RoundRectangle 13">
                                     <Label Text="¤" TextColor="{StaticResource PrimaryGlow}" FontSize="23" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
                                 </Border>
                                 <VerticalStackLayout Grid.Column="1">
@@ -72,8 +57,8 @@
                                 <Border Style="{StaticResource Card}">
                                     <VerticalStackLayout Spacing="12">
                                         <Grid ColumnDefinitions="50,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
-                                            <Border Grid.RowSpan="2" WidthRequest="50" HeightRequest="50" Padding="0" BackgroundColor="#24E2383F" StrokeThickness="0" StrokeShape="RoundRectangle 16">
-                                                <Label Text="€" TextColor="{StaticResource PrimaryGlow}" FontSize="23" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                            <Border Grid.RowSpan="2" WidthRequest="50" HeightRequest="50" Padding="0" BackgroundColor="{StaticResource PrimaryDark}" StrokeThickness="0" StrokeShape="Ellipse">
+                                                <Image Source="category_wallet.png" WidthRequest="27" HeightRequest="27"/>
                                             </Border>
                                             <Label Grid.Column="1" Text="{Binding DisplayName}" FontSize="18" FontAttributes="Bold" />
                                             <Label Grid.Column="2" FontSize="19" FontAttributes="Bold" >
@@ -108,7 +93,7 @@
             </VerticalStackLayout>
         </ScrollView>
         <Button Style="{StaticResource FloatingActionButton}" Command="{Binding NewAccountCommand}"
-                HorizontalOptions="End" VerticalOptions="End" Margin="0,0,22,24"
+                HorizontalOptions="Center" VerticalOptions="End" Margin="0,0,0,24"
                 SemanticProperties.Description="Aggiungi un nuovo conto" />
     </Grid>
 </ContentPage>

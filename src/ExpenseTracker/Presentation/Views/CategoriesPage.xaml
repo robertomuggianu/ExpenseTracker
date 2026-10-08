@@ -1,12 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" x:Class="ExpenseTracker.Presentation.Views.CategoriesPage" x:Name="Page" Title="Categorie">
   <ScrollView>
-    <VerticalStackLayout Padding="20,22,20,32" Spacing="18">
-      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-        <Button Text="‹" Style="{StaticResource SecondaryButton}" Command="{Binding BackCommand}"/>
-        <Label Grid.Column="1" Text="Categorie" Style="{StaticResource PageTitle}" VerticalTextAlignment="Center"/>
-        <Button Grid.Column="2" Text="＋" Command="{Binding NewCategoryCommand}" SemanticProperties.Description="Nuova categoria"/>
-      </Grid>
+    <VerticalStackLayout Spacing="0">
+      <controls:PageHeader Heading="Categorie" Subtitle="Un colore per ogni abitudine"/>
+      <VerticalStackLayout Padding="18,18,18,32" Spacing="18">
+      <Button Text="+  Nuova categoria" Command="{Binding NewCategoryCommand}" HorizontalOptions="End"/>
       <Label Text="Un'icona e un colore per riconoscere ogni spesa." Style="{StaticResource MutedLabel}"/>
       <Border Style="{StaticResource Card}" IsVisible="{Binding IsEditorVisible}">
         <VerticalStackLayout Spacing="14">
@@ -88,6 +86,7 @@
       </VerticalStackLayout>
       <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
       <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
+    </VerticalStackLayout>
     </VerticalStackLayout>
   </ScrollView>
 </ContentPage>

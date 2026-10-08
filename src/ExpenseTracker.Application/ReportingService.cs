@@ -24,6 +24,7 @@ public sealed class ReportingService(IExpenseRepository repository)
         {
             BalanceCurrency = CurrencySelection.SingleOrDefault(accounts.Where(item => item.IsActive).Select(item => item.Currency)),
             PrimaryCurrency = primary?.Currency ?? "EUR",
+            IncomeByCategory = FinancialAggregator.GroupByCategory(allTransactions, categories, range, TransactionType.Income),
             ReportCurrency = CurrencySelection.SingleOrDefault(filtered.Select(item => item.Currency))
         };
     }

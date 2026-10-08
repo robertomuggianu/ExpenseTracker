@@ -3,7 +3,8 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
-    <Style TargetType="ContentPage">
+    <Style TargetType="ContentPage" ApplyToDerivedTypes="True">
+        <Setter Property="SafeAreaEdges" Value="All" />
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource LightBackground}, Dark={StaticResource DarkBackground}}" />
     </Style>
 
@@ -76,7 +77,7 @@
     <Style x:Key="Card" TargetType="Border">
         <Setter Property="Padding" Value="18" />
         <Setter Property="StrokeThickness" Value="0" />
-        <Setter Property="StrokeShape" Value="RoundRectangle 26" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 22" />
     </Style>
 
     <Style x:Key="HeroCard" TargetType="Border">
@@ -94,7 +95,7 @@
     </Style>
 
     <Style TargetType="Button">
-        <Setter Property="TextColor" Value="{StaticResource White}" />
+        <Setter Property="TextColor" Value="{StaticResource DarkBackground}" />
         <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
         <Setter Property="FontFamily" Value="OpenSansSemibold" />
         <Setter Property="FontAttributes" Value="Bold" />
@@ -142,22 +143,24 @@
 
     <Style x:Key="FloatingActionButton" TargetType="Button">
         <Setter Property="Text" Value="+" />
-        <Setter Property="FontSize" Value="30" />
-        <Setter Property="CornerRadius" Value="30" />
-        <Setter Property="WidthRequest" Value="60" />
-        <Setter Property="HeightRequest" Value="60" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Warning}" />
+        <Setter Property="TextColor" Value="{StaticResource DarkBackground}" />
+        <Setter Property="FontSize" Value="34" />
+        <Setter Property="CornerRadius" Value="32" />
+        <Setter Property="WidthRequest" Value="64" />
+        <Setter Property="HeightRequest" Value="64" />
         <Setter Property="Padding" Value="0,-3,0,0" />
         <Setter Property="Shadow">
             <Setter.Value>
-                <Shadow Brush="{StaticResource Primary}" Offset="0,6" Radius="16" Opacity="0.4" />
+                <Shadow Brush="{StaticResource Warning}" Offset="0,6" Radius="16" Opacity="0.4" />
             </Setter.Value>
         </Setter>
     </Style>
 
     <Style x:Key="HeaderMenuButton" TargetType="Button">
-        <Setter Property="Text" Value="•••" />
+        <Setter Property="Text" Value="≡" />
         <Setter Property="TextColor" Value="{StaticResource White}" />
-        <Setter Property="BackgroundColor" Value="#26FFFFFF" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="FontSize" Value="22" />
         <Setter Property="CornerRadius" Value="18" />
         <Setter Property="WidthRequest" Value="46" />
@@ -218,5 +221,22 @@
 
     <Style TargetType="RefreshView">
         <Setter Property="RefreshColor" Value="{StaticResource Primary}" />
+    </Style>
+    <Style x:Key="HeaderCard" TargetType="Border" BasedOn="{StaticResource HeroCard}">
+        <Setter Property="StrokeShape" Value="RoundRectangle 0,0,36,36" />
+        <Setter Property="Padding" Value="18,16,18,32" />
+    </Style>
+    <Style x:Key="ReportTab" TargetType="Button" BasedOn="{StaticResource TextButton}">
+        <Setter Property="TextColor" Value="{StaticResource DarkTextMuted}" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="MinimumHeightRequest" Value="46" />
+    </Style>
+    <Style x:Key="DrawerButton" TargetType="Button" BasedOn="{StaticResource TextButton}">
+        <Setter Property="TextColor" Value="{StaticResource DarkText}" />
+        <Setter Property="HorizontalOptions" Value="Start" />
+        <Setter Property="FontSize" Value="17" />
+        <Setter Property="Padding" Value="12,16" />
+        <Setter Property="MinimumHeightRequest" Value="58" />
     </Style>
 </ResourceDictionary>

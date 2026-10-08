@@ -129,7 +129,10 @@ public sealed record PeriodTotals(decimal Income, decimal Expense)
     public decimal Difference => Income - Expense;
 }
 
-public sealed record ExpenseGroup(Guid CategoryId, string Name, string Color, decimal Total);
+public sealed record ExpenseGroup(Guid CategoryId, string Name, string Color, decimal Total)
+{
+    public string Icon { get; init; } = "tag";
+}
 
 public sealed record TrendPoint(DateTime Date, decimal Income, decimal Expense);
 
@@ -142,6 +145,7 @@ public sealed record DashboardSummary(
 {
     public string? BalanceCurrency { get; init; } = "EUR";
     public string PrimaryCurrency { get; init; } = "EUR";
+    public IReadOnlyList<ExpenseGroup> IncomeByCategory { get; init; } = [];
     public string? ReportCurrency { get; init; } = "EUR";
 }
 

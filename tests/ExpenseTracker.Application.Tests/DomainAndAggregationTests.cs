@@ -68,6 +68,34 @@ public sealed class DomainAndAggregationTests
     }
 
     [Fact]
+    public void IncomeGrouping_ExcludesExpensesAndOutsidePeriodAndPreservesAppearance()
+    {
+        var salaryId = Guid.NewGuid();
+        var extraId = Guid.NewGuid();
+        var from = new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc);
+        var range = new DateRange(from, from.AddMonths(1));
+        var categories = new[]
+        {
+            new Category(salaryId, "Stipendio", TransactionType.Income, "#80D9BE", icon: "work"),
+            new Category(extraId, "Extra", TransactionType.Income, "#F4C66A", icon: "gift")
+        };
+        var transactions = new[]
+        {
+            CreateTransaction(TransactionType.Income, 1000m, from, salaryId),
+            CreateTransaction(TransactionType.Income, 50m, from.AddDays(1), extraId),
+            CreateTransaction(TransactionType.Income, 25m, from.AddDays(2), extraId),
+            CreateTransaction(TransactionType.Expense, 999m, from, salaryId),
+            CreateTransaction(TransactionType.Income, 999m, range.ToUtcExclusive, extraId)
+        };
+
+        var result = FinancialAggregator.GroupByCategory(transactions, categories, range, TransactionType.Income);
+
+        Assert.Collection(result,
+            item => { Assert.Equal(1000m, item.Total); Assert.Equal("work", item.Icon); Assert.Equal("#80D9BE", item.Color); },
+            item => { Assert.Equal(75m, item.Total); Assert.Equal("Extra", item.Name); });
+    }
+
+    [Fact]
     public void CategoryCompatibility_RejectsDifferentTransactionType()
     {
         var category = new Category(Guid.NewGuid(), "Stipendio", TransactionType.Income, "#00AA00");

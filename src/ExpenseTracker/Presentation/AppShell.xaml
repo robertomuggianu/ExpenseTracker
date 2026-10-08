@@ -1,20 +1,56 @@
-<?xml version='1.0' encoding='utf-8'?>
-<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="ExpenseTracker.Presentation.AppShell" Title="ExpenseTracker" FlyoutBehavior="Disabled" Shell.NavBarIsVisible="False" Shell.TabBarBackgroundColor="{StaticResource DarkSurface}" Shell.TabBarForegroundColor="{StaticResource PrimaryGlow}" Shell.TabBarTitleColor="{StaticResource PrimaryGlow}" Shell.TabBarUnselectedColor="{StaticResource DarkTextMuted}">
-  <TabBar Route="Main">
-    <Tab Title="Mese" Route="Dashboard" Icon="tab_month.png">
-      <ShellContent x:Name="DashboardContent"/>
-    </Tab>
-    <Tab Title="Movimenti" Route="Transactions" Icon="tab_transactions.png">
-      <ShellContent x:Name="TransactionsContent"/>
-    </Tab>
-    <Tab Title="Aggiungi" Route="NewTransaction" Icon="tab_plus.png">
-      <ShellContent x:Name="NewTransactionContent"/>
-    </Tab>
-    <Tab Title="Analisi" Route="Statistics" Icon="tab_chart.png">
-      <ShellContent x:Name="StatisticsContent"/>
-    </Tab>
-    <Tab Title="Altro" Route="More" Icon="tab_more.png">
-      <ShellContent x:Name="MoreContent"/>
-    </Tab>
-  </TabBar>
+<?xml version="1.0" encoding="utf-8"?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="ExpenseTracker.Presentation.AppShell" x:Name="Root" Title="ExpenseTracker" FlyoutBehavior="Flyout" FlyoutWidth="300" FlyoutBackgroundColor="{StaticResource PrimaryDark}" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False" BackgroundColor="{StaticResource PrimaryDark}">
+  <Shell.FlyoutContent>
+    <Grid RowDefinitions="Auto,*,Auto" Padding="22,36,22,24" RowSpacing="20" BackgroundColor="{StaticResource PrimaryDark}">
+      <VerticalStackLayout Spacing="8">
+        <Image Source="brand_mark.png" WidthRequest="80" HeightRequest="80" HorizontalOptions="Start"/>
+        <Label Text="ExpenseTracker" FontSize="24" FontAttributes="Bold"/>
+        <Label Text="{Binding MenuBalance, Source={x:Reference Root}}" FontSize="16" TextColor="{StaticResource PrimaryGlow}"/>
+        <BoxView HeightRequest="1" BackgroundColor="{StaticResource DarkBorder}" Margin="0,12,0,0"/>
+      </VerticalStackLayout>
+      <ScrollView Grid.Row="1">
+        <VerticalStackLayout Spacing="4">
+          <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
+            <Image Source="tab_month.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
+            <Button Grid.Column="1" Text="Home" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Dashboard" Clicked="OnNavigate"/>
+          </Grid>
+          <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
+            <Image Source="category_wallet.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
+            <Button Grid.Column="1" Text="Conti" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Accounts" Clicked="OnNavigate"/>
+          </Grid>
+          <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
+            <Image Source="tab_transactions.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
+            <Button Grid.Column="1" Text="Movimenti" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Transactions" Clicked="OnNavigate"/>
+          </Grid>
+          <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
+            <Image Source="tab_chart.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
+            <Button Grid.Column="1" Text="Statistiche" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Statistics" Clicked="OnNavigate"/>
+          </Grid>
+          <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
+            <Image Source="category_tag.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
+            <Button Grid.Column="1" Text="Categorie" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Categories" Clicked="OnNavigate"/>
+          </Grid>
+          <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
+            <Image Source="category_repeat.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
+            <Button Grid.Column="1" Text="Esporta e importa" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Export" Clicked="OnNavigate"/>
+          </Grid>
+          <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
+            <Image Source="tab_plus.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
+            <Button Grid.Column="1" Text="Nuovo movimento" Style="{StaticResource DrawerButton}" CommandParameter="//Main/NewTransaction" Clicked="OnNavigate"/>
+          </Grid>
+        </VerticalStackLayout>
+      </ScrollView>
+      <Label Grid.Row="2" Text="Il tuo bilancio, con calma. · v1.2" TextColor="{StaticResource DarkTextMuted}" FontSize="11"/>
+    </Grid>
+  </Shell.FlyoutContent>
+  <FlyoutItem Route="Main" Title="ExpenseTracker" Shell.TabBarIsVisible="False">
+    <Tab Title="Home" Route="Dashboard"><ShellContent x:Name="DashboardContent"/></Tab>
+    <Tab Title="Conti" Route="Accounts"><ShellContent x:Name="AccountsContent"/></Tab>
+    <Tab Title="Movimenti" Route="Transactions"><ShellContent x:Name="TransactionsContent"/></Tab>
+    <Tab Title="Statistiche" Route="Statistics"><ShellContent x:Name="StatisticsContent"/></Tab>
+    <Tab Title="Categorie" Route="Categories"><ShellContent x:Name="CategoriesContent"/></Tab>
+    <Tab Title="Esporta e importa" Route="Export"><ShellContent x:Name="ExportContent"/></Tab>
+    <Tab Title="Nuovo movimento" Route="NewTransaction"><ShellContent x:Name="NewTransactionContent"/></Tab>
+    <Tab Title="Altro" Route="More"><ShellContent x:Name="MoreContent"/></Tab>
+  </FlyoutItem>
 </Shell>

@@ -17,18 +17,24 @@ public static class FinancialAggregator
     public static IReadOnlyList<ExpenseGroup> GroupExpensesByCategory(
         IEnumerable<Transaction> transactions,
         IReadOnlyCollection<Category> categories,
-        DateRange range)
+        DateRange range) => GroupByCategory(transactions, categories, range, TransactionType.Expense);
+
+    public static IReadOnlyList<ExpenseGroup> GroupByCategory(
+        IEnumerable<Transaction> transactions,
+        IReadOnlyCollection<Category> categories,
+        DateRange range,
+        TransactionType type)
     {
         ArgumentNullException.ThrowIfNull(transactions);
 
         var categoryMap = categories.ToDictionary(item => item.Id);
         return transactions
-            .Where(item => item.Type == TransactionType.Expense && range.Contains(item.OccurredAtUtc))
+            .Where(item => item.Type == type && range.Contains(item.OccurredAtUtc))
             .GroupBy(item => item.CategoryId)
             .Select(group =>
             {
                 var category = categoryMap[group.Key];
-                return new ExpenseGroup(category.Id, category.Name, category.Color, group.Sum(item => item.Amount));
+                return new ExpenseGroup(category.Id, category.Name, category.Color, group.Sum(item => item.Amount)) { Icon = category.Icon };
             })
             .OrderByDescending(item => item.Total)
             .ToArray();

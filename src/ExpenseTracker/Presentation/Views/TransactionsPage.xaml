@@ -7,16 +7,7 @@
     x:Name="Page"
     Title="Movimenti">
     <Grid RowDefinitions="Auto,Auto,*">
-        <Border Style="{StaticResource HeroCard}" Margin="16,16,16,0" Padding="18">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                <Button Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}" />
-                <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
-                    <Label Text="CRONOLOGIA" TextColor="{StaticResource DarkTextMuted}" FontSize="11" FontAttributes="Bold" CharacterSpacing="1.5" />
-                    <Label Text="Movimenti" TextColor="White" FontSize="25" FontAttributes="Bold" />
-                    <Label Text="Cerca e controlla ogni operazione." TextColor="{StaticResource DarkTextMuted}" FontSize="12" />
-                </VerticalStackLayout>
-            </Grid>
-        </Border>
+        <controls:PageHeader Heading="Movimenti" Subtitle="Tutte le tue entrate e le tue spese"/>
 
         <Border Grid.Row="1" Style="{StaticResource Card}" Margin="16,12,16,10" Padding="12">
             <VerticalStackLayout Spacing="10">

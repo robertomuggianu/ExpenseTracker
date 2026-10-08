@@ -12,7 +12,7 @@
                 StrokeShape="RoundRectangle 24">
             <VerticalStackLayout Spacing="16">
                 <Border WidthRequest="48" HeightRequest="48" Padding="0" HorizontalOptions="Start"
-                        BackgroundColor="#24E2383F" StrokeThickness="0" StrokeShape="RoundRectangle 15">
+                        BackgroundColor="#2642C6A5" StrokeThickness="0" StrokeShape="RoundRectangle 15">
                     <Label Text="!" TextColor="{StaticResource PrimaryGlow}" FontSize="24" FontAttributes="Bold"
                            HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
                 </Border>
