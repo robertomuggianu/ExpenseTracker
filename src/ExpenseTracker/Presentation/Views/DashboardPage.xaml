@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="ExpenseTracker.Presentation.Views.DashboardPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
+    xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui"
+    Title="Panoramica">
+    <Grid>
+        <ScrollView>
+            <VerticalStackLayout Spacing="0">
+                <Border Style="{StaticResource HeroCard}" Padding="16,14,16,18">
+                    <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                            <Button Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}" />
+                            <VerticalStackLayout Grid.Column="1" Spacing="0" VerticalOptions="Center">
+                                <Label Text="PANORAMICA" TextColor="#FFD7D9" FontSize="11" FontAttributes="Bold" CharacterSpacing="1.5" />
+                                <Label Text="Il tuo saldo" TextColor="White" FontSize="20" FontAttributes="Bold" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="2" Text="+" Style="{StaticResource HeaderMenuButton}" FontSize="26"
+                                    Command="{Binding NewTransactionCommand}" SemanticProperties.Description="Nuovo movimento" />
+                        </Grid>
+                        <Label Grid.Row="1" Text="{Binding TotalBalance, StringFormat='{0:C}'}" Style="{StaticResource HeroValue}" FontSize="34" />
+                        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="14">
+                            <VerticalStackLayout Spacing="0">
+                                <Label Text="Conto principale" TextColor="#FFD7D9" FontSize="11" />
+                                <Label Text="{Binding PrimaryBalance, StringFormat='{0:C}'}" TextColor="White" FontSize="17" FontAttributes="Bold" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1" Text="Movimenti  ›" Command="{Binding ShowTransactionsCommand}"
+                                    BackgroundColor="Transparent" TextColor="White" Padding="8,2" MinimumHeightRequest="36" />
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <VerticalStackLayout Padding="16,14,16,76" Spacing="12">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Label Text="Periodo" Style="{StaticResource Eyebrow}" VerticalTextAlignment="Center" />
+                        <controls:ChoiceField Grid.Column="1" ItemsSource="{Binding Periods}" SelectedItem="{Binding SelectedPeriod}"
+                                              DisplayMemberPath="Label" Title="Seleziona periodo" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding IsCustomPeriod}">
+                        <Border Style="{StaticResource InputCard}"><DatePicker Date="{Binding CustomFrom}" /></Border>
+                        <Border Grid.Column="1" Style="{StaticResource InputCard}"><DatePicker Date="{Binding CustomTo}" /></Border>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Border Style="{StaticResource Card}" Padding="14" Stroke="#4036C88A">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="ENTRATE" Style="{StaticResource Eyebrow}" TextColor="{StaticResource Income}" />
+                                <Label Text="{Binding Income, StringFormat='{0:C}'}" Style="{StaticResource MetricValue}" TextColor="{StaticResource Income}" FontSize="21" />
+                            </VerticalStackLayout>
+                        </Border>
+                        <Border Grid.Column="1" Style="{StaticResource Card}" Padding="14" Stroke="#40FF5960">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="USCITE" Style="{StaticResource Eyebrow}" />
+                                <Label Text="{Binding Expense, StringFormat='{0:C}'}" Style="{StaticResource MetricValue}" TextColor="{StaticResource Expense}" FontSize="21" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </Grid>
+
+                    <Border Style="{StaticResource Card}" Padding="14">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Spacing="1">
+                                <Label Text="BILANCIO DEL PERIODO" Style="{StaticResource Eyebrow}" />
+                                <Label Text="Entrate meno uscite" Style="{StaticResource MutedLabel}" FontSize="11" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="1" Text="{Binding Difference, StringFormat='{0:C}'}" Style="{StaticResource MetricValue}" FontSize="22" VerticalTextAlignment="Center" />
+                        </Grid>
+                    </Border>
+
+                    <Label Text="Uscite per categoria" Style="{StaticResource SectionTitle}" Margin="0,4,0,0" />
+                    <Border Style="{StaticResource Card}" Padding="8,10" IsVisible="{Binding HasExpenseData}">
+                        <lvc:PieChart Series="{Binding ExpenseSeries}" HeightRequest="230" LegendPosition="Bottom" />
+                    </Border>
+                    <Border Style="{StaticResource Card}" Padding="18" IsVisible="{Binding HasNoExpenseData}">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Nessuna uscita nel periodo" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Text="Aggiungi o importa i movimenti per vedere la distribuzione." Style="{StaticResource MutedLabel}" FontSize="12" HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                        <Label Text="Ultimi movimenti" Style="{StaticResource SectionTitle}" />
+                        <Button Grid.Column="1" Text="Vedi tutti" Style="{StaticResource TextButton}" Command="{Binding ShowTransactionsCommand}" />
+                    </Grid>
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding RecentTransactions}" Spacing="8">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource Card}" Padding="12">
+                                    <Grid ColumnDefinitions="38,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="10">
+                                        <Border Grid.RowSpan="2" WidthRequest="38" HeightRequest="38" Padding="0" StrokeThickness="0" BackgroundColor="#24E2383F" StrokeShape="RoundRectangle 12">
+                                            <Label Text="↗" TextColor="{StaticResource PrimaryGlow}" FontSize="18" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                        </Border>
+                                        <Label Grid.Column="1" Text="{Binding Transaction.Description, TargetNullValue='Senza descrizione'}" FontAttributes="Bold" LineBreakMode="TailTruncation" />
+                                        <Label Grid.Column="2" Text="{Binding SignedAmount, StringFormat='{0:C}'}" FontAttributes="Bold" />
+                                        <Label Grid.Row="1" Grid.Column="1" Text="{Binding CategoryName}" Style="{StaticResource MutedLabel}" FontSize="11" />
+                                        <Label Grid.Row="1" Grid.Column="2" Text="{Binding Transaction.OccurredAtUtc, StringFormat='{0:dd MMM}'}" Style="{StaticResource MutedLabel}" FontSize="11" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                    <Label Text="Nessun movimento recente." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center"
+                           IsVisible="{Binding HasNoRecentTransactions}" />
+
+                    <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}" />
+                    <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

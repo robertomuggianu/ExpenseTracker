@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="ExpenseTracker.Presentation.Views.CategoriesPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
+    x:Name="Page"
+    Title="Categorie">
+    <ScrollView>
+        <VerticalStackLayout Spacing="0">
+            <Border Style="{StaticResource HeroCard}" Padding="16,14,16,18">
+                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Button Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}" />
+                        <Label Grid.Column="1" Text="ORGANIZZA" TextColor="#FFD7D9" FontSize="12" FontAttributes="Bold" CharacterSpacing="1.8" VerticalTextAlignment="Center" />
+                    </Grid>
+                    <Label Grid.Row="1" Text="Categorie" TextColor="White" FontSize="26" FontAttributes="Bold" />
+                    <Label Grid.Row="2" Text="Riconosci subito dove vanno i tuoi soldi." TextColor="#FFD7D9" />
+                </Grid>
+            </Border>
+
+            <VerticalStackLayout Padding="16,14,16,32" Spacing="12">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout>
+                        <Label Text="Categorie" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Entrate e uscite, tutte in un unico elenco" Style="{StaticResource MutedLabel}" FontSize="12" />
+                    </VerticalStackLayout>
+                    <Button Grid.Column="1" Text="+  Nuova" Command="{Binding NewCategoryCommand}" />
+                </Grid>
+
+                <Border Style="{StaticResource Card}" IsVisible="{Binding IsEditorVisible}" Stroke="{StaticResource Primary}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Categoria" FontSize="19" FontAttributes="Bold" />
+                        <Label Text="Nome" FontAttributes="Bold" FontSize="12" />
+                        <Border Style="{StaticResource InputCard}"><Entry Placeholder="Es. Education" Text="{Binding CategoryName}" /></Border>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <VerticalStackLayout Spacing="5">
+                                <Label Text="Tipo" FontAttributes="Bold" FontSize="12" />
+                                <controls:ChoiceField ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedCategoryType}" DisplayMemberPath="Label" Title="Tipo" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="5">
+                                <Label Text="Colore" FontAttributes="Bold" FontSize="12" />
+                                <Border Style="{StaticResource InputCard}"><Entry Placeholder="#E2383F" Text="{Binding CategoryColor}" /></Border>
+                            </VerticalStackLayout>
+                        </Grid>
+                        <HorizontalStackLayout><CheckBox IsChecked="{Binding CategoryIsActive}" /><Label Text="Categoria attiva" VerticalTextAlignment="Center" /></HorizontalStackLayout>
+                        <Button Text="Salva categoria" Command="{Binding SaveCategoryCommand}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Categories}" Spacing="10">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Card}">
+                                <Grid ColumnDefinitions="52,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
+                                    <Border Grid.RowSpan="2" WidthRequest="52" HeightRequest="52" Padding="0" StrokeThickness="0"
+                                            BackgroundColor="{Binding Color}" StrokeShape="RoundRectangle 18">
+                                        <Label Text="●" TextColor="White" FontSize="24" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                    </Border>
+                                    <Label Grid.Column="1" Text="{Binding Name}" FontSize="18" FontAttributes="Bold" />
+                                    <Border Grid.Column="2" Padding="10,4" StrokeThickness="0" BackgroundColor="#24E2383F" StrokeShape="RoundRectangle 12">
+                                        <Label Text="{Binding TypeLabel}" TextColor="{StaticResource PrimaryGlow}" FontSize="11" FontAttributes="Bold" />
+                                    </Border>
+                                    <Label Grid.Row="1" Grid.Column="1" Text="Tocca per modificare" Style="{StaticResource MutedLabel}" FontSize="12" />
+                                    <Button Grid.Row="1" Grid.Column="2" Text="Modifica" Style="{StaticResource TextButton}"
+                                            Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditCategoryCommand}" CommandParameter="{Binding .}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+                <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}" />
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

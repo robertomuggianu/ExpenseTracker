@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="ExpenseTracker.Presentation.Views.StatisticsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
+    xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui"
+    Title="Statistiche">
+    <ScrollView>
+        <VerticalStackLayout Spacing="0">
+            <Border Style="{StaticResource HeroCard}" Padding="16,14,16,18">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                    <Button Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}" />
+                    <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                        <Label Text="ANALISI" TextColor="#FFD7D9" FontSize="11" FontAttributes="Bold" CharacterSpacing="1.5" />
+                        <Label Text="Statistiche" TextColor="White" FontSize="25" FontAttributes="Bold" />
+                        <Label Text="Numeri chiari, decisioni più semplici." TextColor="#FFD7D9" FontSize="12" />
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+
+            <VerticalStackLayout Padding="16,14,16,32" Spacing="12">
+                <Border Style="{StaticResource Card}" Padding="14">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Intervallo di analisi" FontSize="17" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                            <Button Grid.Column="1" Text="Aggiorna" Command="{Binding ApplyFiltersCommand}" Padding="16,8" MinimumHeightRequest="40" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <controls:ChoiceField ItemsSource="{Binding Periods}" SelectedItem="{Binding SelectedPeriod}" DisplayMemberPath="Label" Title="Periodo" />
+                            <controls:ChoiceField Grid.Column="1" ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount}" DisplayMemberPath="Name" Title="Conto" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Border Style="{StaticResource InputCard}"><DatePicker Date="{Binding CustomFrom}" /></Border>
+                            <Border Grid.Column="1" Style="{StaticResource InputCard}"><DatePicker Date="{Binding CustomTo}" /></Border>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                    <Border Style="{StaticResource Card}" Stroke="#4036C88A">
+                        <VerticalStackLayout><Label Text="ENTRATE" Style="{StaticResource Eyebrow}" TextColor="{StaticResource Income}" /><Label Text="{Binding Income, StringFormat='{0:C}'}" Style="{StaticResource MetricValue}" TextColor="{StaticResource Income}" FontSize="22" /></VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource Card}" Stroke="#40FF5960">
+                        <VerticalStackLayout><Label Text="USCITE" Style="{StaticResource Eyebrow}" /><Label Text="{Binding Expense, StringFormat='{0:C}'}" Style="{StaticResource MetricValue}" TextColor="{StaticResource Expense}" FontSize="22" /></VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource Card}">
+                        <Grid ColumnDefinitions="*,Auto"><VerticalStackLayout><Label Text="RISULTATO" Style="{StaticResource Eyebrow}" /><Label Text="Differenza nel periodo" Style="{StaticResource MutedLabel}" FontSize="12" /></VerticalStackLayout><Label Grid.Column="1" Text="{Binding Difference, StringFormat='{0:C}'}" Style="{StaticResource MetricValue}" VerticalTextAlignment="Center" /></Grid>
+                    </Border>
+                </Grid>
+
+                <Label Text="Andamento temporale" Style="{StaticResource SectionTitle}" />
+                <Border Style="{StaticResource Card}" Padding="10,16">
+                    <lvc:CartesianChart Series="{Binding TrendSeries}" XAxes="{Binding XAxes}" HeightRequest="310" LegendPosition="Bottom" />
+                </Border>
+
+                <Label Text="Distribuzione uscite" Style="{StaticResource SectionTitle}" />
+                <Border Style="{StaticResource Card}" Padding="10,16">
+                    <lvc:PieChart Series="{Binding ExpenseSeries}" HeightRequest="300" LegendPosition="Bottom" />
+                </Border>
+
+                <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}" />
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

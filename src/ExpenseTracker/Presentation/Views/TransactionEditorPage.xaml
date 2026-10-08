@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="ExpenseTracker.Presentation.Views.TransactionEditorPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
+    Title="{Binding Title}">
+    <ScrollView>
+        <VerticalStackLayout Spacing="0">
+            <Border Style="{StaticResource HeroCard}" Padding="16,14,16,18">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                    <Button Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}" />
+                    <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                        <Label Text="REGISTRA" TextColor="#FFD7D9" FontSize="11" FontAttributes="Bold" CharacterSpacing="1.5" />
+                        <Label Text="{Binding Title}" TextColor="White" FontSize="25" FontAttributes="Bold" />
+                        <Label Text="Pochi dati, tutto sotto controllo." TextColor="#FFD7D9" FontSize="12" />
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+
+            <VerticalStackLayout Padding="16,14,16,32" Spacing="12">
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Operazione" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Tipo" FontAttributes="Bold" FontSize="12" />
+                        <controls:ChoiceField ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType}" DisplayMemberPath="Label" Title="Tipo" />
+
+                        <Label Text="Importo" FontAttributes="Bold" FontSize="12" />
+                        <Border Style="{StaticResource InputCard}" Padding="14,7">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                <Label Text="€" TextColor="{StaticResource PrimaryGlow}" FontSize="26" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                                <Entry Grid.Column="1" Placeholder="0,00" Text="{Binding Amount}" Keyboard="Numeric" FontSize="24" FontAttributes="Bold" />
+                                <Entry Grid.Column="2" Text="{Binding Currency}" MaxLength="3" WidthRequest="62" HorizontalTextAlignment="End" />
+                            </Grid>
+                        </Border>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Classificazione" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Conto" FontAttributes="Bold" FontSize="12" />
+                        <controls:ChoiceField ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount}" DisplayMemberPath="DisplayName" Title="Seleziona conto" />
+                        <Label Text="Categoria" FontAttributes="Bold" FontSize="12" />
+                        <controls:ChoiceField ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" DisplayMemberPath="Name" Title="Seleziona categoria" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Quando e dettagli" Style="{StaticResource SectionTitle}" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <VerticalStackLayout Spacing="5">
+                                <Label Text="Data" FontAttributes="Bold" FontSize="12" />
+                                <Border Style="{StaticResource InputCard}"><DatePicker Date="{Binding Date}" /></Border>
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="5">
+                                <Label Text="Ora" FontAttributes="Bold" FontSize="12" />
+                                <Border Style="{StaticResource InputCard}"><TimePicker Time="{Binding Time}" /></Border>
+                            </VerticalStackLayout>
+                        </Grid>
+                        <Label Text="Descrizione" FontAttributes="Bold" FontSize="12" />
+                        <Border Style="{StaticResource InputCard}"><Entry Placeholder="Es. Spesa settimanale" Text="{Binding Description}" /></Border>
+                        <Label Text="Note" FontAttributes="Bold" FontSize="12" />
+                        <Border Style="{StaticResource InputCard}"><Editor Placeholder="Dettagli opzionali" Text="{Binding Notes}" AutoSize="TextChanges" /></Border>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}" />
+                <Button Text="Salva movimento" Command="{Binding SaveCommand}" FontSize="16" />
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
