@@ -26,6 +26,7 @@ internal sealed class AccountRecord
 [Table("Categories")]
 internal sealed class CategoryRecord
 {
+    public string Icon { get; set; } = "tag";
     [PrimaryKey]
     public string Id { get; set; } = string.Empty;
 

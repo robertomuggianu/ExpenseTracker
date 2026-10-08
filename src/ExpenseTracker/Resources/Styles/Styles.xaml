@@ -69,21 +69,21 @@
     <Style TargetType="Border">
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource LightSurface}, Dark={StaticResource DarkSurface}}" />
         <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" />
-        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeThickness" Value="0" />
         <Setter Property="StrokeShape" Value="RoundRectangle 20" />
     </Style>
 
     <Style x:Key="Card" TargetType="Border">
         <Setter Property="Padding" Value="18" />
-        <Setter Property="StrokeThickness" Value="1" />
-        <Setter Property="StrokeShape" Value="RoundRectangle 22" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 26" />
     </Style>
 
     <Style x:Key="HeroCard" TargetType="Border">
         <Setter Property="BackgroundColor" Value="{StaticResource PrimaryDark}" />
         <Setter Property="Stroke" Value="{StaticResource PrimaryDark}" />
         <Setter Property="StrokeThickness" Value="0" />
-        <Setter Property="StrokeShape" Value="RoundRectangle 0,0,28,28" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 28" />
         <Setter Property="Padding" Value="22,18,22,24" />
     </Style>
 
@@ -99,7 +99,7 @@
         <Setter Property="FontFamily" Value="OpenSansSemibold" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="FontSize" Value="14" />
-        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="CornerRadius" Value="18" />
         <Setter Property="Padding" Value="16,11" />
         <Setter Property="MinimumHeightRequest" Value="48" />
         <Setter Property="BorderWidth" Value="0" />
@@ -155,11 +155,11 @@
     </Style>
 
     <Style x:Key="HeaderMenuButton" TargetType="Button">
-        <Setter Property="Text" Value="☰" />
+        <Setter Property="Text" Value="•••" />
         <Setter Property="TextColor" Value="{StaticResource White}" />
         <Setter Property="BackgroundColor" Value="#26FFFFFF" />
         <Setter Property="FontSize" Value="22" />
-        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="CornerRadius" Value="18" />
         <Setter Property="WidthRequest" Value="46" />
         <Setter Property="HeightRequest" Value="46" />
         <Setter Property="Padding" Value="0" />

@@ -42,12 +42,6 @@ public sealed class TransactionImportService(
     IExpenseRepository repository,
     ITransactionImportParser parser)
 {
-    private static readonly string[] CategoryColors =
-    [
-        "#E2383F", "#FF6B70", "#F4B942", "#36C88A", "#5AA9FF", "#9C7CFF",
-        "#F477B3", "#F28C45", "#35B5B0", "#7DBB52", "#9B8B7A", "#6F7D91"
-    ];
-
     public async Task<TransactionImportResult> ImportAsync(
         Stream stream,
         string fileName,
@@ -111,7 +105,7 @@ public sealed class TransactionImportService(
                 StableGuid($"import-category|{sourceCategory.Type}|{sourceCategory.CategoryName.ToUpperInvariant()}"),
                 sourceCategory.CategoryName,
                 sourceCategory.Type,
-                CategoryColors[categories.Count % CategoryColors.Length]);
+                CategoryAppearance.SuggestColor(categories.Select(item => item.Color)));
             await repository.SaveCategoryAsync(category, cancellationToken);
             categories.Add(category);
             categoriesCreated++;

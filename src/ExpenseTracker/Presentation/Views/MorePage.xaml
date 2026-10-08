@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="ExpenseTracker.Presentation.Views.MorePage" Title="Altro">
+  <ScrollView>
+    <VerticalStackLayout Padding="20,24" Spacing="18">
+      <Label Text="Il tuo spazio" Style="{StaticResource PageTitle}"/>
+      <Label Text="Personalizza le categorie e gestisci i tuoi dati." Style="{StaticResource MutedLabel}"/>
+      <Border Style="{StaticResource Card}">
+        <VerticalStackLayout Spacing="12">
+          <Label Text="Organizza" Style="{StaticResource SectionTitle}"/>
+          <Button Text="Categorie e colori  ›" Style="{StaticResource SecondaryButton}" Clicked="OnCategories"/>
+          <Button Text="Conti e saldi  ›" Style="{StaticResource SecondaryButton}" Clicked="OnAccounts"/>
+        </VerticalStackLayout>
+      </Border>
+      <Border Style="{StaticResource Card}">
+        <VerticalStackLayout Spacing="12">
+          <Label Text="I tuoi dati" Style="{StaticResource SectionTitle}"/>
+          <Button Text="Importa / esporta CSV  ›" Style="{StaticResource SecondaryButton}" Clicked="OnExport"/>
+          <Label Text="I movimenti sono conservati sul dispositivo." Style="{StaticResource MutedLabel}"/>
+        </VerticalStackLayout>
+      </Border>
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

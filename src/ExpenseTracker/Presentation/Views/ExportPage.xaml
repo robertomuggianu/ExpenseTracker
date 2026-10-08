@@ -7,13 +7,13 @@
     Title="Dati">
     <ScrollView>
         <VerticalStackLayout Spacing="0">
-            <Border Style="{StaticResource HeroCard}" Padding="16,14,16,18">
+            <Border Style="{StaticResource HeroCard}" Margin="16,16,16,0" Padding="18">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                    <Button Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}" />
+                    <Button Style="{StaticResource HeaderMenuButton}" Text="‹" Command="{Binding BackCommand}" />
                     <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
-                        <Label Text="I TUOI DATI" TextColor="#FFD7D9" FontSize="11" FontAttributes="Bold" CharacterSpacing="1.5" />
+                        <Label Text="I TUOI DATI" TextColor="{StaticResource DarkTextMuted}" FontSize="11" FontAttributes="Bold" CharacterSpacing="1.5" />
                         <Label Text="Importa ed esporta" TextColor="White" FontSize="25" FontAttributes="Bold" />
-                        <Label Text="Migra lo storico o crea il tuo backup CSV." TextColor="#FFD7D9" FontSize="12" />
+                        <Label Text="Migra lo storico o crea il tuo backup CSV." TextColor="{StaticResource DarkTextMuted}" FontSize="12" />
                     </VerticalStackLayout>
                 </Grid>
             </Border>

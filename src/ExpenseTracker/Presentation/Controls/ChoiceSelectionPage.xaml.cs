@@ -1,10 +1,14 @@
 using System.Collections.ObjectModel;
+using ExpenseTracker.Domain;
 
 namespace ExpenseTracker.Presentation.Controls;
 
 public sealed record ChoiceSelectionItem(object Value, string Label, bool IsSelected)
 {
     public string Indicator => IsSelected ? "●" : "○";
+    public string? IconSource => Value is Category category ? category.IconSource : null;
+    public string IconColor => Value is Category category ? category.Color : "#222A3C";
+    public bool HasIcon => IconSource is not null;
 }
 
 public partial class ChoiceSelectionPage : ContentPage

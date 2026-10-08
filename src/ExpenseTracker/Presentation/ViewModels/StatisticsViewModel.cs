@@ -4,6 +4,8 @@ using CommunityToolkit.Mvvm.Input;
 using ExpenseTracker.Application;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
+using LiveChartsCore.SkiaSharpView.Painting;
+using SkiaSharp;
 
 namespace ExpenseTracker.Presentation.ViewModels;
 
@@ -12,6 +14,9 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
     public IReadOnlyList<PeriodOption> Periods { get; } = PeriodOption.All;
 
     public ObservableCollection<AccountFilterOption> Accounts { get; } = [];
+
+    [ObservableProperty]
+    public partial string? ReportCurrency { get; set; } = "EUR";
 
     [ObservableProperty]
     public partial PeriodOption SelectedPeriod { get; set; } = PeriodOption.All[1];
@@ -24,6 +29,9 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
 
     [ObservableProperty]
     public partial AccountFilterOption? SelectedAccount { get; set; }
+
+    public bool IsCustomPeriod => SelectedPeriod.Value == DateRangePreset.Custom;
+    partial void OnSelectedPeriodChanged(PeriodOption value) => OnPropertyChanged(nameof(IsCustomPeriod));
 
     [ObservableProperty]
     public partial decimal Income { get; set; }
@@ -65,17 +73,39 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
     {
         var range = DateRangeFactory.Create(SelectedPeriod.Value, DateTime.Now, CustomFrom, CustomTo);
         var summary = await reportingService.GetAnalyticsAsync(range, SelectedAccount?.Id);
+        ReportCurrency = summary.ReportCurrency;
         Income = summary.Totals.Income;
         Expense = summary.Totals.Expense;
         Difference = summary.Totals.Difference;
-        TrendSeries =
-        [
-            new LineSeries<decimal> { Name = "Entrate", Values = summary.Trend.Select(item => item.Income).ToArray() },
-            new LineSeries<decimal> { Name = "Uscite", Values = summary.Trend.Select(item => item.Expense).ToArray() }
-        ];
-        XAxes = [new Axis { Labels = summary.Trend.Select(item => item.Date.ToString("dd/MM")).ToArray() }];
+        if (SelectedPeriod.Value == DateRangePreset.CurrentYear)
+        {
+            var monthly = Enumerable.Range(1, 12).Select(month => new
+            {
+                Date = new DateTime(DateTime.Today.Year, month, 1),
+                Income = summary.Trend.Where(item => item.Date.Month == month).Sum(item => item.Income),
+                Expense = summary.Trend.Where(item => item.Date.Month == month).Sum(item => item.Expense)
+            }).ToArray();
+            TrendSeries =
+            [
+                new ColumnSeries<decimal> { Name = "Entrate", Values = monthly.Select(item => item.Income).ToArray(), Fill = new SolidColorPaint(SKColor.Parse("#34D399")) },
+                new ColumnSeries<decimal> { Name = "Spese", Values = monthly.Select(item => item.Expense).ToArray(), Fill = new SolidColorPaint(SKColor.Parse("#A78BFA")) }
+            ];
+            XAxes = [new Axis { Labels = monthly.Select(item => item.Date.ToString("MMM", System.Globalization.CultureInfo.GetCultureInfo("it-IT"))).ToArray() }];
+        }
+        else
+        {
+            var days = new List<TrendPoint>();
+            for (var day = range.FromUtc.ToLocalTime().Date; day < range.ToUtcExclusive.ToLocalTime().Date; day = day.AddDays(1))
+                days.Add(summary.Trend.FirstOrDefault(item => item.Date == day) ?? new TrendPoint(day, 0, 0));
+            TrendSeries =
+            [
+                new LineSeries<decimal> { Name = "Entrate", Values = days.Select(item => item.Income).ToArray(), Stroke = new SolidColorPaint(SKColor.Parse("#34D399"), 3), Fill = null },
+                new LineSeries<decimal> { Name = "Spese", Values = days.Select(item => item.Expense).ToArray(), Stroke = new SolidColorPaint(SKColor.Parse("#A78BFA"), 3), Fill = null }
+            ];
+            XAxes = [new Axis { Labels = days.Select(item => item.Date.ToString("dd/MM")).ToArray() }];
+        }
         ExpenseSeries = summary.ExpensesByCategory
-            .Select(item => (ISeries)new PieSeries<decimal> { Name = item.Name, Values = [item.Total] })
+            .Select(item => (ISeries)new PieSeries<decimal> { Name = item.Name, Values = [item.Total], InnerRadius = 65, Fill = new SolidColorPaint(SKColor.Parse(item.Color)), Stroke = null })
             .ToArray();
     }
 }

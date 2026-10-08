@@ -8,7 +8,7 @@ namespace ExpenseTracker.Infrastructure;
 
 public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposable
 {
-    private const int CurrentSchemaVersion = 2;
+    private const int CurrentSchemaVersion = 4;
     private readonly SQLiteAsyncConnection _connection;
     private readonly SemaphoreSlim _initializationGate = new(1, 1);
     private bool _initialized;
@@ -52,10 +52,12 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
                 await ApplyVersionTwoAsync();
             }
 
-            if (version < CurrentSchemaVersion)
+            if (version < 3)
             {
-                await _connection.ExecuteAsync($"PRAGMA user_version = {CurrentSchemaVersion};");
+                await ApplyVersionThreeAsync();
             }
+
+            if (version < 4) await ApplyVersionFourAsync();
 
             await SeedCategoriesAsync();
             _initialized = true;
@@ -273,64 +275,146 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
         await _connection.ExecuteAsync("PRAGMA foreign_keys = OFF;");
         try
         {
-            await _connection.ExecuteAsync(
-                """
-                CREATE TABLE CategoriesV2 (
-                    Id TEXT PRIMARY KEY NOT NULL,
-                    Name TEXT NOT NULL,
-                    Type INTEGER NOT NULL CHECK (Type IN (1, 2)),
-                    Color TEXT NOT NULL,
-                    IsActive INTEGER NOT NULL
-                );
-                """);
-            await _connection.ExecuteAsync(
-                """
-                INSERT INTO CategoriesV2 (Id, Name, Type, Color, IsActive)
-                SELECT c.Id, c.Name, m.Type, m.Color,
-                       CASE WHEN c.IsActive = 1 AND m.IsActive = 1 THEN 1 ELSE 0 END
-                FROM Categories c
-                INNER JOIN MacroCategories m ON m.Id = c.MacroCategoryId;
-                """);
-            await _connection.ExecuteAsync(
-                """
-                CREATE TABLE TransactionsV2 (
-                    Id TEXT PRIMARY KEY NOT NULL,
-                    OccurredAtUtc INTEGER NOT NULL,
-                    Type INTEGER NOT NULL CHECK (Type IN (1, 2)),
-                    AccountId TEXT NOT NULL,
-                    CategoryId TEXT NOT NULL,
-                    Description TEXT NULL,
-                    AmountMinor INTEGER NOT NULL CHECK (AmountMinor > 0),
-                    Currency TEXT NOT NULL,
-                    Notes TEXT NULL,
-                    CreatedAtUtc INTEGER NOT NULL,
-                    UpdatedAtUtc INTEGER NOT NULL,
-                    FOREIGN KEY (AccountId) REFERENCES Accounts (Id) ON DELETE RESTRICT,
-                    FOREIGN KEY (CategoryId) REFERENCES CategoriesV2 (Id) ON DELETE RESTRICT
-                );
-                """);
-            await _connection.ExecuteAsync(
-                """
-                INSERT INTO TransactionsV2
-                SELECT Id, OccurredAtUtc, Type, AccountId, CategoryId, Description,
-                       AmountMinor, Currency, Notes, CreatedAtUtc, UpdatedAtUtc
-                FROM Transactions;
-                """);
-            await _connection.ExecuteAsync("DROP TABLE Transactions;");
-            await _connection.ExecuteAsync("DROP TABLE Categories;");
-            await _connection.ExecuteAsync("DROP TABLE MacroCategories;");
-            await _connection.ExecuteAsync("ALTER TABLE CategoriesV2 RENAME TO Categories;");
-            await _connection.ExecuteAsync("ALTER TABLE TransactionsV2 RENAME TO Transactions;");
-            await _connection.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Categories_Type ON Categories (Type);");
-            await _connection.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Transactions_OccurredAtUtc ON Transactions (OccurredAtUtc DESC);");
-            await _connection.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Transactions_AccountId ON Transactions (AccountId);");
-            await _connection.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Transactions_CategoryId ON Transactions (CategoryId);");
+            await _connection.RunInTransactionAsync(database =>
+            {
+                database.Execute(
+                    """
+                    CREATE TABLE CategoriesV2 (
+                        Id TEXT PRIMARY KEY NOT NULL,
+                        Name TEXT NOT NULL,
+                        Type INTEGER NOT NULL CHECK (Type IN (1, 2)),
+                        Color TEXT NOT NULL,
+                        IsActive INTEGER NOT NULL
+                    );
+                    """);
+                database.Execute(
+                    """
+                    INSERT INTO CategoriesV2 (Id, Name, Type, Color, IsActive)
+                    SELECT c.Id, c.Name, m.Type, m.Color,
+                           CASE WHEN c.IsActive = 1 AND m.IsActive = 1 THEN 1 ELSE 0 END
+                    FROM Categories c
+                    INNER JOIN MacroCategories m ON m.Id = c.MacroCategoryId;
+                    """);
+                database.Execute(
+                    """
+                    CREATE TABLE TransactionsV2 (
+                        Id TEXT PRIMARY KEY NOT NULL,
+                        OccurredAtUtc INTEGER NOT NULL,
+                        Type INTEGER NOT NULL CHECK (Type IN (1, 2)),
+                        AccountId TEXT NOT NULL,
+                        CategoryId TEXT NOT NULL,
+                        Description TEXT NULL,
+                        AmountMinor INTEGER NOT NULL CHECK (AmountMinor > 0),
+                        Currency TEXT NOT NULL,
+                        Notes TEXT NULL,
+                        CreatedAtUtc INTEGER NOT NULL,
+                        UpdatedAtUtc INTEGER NOT NULL,
+                        FOREIGN KEY (AccountId) REFERENCES Accounts (Id) ON DELETE RESTRICT,
+                        FOREIGN KEY (CategoryId) REFERENCES Categories (Id) ON DELETE RESTRICT
+                    );
+                    """);
+                database.Execute(
+                    """
+                    INSERT INTO TransactionsV2
+                    SELECT Id, OccurredAtUtc, Type, AccountId, CategoryId, Description,
+                           AmountMinor, Currency, Notes, CreatedAtUtc, UpdatedAtUtc
+                    FROM Transactions;
+                    """);
+                database.Execute("DROP TABLE Transactions;");
+                database.Execute("DROP TABLE Categories;");
+                database.Execute("DROP TABLE MacroCategories;");
+                database.Execute("ALTER TABLE CategoriesV2 RENAME TO Categories;");
+                database.Execute("ALTER TABLE TransactionsV2 RENAME TO Transactions;");
+                database.Execute("CREATE INDEX IF NOT EXISTS IX_Categories_Type ON Categories (Type);");
+                database.Execute("CREATE INDEX IF NOT EXISTS IX_Transactions_OccurredAtUtc ON Transactions (OccurredAtUtc DESC);");
+                database.Execute("CREATE INDEX IF NOT EXISTS IX_Transactions_AccountId ON Transactions (AccountId);");
+                database.Execute("CREATE INDEX IF NOT EXISTS IX_Transactions_CategoryId ON Transactions (CategoryId);");
+                database.Execute("PRAGMA user_version = 2;");
+            });
         }
         finally
         {
             await _connection.ExecuteAsync("PRAGMA foreign_keys = ON;");
         }
     }
+
+    private async Task ApplyVersionThreeAsync()
+    {
+        // Older iOS SQLite engines can leave the V2 foreign key pointing at
+        // CategoriesV2 after its rename. Rebuild against the final table name.
+        await _connection.ExecuteAsync("PRAGMA foreign_keys = OFF;");
+        try
+        {
+            await _connection.RunInTransactionAsync(database =>
+            {
+                database.Execute(
+                    """
+                    CREATE TABLE TransactionsV3 (
+                        Id TEXT PRIMARY KEY NOT NULL,
+                        OccurredAtUtc INTEGER NOT NULL,
+                        Type INTEGER NOT NULL CHECK (Type IN (1, 2)),
+                        AccountId TEXT NOT NULL,
+                        CategoryId TEXT NOT NULL,
+                        Description TEXT NULL,
+                        AmountMinor INTEGER NOT NULL CHECK (AmountMinor > 0),
+                        Currency TEXT NOT NULL,
+                        Notes TEXT NULL,
+                        CreatedAtUtc INTEGER NOT NULL,
+                        UpdatedAtUtc INTEGER NOT NULL,
+                        FOREIGN KEY (AccountId) REFERENCES Accounts (Id) ON DELETE RESTRICT,
+                        FOREIGN KEY (CategoryId) REFERENCES Categories (Id) ON DELETE RESTRICT
+                    );
+                    """);
+                database.Execute(
+                    """
+                    INSERT INTO TransactionsV3
+                    SELECT Id, OccurredAtUtc, Type, AccountId, CategoryId, Description,
+                           AmountMinor, Currency, Notes, CreatedAtUtc, UpdatedAtUtc
+                    FROM Transactions;
+                    """);
+                database.Execute("DROP TABLE Transactions;");
+                database.Execute("ALTER TABLE TransactionsV3 RENAME TO Transactions;");
+                database.Execute("CREATE INDEX IX_Transactions_OccurredAtUtc ON Transactions (OccurredAtUtc DESC);");
+                database.Execute("CREATE INDEX IX_Transactions_AccountId ON Transactions (AccountId);");
+                database.Execute("CREATE INDEX IX_Transactions_CategoryId ON Transactions (CategoryId);");
+                if (database.Query<ForeignKeyViolation>("PRAGMA foreign_key_check;").Count > 0)
+                {
+                    throw new InvalidOperationException("Il database contiene riferimenti non validi. Migrazione annullata senza eliminare i dati.");
+                }
+
+                database.Execute("PRAGMA user_version = 3;");
+            });
+        }
+        finally
+        {
+            await _connection.ExecuteAsync("PRAGMA foreign_keys = ON;");
+        }
+    }
+
+    private sealed class ForeignKeyViolation
+    {
+        public string table { get; set; } = string.Empty;
+    }
+
+    private Task ApplyVersionFourAsync() => _connection.RunInTransactionAsync(database =>
+    {
+        database.Execute("ALTER TABLE Categories ADD COLUMN Icon TEXT NOT NULL DEFAULT 'tag';");
+        var categories = database.Table<CategoryRecord>().OrderBy(item => item.Id).ToList();
+        string[] legacyColors = ["#E2383F", "#5AA9FF", "#F28C45", "#6F7D91", "#36C88A", "#F4B942", "#F477B3", "#7DBB52", "#FF6B70", "#35B5B0", "#9B8B7A", "#9C7CFF", "#B76E79"];
+        var used = categories.Where(item => !legacyColors.Contains(item.Color, StringComparer.OrdinalIgnoreCase))
+            .Select(item => item.Color).ToList();
+        foreach (var category in categories)
+        {
+            category.Icon = CategoryAppearance.InferIcon(category.Name);
+            if (legacyColors.Contains(category.Color, StringComparer.OrdinalIgnoreCase))
+            {
+                category.Color = CategoryAppearance.SuggestColor(used);
+                used.Add(category.Color);
+            }
+            database.Update(category);
+        }
+        database.Execute("PRAGMA user_version = 4;");
+    });
 
     private async Task SeedCategoriesAsync()
     {
@@ -380,7 +464,8 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
                 Id = definition.Id ?? StableGuid($"reference-category|{definition.Type}|{definition.Name.ToUpperInvariant()}").ToString("D"),
                 Name = definition.Name,
                 Type = definition.Type,
-                Color = definition.Color,
+                Color = CategoryAppearance.SuggestColor(existing.Select(item => item.Color)),
+                Icon = CategoryAppearance.InferIcon(definition.Name),
                 IsActive = true
             };
             await _connection.InsertAsync(category);
@@ -417,11 +502,11 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
 
     private static CategoryRecord ToRecord(Category item) => new()
     {
-        Id = item.Id.ToString("D"), Name = item.Name, Type = (int)item.Type, Color = item.Color, IsActive = item.IsActive
+        Id = item.Id.ToString("D"), Name = item.Name, Type = (int)item.Type, Color = item.Color, IsActive = item.IsActive, Icon = item.Icon
     };
 
     private static Category ToDomain(CategoryRecord item) =>
-        new(Guid.Parse(item.Id), item.Name, (TransactionType)item.Type, item.Color, item.IsActive);
+        new(Guid.Parse(item.Id), item.Name, (TransactionType)item.Type, item.Color, item.IsActive, item.Icon);
 
     private static TransactionRecord ToRecord(Transaction item) => new()
     {

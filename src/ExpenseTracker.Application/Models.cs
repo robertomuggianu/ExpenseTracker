@@ -86,7 +86,8 @@ public sealed record CategoryInput(
     string Name,
     TransactionType Type,
     string Color,
-    bool IsActive);
+    bool IsActive,
+    string? Icon = null);
 
 public sealed record TransactionInput(
     Guid? Id,
@@ -110,8 +111,12 @@ public sealed record TransactionListItem(
     Transaction Transaction,
     string AccountName,
     string CategoryName,
-    string CategoryColor)
+    string CategoryColor,
+    string CategoryIcon = "tag")
 {
+    public string IconSource => $"category_{CategoryIcon}.png";
+    public DateTime LocalDate => Transaction.OccurredAtUtc.ToLocalTime();
+    public string DisplayDescription => string.IsNullOrWhiteSpace(Transaction.Description) ? CategoryName : Transaction.Description;
     public decimal SignedAmount => Transaction.Type == TransactionType.Income
         ? Transaction.Amount
         : -Transaction.Amount;
@@ -133,11 +138,29 @@ public sealed record DashboardSummary(
     decimal ActiveAccountsBalance,
     PeriodTotals Totals,
     IReadOnlyList<ExpenseGroup> ExpensesByCategory,
-    IReadOnlyList<TransactionListItem> RecentTransactions);
+    IReadOnlyList<TransactionListItem> RecentTransactions)
+{
+    public string? BalanceCurrency { get; init; } = "EUR";
+    public string PrimaryCurrency { get; init; } = "EUR";
+    public string? ReportCurrency { get; init; } = "EUR";
+}
 
 public sealed record AnalyticsSummary(
     PeriodTotals Totals,
     IReadOnlyList<TrendPoint> Trend,
-    IReadOnlyList<ExpenseGroup> ExpensesByCategory);
+    IReadOnlyList<ExpenseGroup> ExpensesByCategory)
+{
+    public string? ReportCurrency { get; init; } = "EUR";
+}
+
+public static class CurrencySelection
+{
+    // No exchange-rate conversion exists: never label mixed totals as one currency.
+    public static string? SingleOrDefault(IEnumerable<string> currencies)
+    {
+        var codes = currencies.Select(code => code.Trim().ToUpperInvariant()).Distinct().Take(2).ToArray();
+        return codes.Length switch { 0 => "EUR", 1 => codes[0], _ => null };
+    }
+}
 
 public sealed record CsvExportResult(string FileName, string Content);

@@ -86,12 +86,12 @@ public sealed class AppNavigationService : IAppNavigationService
     public Task GoToTransactionEditorAsync(Guid? transactionId = null)
     {
         var route = transactionId.HasValue
-            ? $"//NewTransaction?transactionId={Uri.EscapeDataString(transactionId.Value.ToString("D"))}"
-            : "//NewTransaction";
+            ? $"//Main/NewTransaction?transactionId={Uri.EscapeDataString(transactionId.Value.ToString("D"))}"
+            : "//Main/NewTransaction";
         return Shell.Current.GoToAsync(route);
     }
 
-    public Task GoToTransactionsAsync() => Shell.Current.GoToAsync("//Transactions");
+    public Task GoToTransactionsAsync() => Shell.Current.GoToAsync("//Main/Transactions");
 }
 
 public sealed class FileShareService : IFileShareService
