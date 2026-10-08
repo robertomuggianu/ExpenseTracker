@@ -10,6 +10,8 @@ jobs:
   build-ios:
     runs-on: macos-26
     timeout-minutes: 45
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     defaults:
       run:
         shell: bash
@@ -18,10 +20,22 @@ jobs:
 
       - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '10.0.401'
+
+      - name: Pin SDK selection for this build
+        run: |
+          cat > global.json <<'JSON'
+          {
+            "sdk": {
+              "version": "10.0.401",
+              "rollForward": "disable"
+            }
+          }
+          JSON
 
       - name: Install MAUI iOS workload
-        run: dotnet workload install maui-ios
+        # This workload set supports Xcode 26.6. Set 10.0.401.1 requires Xcode 27.
+        run: dotnet workload install maui-ios --version 10.0.401
 
       - name: Show build tool versions
         run: |

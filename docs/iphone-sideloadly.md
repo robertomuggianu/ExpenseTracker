@@ -44,14 +44,19 @@ La procedura è predisposta, ma la prima build su macOS e l'installazione su
 iPhone devono ancora essere verificate. Un workflow riuscito verifica la
 creazione dell'archivio per iPhone, non il corretto funzionamento sul telefono.
 
-Il workflow usa l'ultima versione disponibile di .NET 10 e il workload MAUI iOS,
-con l'Xcode predefinito del runner macOS 26. Se un aggiornamento introduce una
-richiesta di una versione diversa di Xcode, consultare il passaggio di log
-**Show build tool versions** e allineare Xcode e workload prima di riprovare.
+Il workflow fissa .NET SDK **10.0.401**, workload set **10.0.401** e
+**Xcode 26.6**, selezionato tramite `DEVELOPER_DIR` sul runner macOS 26.
+Questa combinazione usa .NET per iOS **26.5.10318**. Il workload set
+**10.0.401.1** richiede invece Xcode 27: non è intercambiabile con 10.0.401.
+Il file `global.json` che impedisce la selezione di altri SDK è generato solo
+durante il workflow, senza cambiare l'SDK usato sul PC Windows.
+Per aggiornare gli strumenti, allineare SDK, workload set e Xcode secondo
+le note di rilascio e controllare il passaggio **Show build tool versions**.
 Se una build fallisce, non esiste ancora un IPA utilizzabile per quella esecuzione:
 aprire il primo passaggio rosso e leggere l'errore.
 
 Riferimenti:
+- https://github.com/dotnet/macios/releases/tag/dotnet-10.0.1xx-xcode26.5-10318
 - https://learn.microsoft.com/en-us/dotnet/ios/building-apps/build-properties
 - https://docs.github.com/en/actions/managing-workflow-runs/manually-running-a-workflow
 - https://sideloadly.io/faq.html
