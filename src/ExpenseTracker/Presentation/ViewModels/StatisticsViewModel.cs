@@ -74,7 +74,7 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
             new LineSeries<decimal> { Name = "Uscite", Values = summary.Trend.Select(item => item.Expense).ToArray() }
         ];
         XAxes = [new Axis { Labels = summary.Trend.Select(item => item.Date.ToString("dd/MM")).ToArray() }];
-        ExpenseSeries = summary.ExpensesByMacroCategory
+        ExpenseSeries = summary.ExpensesByCategory
             .Select(item => (ISeries)new PieSeries<decimal> { Name = item.Name, Values = [item.Total] })
             .ToArray();
     }

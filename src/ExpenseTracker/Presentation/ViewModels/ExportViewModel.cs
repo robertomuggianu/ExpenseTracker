@@ -10,24 +10,24 @@ namespace ExpenseTracker.Presentation.ViewModels;
 public partial class ExportViewModel(
     ICsvExportService csvExportService,
     IFileShareService fileShareService,
+    TransactionImportService importService,
+    IImportFilePickerService importFilePicker,
     AccountService accountService,
     CategoryService categoryService,
     IUserDialogService dialogs) : ViewModelBase
 {
-    private IReadOnlyList<Category> _allCategories = [];
-
     public IReadOnlyList<PeriodOption> Periods { get; } = PeriodOption.All;
 
     public IReadOnlyList<TransactionTypeOption> Types { get; } = TransactionTypeOption.Optional;
 
     public ObservableCollection<AccountFilterOption> Accounts { get; } = [];
 
-    public ObservableCollection<MacroCategoryFilterOption> MacroCategories { get; } = [];
-
     public ObservableCollection<CategoryFilterOption> Categories { get; } = [];
 
     [ObservableProperty]
     public partial bool ExportAll { get; set; } = true;
+
+    public bool UseExportFilters => !ExportAll;
 
     [ObservableProperty]
     public partial PeriodOption SelectedPeriod { get; set; } = PeriodOption.All[1];
@@ -45,10 +45,10 @@ public partial class ExportViewModel(
     public partial TransactionTypeOption SelectedType { get; set; } = TransactionTypeOption.Optional[0];
 
     [ObservableProperty]
-    public partial MacroCategoryFilterOption? SelectedMacroCategory { get; set; }
+    public partial CategoryFilterOption? SelectedCategory { get; set; }
 
     [ObservableProperty]
-    public partial CategoryFilterOption? SelectedCategory { get; set; }
+    public partial string? ImportSummary { get; set; }
 
     [RelayCommand]
     public Task LoadAsync() => RunAsync(async () =>
@@ -61,16 +61,14 @@ public partial class ExportViewModel(
         }
 
         SelectedAccount = Accounts[0];
-        MacroCategories.Clear();
-        MacroCategories.Add(new MacroCategoryFilterOption(null, "Tutte le macro-categorie"));
-        foreach (var item in await categoryService.GetMacroCategoriesAsync())
+        Categories.Clear();
+        Categories.Add(new CategoryFilterOption(null, "Tutte le categorie"));
+        foreach (var item in await categoryService.GetCategoriesAsync())
         {
-            MacroCategories.Add(new MacroCategoryFilterOption(item.Id, item.Name));
+            Categories.Add(new CategoryFilterOption(item.Id, item.Name));
         }
 
-        SelectedMacroCategory = MacroCategories[0];
-        _allCategories = await categoryService.GetCategoriesAsync();
-        RefreshCategories();
+        SelectedCategory = Categories[0];
     });
 
     [RelayCommand]
@@ -85,7 +83,6 @@ public partial class ExportViewModel(
                 range.ToUtcExclusive,
                 SelectedAccount?.Id,
                 SelectedType.Value,
-                SelectedMacroCategory?.Id,
                 SelectedCategory?.Id);
         }
 
@@ -94,20 +91,34 @@ public partial class ExportViewModel(
         await dialogs.ShowMessageAsync("Esportazione pronta", "Il file CSV è stato creato ed è disponibile nel pannello di condivisione.");
     });
 
-    partial void OnSelectedMacroCategoryChanged(MacroCategoryFilterOption? value) => RefreshCategories();
-
-    private void RefreshCategories()
+    [RelayCommand]
+    private Task ImportAsync() => RunAsync(async () =>
     {
-        Categories.Clear();
-        Categories.Add(new CategoryFilterOption(null, "Tutte le categorie"));
-        var items = SelectedMacroCategory?.Id is Guid macroId
-            ? _allCategories.Where(item => item.MacroCategoryId == macroId)
-            : _allCategories;
-        foreach (var item in items)
+        await using var selectedFile = await importFilePicker.PickAsync();
+        if (selectedFile is null)
         {
-            Categories.Add(new CategoryFilterOption(item.Id, item.Name));
+            return;
         }
 
-        SelectedCategory = Categories[0];
-    }
+        var confirmed = await dialogs.ConfirmAsync(
+            "Importa movimenti",
+            $"Importare i dati da {selectedFile.FileName}? Se il file è già stato importato, i movimenti esistenti verranno aggiornati senza duplicati.",
+            "Importa",
+            "Annulla");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        var result = await importService.ImportAsync(selectedFile.Content, selectedFile.FileName);
+        ImportSummary = $"{result.Created} nuovi · {result.Updated} aggiornati · {result.CategoriesCreated} categorie create";
+        var warningText = result.Warnings.Count == 0
+            ? string.Empty
+            : $"\n\nNote: {string.Join(" ", result.Warnings.Take(3))}";
+        await dialogs.ShowMessageAsync(
+            "Importazione completata",
+            $"Elaborati {result.TotalProcessed} movimenti. Creati {result.AccountsCreated} conti e {result.CategoriesCreated} categorie.{warningText}");
+    });
+
+    partial void OnExportAllChanged(bool value) => OnPropertyChanged(nameof(UseExportFilters));
 }

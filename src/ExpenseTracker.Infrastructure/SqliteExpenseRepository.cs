@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using ExpenseTracker.Application;
 using ExpenseTracker.Domain;
 using SQLite;
@@ -6,7 +8,7 @@ namespace ExpenseTracker.Infrastructure;
 
 public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposable
 {
-    private const int CurrentSchemaVersion = 1;
+    private const int CurrentSchemaVersion = 2;
     private readonly SQLiteAsyncConnection _connection;
     private readonly SemaphoreSlim _initializationGate = new(1, 1);
     private bool _initialized;
@@ -35,15 +37,24 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
 
             await _connection.ExecuteAsync("PRAGMA foreign_keys = ON;");
             var version = await _connection.ExecuteScalarAsync<int>("PRAGMA user_version;");
-            if (version < 1)
-            {
-                await ApplyVersionOneAsync();
-                await _connection.ExecuteAsync($"PRAGMA user_version = {CurrentSchemaVersion};");
-            }
-
             if (version > CurrentSchemaVersion)
             {
                 throw new InvalidOperationException($"Versione database {version} non supportata dall'applicazione.");
+            }
+
+            if (version < 1)
+            {
+                await ApplyVersionOneAsync();
+            }
+
+            if (version < 2)
+            {
+                await ApplyVersionTwoAsync();
+            }
+
+            if (version < CurrentSchemaVersion)
+            {
+                await _connection.ExecuteAsync($"PRAGMA user_version = {CurrentSchemaVersion};");
             }
 
             await SeedCategoriesAsync();
@@ -90,47 +101,10 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
         });
     }
 
-    public async Task<IReadOnlyList<MacroCategory>> GetMacroCategoriesAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Category>> GetCategoriesAsync(CancellationToken cancellationToken = default)
     {
         await EnsureReadyAsync(cancellationToken);
-        var records = await _connection.Table<MacroCategoryRecord>().OrderBy(item => item.Type).ThenBy(item => item.Name).ToListAsync();
-        return records.Select(ToDomain).ToArray();
-    }
-
-    public async Task<MacroCategory?> GetMacroCategoryAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        await EnsureReadyAsync(cancellationToken);
-        var record = await _connection.FindAsync<MacroCategoryRecord>(id.ToString("D"));
-        return record is null ? null : ToDomain(record);
-    }
-
-    public async Task SaveMacroCategoryAsync(MacroCategory macroCategory, CancellationToken cancellationToken = default)
-    {
-        await EnsureReadyAsync(cancellationToken);
-        var record = ToRecord(macroCategory);
-        if (await _connection.FindAsync<MacroCategoryRecord>(record.Id) is null)
-        {
-            await _connection.InsertAsync(record);
-        }
-        else
-        {
-            await _connection.UpdateAsync(record);
-        }
-    }
-
-    public async Task<IReadOnlyList<Category>> GetCategoriesAsync(
-        Guid? macroCategoryId = null,
-        CancellationToken cancellationToken = default)
-    {
-        await EnsureReadyAsync(cancellationToken);
-        var query = _connection.Table<CategoryRecord>();
-        if (macroCategoryId.HasValue)
-        {
-            var id = macroCategoryId.Value.ToString("D");
-            query = query.Where(item => item.MacroCategoryId == id);
-        }
-
-        var records = await query.OrderBy(item => item.Name).ToListAsync();
+        var records = await _connection.Table<CategoryRecord>().OrderBy(item => item.Type).ThenBy(item => item.Name).ToListAsync();
         return records.Select(ToDomain).ToArray();
     }
 
@@ -186,12 +160,6 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
         {
             sql += " AND Type = ?";
             arguments.Add((int)filter.Type.Value);
-        }
-
-        if (filter?.MacroCategoryId is not null)
-        {
-            sql += " AND CategoryId IN (SELECT Id FROM Categories WHERE MacroCategoryId = ?)";
-            arguments.Add(filter.MacroCategoryId.Value.ToString("D"));
         }
 
         if (filter?.CategoryId is not null)
@@ -300,40 +268,130 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
         await _connection.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Transactions_CategoryId ON Transactions (CategoryId);");
     }
 
+    private async Task ApplyVersionTwoAsync()
+    {
+        await _connection.ExecuteAsync("PRAGMA foreign_keys = OFF;");
+        try
+        {
+            await _connection.ExecuteAsync(
+                """
+                CREATE TABLE CategoriesV2 (
+                    Id TEXT PRIMARY KEY NOT NULL,
+                    Name TEXT NOT NULL,
+                    Type INTEGER NOT NULL CHECK (Type IN (1, 2)),
+                    Color TEXT NOT NULL,
+                    IsActive INTEGER NOT NULL
+                );
+                """);
+            await _connection.ExecuteAsync(
+                """
+                INSERT INTO CategoriesV2 (Id, Name, Type, Color, IsActive)
+                SELECT c.Id, c.Name, m.Type, m.Color,
+                       CASE WHEN c.IsActive = 1 AND m.IsActive = 1 THEN 1 ELSE 0 END
+                FROM Categories c
+                INNER JOIN MacroCategories m ON m.Id = c.MacroCategoryId;
+                """);
+            await _connection.ExecuteAsync(
+                """
+                CREATE TABLE TransactionsV2 (
+                    Id TEXT PRIMARY KEY NOT NULL,
+                    OccurredAtUtc INTEGER NOT NULL,
+                    Type INTEGER NOT NULL CHECK (Type IN (1, 2)),
+                    AccountId TEXT NOT NULL,
+                    CategoryId TEXT NOT NULL,
+                    Description TEXT NULL,
+                    AmountMinor INTEGER NOT NULL CHECK (AmountMinor > 0),
+                    Currency TEXT NOT NULL,
+                    Notes TEXT NULL,
+                    CreatedAtUtc INTEGER NOT NULL,
+                    UpdatedAtUtc INTEGER NOT NULL,
+                    FOREIGN KEY (AccountId) REFERENCES Accounts (Id) ON DELETE RESTRICT,
+                    FOREIGN KEY (CategoryId) REFERENCES CategoriesV2 (Id) ON DELETE RESTRICT
+                );
+                """);
+            await _connection.ExecuteAsync(
+                """
+                INSERT INTO TransactionsV2
+                SELECT Id, OccurredAtUtc, Type, AccountId, CategoryId, Description,
+                       AmountMinor, Currency, Notes, CreatedAtUtc, UpdatedAtUtc
+                FROM Transactions;
+                """);
+            await _connection.ExecuteAsync("DROP TABLE Transactions;");
+            await _connection.ExecuteAsync("DROP TABLE Categories;");
+            await _connection.ExecuteAsync("DROP TABLE MacroCategories;");
+            await _connection.ExecuteAsync("ALTER TABLE CategoriesV2 RENAME TO Categories;");
+            await _connection.ExecuteAsync("ALTER TABLE TransactionsV2 RENAME TO Transactions;");
+            await _connection.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Categories_Type ON Categories (Type);");
+            await _connection.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Transactions_OccurredAtUtc ON Transactions (OccurredAtUtc DESC);");
+            await _connection.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Transactions_AccountId ON Transactions (AccountId);");
+            await _connection.ExecuteAsync("CREATE INDEX IF NOT EXISTS IX_Transactions_CategoryId ON Transactions (CategoryId);");
+        }
+        finally
+        {
+            await _connection.ExecuteAsync("PRAGMA foreign_keys = ON;");
+        }
+    }
+
     private async Task SeedCategoriesAsync()
     {
-        if (await _connection.Table<MacroCategoryRecord>().CountAsync() > 0)
+        (string? Id, string Name, int Type, string Color)[] definitions =
+        [
+            ("20111111-1111-1111-1111-111111111111", "Affitto", 2, "#E2383F"),
+            ("20211111-1111-1111-1111-111111111111", "Bollette", 2, "#E2383F"),
+            ("20311111-1111-1111-1111-111111111111", "Manutenzione", 2, "#E2383F"),
+            ("20122222-2222-2222-2222-222222222222", "Carburante", 2, "#5AA9FF"),
+            ("20222222-2222-2222-2222-222222222222", "Trasporto pubblico", 2, "#5AA9FF"),
+            ("20133333-3333-3333-3333-333333333333", "Spesa", 2, "#F28C45"),
+            ("20233333-3333-3333-3333-333333333333", "Ristoranti", 2, "#F28C45"),
+            ("20144444-4444-4444-4444-444444444444", "Strumenti", 2, "#6F7D91"),
+            ("20155555-5555-5555-5555-555555555555", "Retribuzione", 1, "#36C88A"),
+            (null, "Benzina", 2, "#F4B942"),
+            (null, "Cafe", 2, "#F28C45"),
+            (null, "Education", 2, "#5AA9FF"),
+            (null, "Gifts", 2, "#F477B3"),
+            (null, "Groceries", 2, "#7DBB52"),
+            (null, "Health", 2, "#E2383F"),
+            (null, "Home", 2, "#FF6B70"),
+            (null, "Leisure", 2, "#35B5B0"),
+            (null, "Other", 2, "#9B8B7A"),
+            (null, "Restaurants", 2, "#F28C45"),
+            (null, "Spese per macchina", 2, "#6F7D91"),
+            (null, "Subscription", 2, "#9C7CFF"),
+            (null, "Transportation", 2, "#5AA9FF"),
+            (null, "Uscite", 2, "#E2383F"),
+            (null, "Vape", 2, "#B76E79"),
+            (null, "Gift", 1, "#36C88A"),
+            (null, "Other", 1, "#35B5B0"),
+            (null, "Paycheck", 1, "#36C88A")
+        ];
+
+        var existing = await _connection.Table<CategoryRecord>().ToListAsync();
+        foreach (var definition in definitions)
         {
-            return;
+            if (existing.Any(item =>
+                    item.Type == definition.Type
+                    && string.Equals(item.Name, definition.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            var category = new CategoryRecord
+            {
+                Id = definition.Id ?? StableGuid($"reference-category|{definition.Type}|{definition.Name.ToUpperInvariant()}").ToString("D"),
+                Name = definition.Name,
+                Type = definition.Type,
+                Color = definition.Color,
+                IsActive = true
+            };
+            await _connection.InsertAsync(category);
+            existing.Add(category);
         }
+    }
 
-        var home = new MacroCategoryRecord { Id = "10111111-1111-1111-1111-111111111111", Name = "Casa", Type = 2, Color = "#7C4DFF", IsActive = true };
-        var transport = new MacroCategoryRecord { Id = "10222222-2222-2222-2222-222222222222", Name = "Trasporti", Type = 2, Color = "#0288D1", IsActive = true };
-        var food = new MacroCategoryRecord { Id = "10333333-3333-3333-3333-333333333333", Name = "Alimentazione", Type = 2, Color = "#F57C00", IsActive = true };
-        var work = new MacroCategoryRecord { Id = "10444444-4444-4444-4444-444444444444", Name = "Lavoro", Type = 2, Color = "#455A64", IsActive = true };
-        var salary = new MacroCategoryRecord { Id = "10555555-5555-5555-5555-555555555555", Name = "Stipendio", Type = 1, Color = "#2E7D32", IsActive = true };
-
-        var categories = new[]
-        {
-            Category("20111111-1111-1111-1111-111111111111", home.Id, "Affitto"),
-            Category("20211111-1111-1111-1111-111111111111", home.Id, "Bollette"),
-            Category("20311111-1111-1111-1111-111111111111", home.Id, "Manutenzione"),
-            Category("20122222-2222-2222-2222-222222222222", transport.Id, "Carburante"),
-            Category("20222222-2222-2222-2222-222222222222", transport.Id, "Trasporto pubblico"),
-            Category("20133333-3333-3333-3333-333333333333", food.Id, "Spesa"),
-            Category("20233333-3333-3333-3333-333333333333", food.Id, "Ristoranti"),
-            Category("20144444-4444-4444-4444-444444444444", work.Id, "Strumenti"),
-            Category("20155555-5555-5555-5555-555555555555", salary.Id, "Retribuzione")
-        };
-
-        await _connection.RunInTransactionAsync(database =>
-        {
-            database.InsertAll(new[] { home, transport, food, work, salary });
-            database.InsertAll(categories);
-        });
-
-        static CategoryRecord Category(string id, string macroId, string name) =>
-            new() { Id = id, MacroCategoryId = macroId, Name = name, IsActive = true };
+    private static Guid StableGuid(string value)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(value));
+        return new Guid(hash.AsSpan(0, 16));
     }
 
     private static long ToMinorUnits(decimal value) =>
@@ -357,21 +415,13 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
         Guid.Parse(item.Id), item.Name, FromMinorUnits(item.OpeningBalanceMinor), item.Currency,
         item.IsPrimary, item.IsActive, item.CreatedAtUtc, item.UpdatedAtUtc);
 
-    private static MacroCategoryRecord ToRecord(MacroCategory item) => new()
+    private static CategoryRecord ToRecord(Category item) => new()
     {
         Id = item.Id.ToString("D"), Name = item.Name, Type = (int)item.Type, Color = item.Color, IsActive = item.IsActive
     };
 
-    private static MacroCategory ToDomain(MacroCategoryRecord item) =>
-        new(Guid.Parse(item.Id), item.Name, (TransactionType)item.Type, item.Color, item.IsActive);
-
-    private static CategoryRecord ToRecord(Category item) => new()
-    {
-        Id = item.Id.ToString("D"), MacroCategoryId = item.MacroCategoryId.ToString("D"), Name = item.Name, IsActive = item.IsActive
-    };
-
     private static Category ToDomain(CategoryRecord item) =>
-        new(Guid.Parse(item.Id), Guid.Parse(item.MacroCategoryId), item.Name, item.IsActive);
+        new(Guid.Parse(item.Id), item.Name, (TransactionType)item.Type, item.Color, item.IsActive);
 
     private static TransactionRecord ToRecord(Transaction item) => new()
     {

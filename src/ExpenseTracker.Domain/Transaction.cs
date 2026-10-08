@@ -89,11 +89,11 @@ public sealed class Transaction
 
 public static class TransactionRules
 {
-    public static void EnsureCategoryCompatible(TransactionType type, MacroCategory macroCategory)
+    public static void EnsureCategoryCompatible(TransactionType type, Category category)
     {
-        ArgumentNullException.ThrowIfNull(macroCategory);
+        ArgumentNullException.ThrowIfNull(category);
 
-        if (macroCategory.Type != type)
+        if (category.Type != type)
         {
             throw new DomainValidationException("La categoria selezionata non è compatibile con il tipo di movimento.");
         }

@@ -10,10 +10,9 @@ public sealed class TransactionService(IExpenseRepository repository)
     {
         var transactions = await repository.GetTransactionsAsync(filter, cancellationToken);
         var accounts = await repository.GetAccountsAsync(cancellationToken);
-        var categories = await repository.GetCategoriesAsync(cancellationToken: cancellationToken);
-        var macroCategories = await repository.GetMacroCategoriesAsync(cancellationToken);
+        var categories = await repository.GetCategoriesAsync(cancellationToken);
 
-        return Join(transactions, accounts, categories, macroCategories);
+        return Join(transactions, accounts, categories);
     }
 
     public Task<Transaction?> GetTransactionAsync(Guid id, CancellationToken cancellationToken = default) =>
@@ -30,15 +29,12 @@ public sealed class TransactionService(IExpenseRepository repository)
 
         var category = await repository.GetCategoryAsync(input.CategoryId, cancellationToken)
             ?? throw new DomainValidationException("La categoria selezionata non esiste.");
-        var macroCategory = await repository.GetMacroCategoryAsync(category.MacroCategoryId, cancellationToken)
-            ?? throw new DomainValidationException("La macro-categoria selezionata non esiste.");
-
-        if (!category.IsActive || !macroCategory.IsActive)
+        if (!category.IsActive)
         {
             throw new DomainValidationException("La categoria selezionata non è attiva.");
         }
 
-        TransactionRules.EnsureCategoryCompatible(input.Type, macroCategory);
+        TransactionRules.EnsureCategoryCompatible(input.Type, category);
 
         var transaction = input.Id.HasValue
             ? await repository.GetTransactionAsync(input.Id.Value, cancellationToken)
@@ -77,21 +73,17 @@ public sealed class TransactionService(IExpenseRepository repository)
     internal static IReadOnlyList<TransactionListItem> Join(
         IEnumerable<Transaction> transactions,
         IReadOnlyCollection<Account> accounts,
-        IReadOnlyCollection<Category> categories,
-        IReadOnlyCollection<MacroCategory> macroCategories)
+        IReadOnlyCollection<Category> categories)
     {
         var accountMap = accounts.ToDictionary(item => item.Id);
         var categoryMap = categories.ToDictionary(item => item.Id);
-        var macroMap = macroCategories.ToDictionary(item => item.Id);
-
         return transactions
             .OrderByDescending(item => item.OccurredAtUtc)
             .Select(item =>
             {
                 var account = accountMap[item.AccountId];
                 var category = categoryMap[item.CategoryId];
-                var macro = macroMap[category.MacroCategoryId];
-                return new TransactionListItem(item, account.Name, category.Name, macro.Name, macro.Color);
+                return new TransactionListItem(item, account.Name, category.Name, category.Color);
             })
             .ToArray();
     }

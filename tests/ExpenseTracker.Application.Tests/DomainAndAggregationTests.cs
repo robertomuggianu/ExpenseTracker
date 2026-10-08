@@ -42,22 +42,15 @@ public sealed class DomainAndAggregationTests
     }
 
     [Fact]
-    public void ExpenseGrouping_AggregatesByMacroCategory()
+    public void ExpenseGrouping_AggregatesByCategory()
     {
-        var homeId = Guid.NewGuid();
-        var foodId = Guid.NewGuid();
         var rentId = Guid.NewGuid();
         var groceriesId = Guid.NewGuid();
         var range = new DateRange(DateTime.UnixEpoch, DateTime.MaxValue);
         var categories = new[]
         {
-            new Category(rentId, homeId, "Affitto"),
-            new Category(groceriesId, foodId, "Spesa")
-        };
-        var macros = new[]
-        {
-            new MacroCategory(homeId, "Casa", TransactionType.Expense, "#111111"),
-            new MacroCategory(foodId, "Alimentazione", TransactionType.Expense, "#222222")
+            new Category(rentId, "Affitto", TransactionType.Expense, "#111111"),
+            new Category(groceriesId, "Spesa", TransactionType.Expense, "#222222")
         };
         var transactions = new[]
         {
@@ -66,21 +59,21 @@ public sealed class DomainAndAggregationTests
             CreateTransaction(TransactionType.Expense, 50m, DateTime.UtcNow, groceriesId)
         };
 
-        var result = FinancialAggregator.GroupExpensesByMacroCategory(transactions, categories, macros, range);
+        var result = FinancialAggregator.GroupExpensesByCategory(transactions, categories, range);
 
         Assert.Collection(
             result,
-            item => { Assert.Equal("Casa", item.Name); Assert.Equal(500m, item.Total); },
-            item => { Assert.Equal("Alimentazione", item.Name); Assert.Equal(150m, item.Total); });
+            item => { Assert.Equal("Affitto", item.Name); Assert.Equal(500m, item.Total); },
+            item => { Assert.Equal("Spesa", item.Name); Assert.Equal(150m, item.Total); });
     }
 
     [Fact]
     public void CategoryCompatibility_RejectsDifferentTransactionType()
     {
-        var macro = new MacroCategory(Guid.NewGuid(), "Stipendio", TransactionType.Income, "#00AA00");
+        var category = new Category(Guid.NewGuid(), "Stipendio", TransactionType.Income, "#00AA00");
 
         var error = Assert.Throws<DomainValidationException>(() =>
-            TransactionRules.EnsureCategoryCompatible(TransactionType.Expense, macro));
+            TransactionRules.EnsureCategoryCompatible(TransactionType.Expense, category));
 
         Assert.Contains("compatibile", error.Message);
     }

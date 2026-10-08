@@ -3,59 +3,61 @@
     x:Class="ExpenseTracker.Presentation.Views.ExportPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="Esportazione CSV">
+    xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
+    Title="Dati">
     <ScrollView>
         <VerticalStackLayout Spacing="0">
-            <Border Style="{StaticResource HeroCard}">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-                    <VerticalStackLayout Spacing="5">
-                        <Label Text="I TUOI DATI" TextColor="#FFD7D9" FontSize="12" FontAttributes="Bold" CharacterSpacing="1.8" />
-                        <Label Text="Esporta CSV" TextColor="White" FontSize="30" FontAttributes="Bold" />
-                        <Label Text="Porta con te lo storico, senza vincoli." TextColor="#FFD7D9" />
+            <Border Style="{StaticResource HeroCard}" Padding="16,14,16,18">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                    <Button Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}" />
+                    <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                        <Label Text="I TUOI DATI" TextColor="#FFD7D9" FontSize="11" FontAttributes="Bold" CharacterSpacing="1.5" />
+                        <Label Text="Importa ed esporta" TextColor="White" FontSize="25" FontAttributes="Bold" />
+                        <Label Text="Migra lo storico o crea il tuo backup CSV." TextColor="#FFD7D9" FontSize="12" />
                     </VerticalStackLayout>
-                    <Border Grid.Column="1" WidthRequest="58" HeightRequest="58" Padding="0" VerticalOptions="Center" BackgroundColor="#33FFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 18">
-                        <Label Text="⇩" TextColor="White" FontSize="28" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
-                    </Border>
                 </Grid>
             </Border>
 
-            <VerticalStackLayout Padding="18,20,18,40" Spacing="16">
-                <Border Style="{StaticResource Card}">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                        <VerticalStackLayout Spacing="3">
-                            <Label Text="Tutti i movimenti" FontSize="17" FontAttributes="Bold" />
-                            <Label Text="Disattiva per scegliere un intervallo e filtri specifici." Style="{StaticResource MutedLabel}" FontSize="12" />
-                        </VerticalStackLayout>
-                        <Switch Grid.Column="1" IsToggled="{Binding ExportAll}" VerticalOptions="Center" />
-                    </Grid>
+            <VerticalStackLayout Padding="16,14,16,32" Spacing="12">
+                <Border Style="{StaticResource Card}" Stroke="{StaticResource Primary}" Padding="16">
+                    <VerticalStackLayout Spacing="12">
+                        <Grid ColumnDefinitions="48,*" ColumnSpacing="12">
+                            <Border WidthRequest="48" HeightRequest="48" Padding="0" BackgroundColor="#24E2383F" StrokeThickness="0" StrokeShape="RoundRectangle 15">
+                                <Label Text="⇧" TextColor="{StaticResource PrimaryGlow}" FontSize="25" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="Importa lo storico" FontSize="18" FontAttributes="Bold" />
+                                <Label Text="Compatibile con Excel (.xlsx) e CSV." Style="{StaticResource MutedLabel}" FontSize="12" />
+                            </VerticalStackLayout>
+                        </Grid>
+                        <Label Text="Il formato dell'app precedente viene riconosciuto automaticamente. Conti e categorie mancanti vengono creati senza duplicare i movimenti già importati."
+                               Style="{StaticResource MutedLabel}" FontSize="13" LineHeight="1.2" />
+                        <Button Text="Scegli file e importa" Command="{Binding ImportCommand}" />
+                        <Label Text="{Binding ImportSummary}" TextColor="{StaticResource Income}" FontAttributes="Bold" FontSize="12" />
+                    </VerticalStackLayout>
                 </Border>
 
-                <Border Style="{StaticResource Card}">
-                    <VerticalStackLayout Spacing="12">
-                        <Label Text="Filtri esportazione" Style="{StaticResource SectionTitle}" />
-                        <Label Text="Vengono usati quando l'esportazione completa è disattivata." Style="{StaticResource MutedLabel}" FontSize="12" />
-                        <Label Text="Periodo" FontAttributes="Bold" FontSize="12" />
-                        <Border Style="{StaticResource InputCard}"><Picker ItemsSource="{Binding Periods}" ItemDisplayBinding="{Binding Label}" SelectedItem="{Binding SelectedPeriod}" /></Border>
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Esporta CSV" Style="{StaticResource SectionTitle}" VerticalTextAlignment="Center" />
+                    <Switch Grid.Column="1" IsToggled="{Binding ExportAll}" VerticalOptions="Center" />
+                </Grid>
+                <Label Text="Esporta tutti i movimenti oppure disattiva l'interruttore per usare i filtri."
+                       Style="{StaticResource MutedLabel}" FontSize="12" />
+
+                <Border Style="{StaticResource Card}" Padding="14" IsVisible="{Binding UseExportFilters}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Filtri esportazione" FontSize="17" FontAttributes="Bold" />
+                        <controls:ChoiceField ItemsSource="{Binding Periods}" SelectedItem="{Binding SelectedPeriod}" DisplayMemberPath="Label" Title="Periodo" />
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                             <Border Style="{StaticResource InputCard}"><DatePicker Date="{Binding CustomFrom}" /></Border>
                             <Border Grid.Column="1" Style="{StaticResource InputCard}"><DatePicker Date="{Binding CustomTo}" /></Border>
                         </Grid>
-                        <Label Text="Conto e tipo" FontAttributes="Bold" FontSize="12" />
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                            <Border Style="{StaticResource InputCard}"><Picker ItemsSource="{Binding Accounts}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedAccount}" /></Border>
-                            <Border Grid.Column="1" Style="{StaticResource InputCard}"><Picker ItemsSource="{Binding Types}" ItemDisplayBinding="{Binding Label}" SelectedItem="{Binding SelectedType}" /></Border>
+                            <controls:ChoiceField ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount}" DisplayMemberPath="Name" Title="Conto" />
+                            <controls:ChoiceField Grid.Column="1" ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType}" DisplayMemberPath="Label" Title="Tipo" />
                         </Grid>
-                        <Label Text="Categorie" FontAttributes="Bold" FontSize="12" />
-                        <Border Style="{StaticResource InputCard}"><Picker ItemsSource="{Binding MacroCategories}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedMacroCategory}" /></Border>
-                        <Border Style="{StaticResource InputCard}"><Picker ItemsSource="{Binding Categories}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedCategory}" /></Border>
+                        <controls:ChoiceField ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" DisplayMemberPath="Name" Title="Categoria" />
                     </VerticalStackLayout>
-                </Border>
-
-                <Border Style="{StaticResource Card}" BackgroundColor="#14E2383F" Stroke="#40E2383F">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                        <Label Text="i" TextColor="{StaticResource PrimaryGlow}" FontSize="20" FontAttributes="Bold" />
-                        <Label Grid.Column="1" Text="Il CSV usa il punto e virgola, date ISO 8601 e importi indipendenti dalla lingua del dispositivo." Style="{StaticResource MutedLabel}" FontSize="12" />
-                    </Grid>
                 </Border>
 
                 <Button Text="Crea e condividi CSV" Command="{Binding ExportCommand}" FontSize="16" />

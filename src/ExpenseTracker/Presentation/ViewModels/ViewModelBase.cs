@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using ExpenseTracker.Application;
 using ExpenseTracker.Domain;
 
@@ -11,6 +12,9 @@ public abstract partial class ViewModelBase : ObservableObject
 
     [ObservableProperty]
     public partial string? ErrorMessage { get; set; }
+
+    [RelayCommand]
+    private void OpenMenu() => Shell.Current.FlyoutIsPresented = true;
 
     protected async Task RunAsync(Func<Task> action)
     {
@@ -67,7 +71,5 @@ public sealed record TransactionTypeOption(TransactionType? Value, string Label)
 }
 
 public sealed record AccountFilterOption(Guid? Id, string Name);
-
-public sealed record MacroCategoryFilterOption(Guid? Id, string Name);
 
 public sealed record CategoryFilterOption(Guid? Id, string Name);

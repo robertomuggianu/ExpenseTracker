@@ -1,0 +1,67 @@
+name: iPhone IPA for Sideloadly
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios:
+    runs-on: macos-26
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install MAUI iOS workload
+        run: dotnet workload install maui-ios
+
+      - name: Show build tool versions
+        run: |
+          dotnet --info
+          dotnet workload list
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Build unsigned app for a physical iPhone
+        run: |
+          dotnet publish src/ExpenseTracker/ExpenseTracker.csproj \
+            -f net10.0-ios -c Release \
+            -p:TargetFrameworks=net10.0-ios \
+            -p:RuntimeIdentifier=ios-arm64 \
+            -p:EnableCodeSigning=false \
+            -p:CodesignRequireProvisioningProfile=false \
+            -p:ArchiveOnBuild=false \
+            -p:BuildIpa=false
+
+      - name: Package and validate IPA
+        run: |
+          set -euo pipefail
+          app="src/ExpenseTracker/bin/Release/net10.0-ios/ios-arm64/ExpenseTracker.app"
+          test -d "$app"
+          executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Info.plist")
+          test -f "$app/$executable"
+          xcrun lipo -verify_arch arm64 "$app/$executable"
+          platform=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleSupportedPlatforms:0' "$app/Info.plist")
+          test "$platform" = "iPhoneOS"
+          mkdir -p "$RUNNER_TEMP/ios-package/Payload" "$GITHUB_WORKSPACE/artifacts"
+          ditto "$app" "$RUNNER_TEMP/ios-package/Payload/ExpenseTracker.app"
+          cd "$RUNNER_TEMP/ios-package"
+          /usr/bin/zip -qry "$GITHUB_WORKSPACE/artifacts/ExpenseTracker.ipa" Payload
+          /usr/bin/unzip -t "$GITHUB_WORKSPACE/artifacts/ExpenseTracker.ipa"
+          shasum -a 256 "$GITHUB_WORKSPACE/artifacts/ExpenseTracker.ipa"
+
+      - name: Upload IPA for Sideloadly
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExpenseTracker-iPhone-${{ github.run_number }}
+          path: artifacts/ExpenseTracker.ipa
+          if-no-files-found: error
+          retention-days: 14

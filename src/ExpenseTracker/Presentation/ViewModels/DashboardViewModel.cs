@@ -43,6 +43,19 @@ public partial class DashboardViewModel(
     [ObservableProperty]
     public partial IEnumerable<ISeries> ExpenseSeries { get; set; } = [];
 
+    [ObservableProperty]
+    public partial bool IsCustomPeriod { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasExpenseData { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasRecentTransactions { get; set; }
+
+    public bool HasNoExpenseData => !HasExpenseData;
+
+    public bool HasNoRecentTransactions => !HasRecentTransactions;
+
     [RelayCommand]
     public Task LoadAsync() => RunAsync(async () =>
     {
@@ -53,19 +66,21 @@ public partial class DashboardViewModel(
         Income = summary.Totals.Income;
         Expense = summary.Totals.Expense;
         Difference = summary.Totals.Difference;
-        ExpenseSeries = summary.ExpensesByMacroCategory
+        ExpenseSeries = summary.ExpensesByCategory
             .Select(item => (ISeries)new PieSeries<decimal>
             {
                 Name = item.Name,
                 Values = [item.Total]
             })
             .ToArray();
+        HasExpenseData = summary.ExpensesByCategory.Count > 0;
 
         RecentTransactions.Clear();
         foreach (var item in summary.RecentTransactions)
         {
             RecentTransactions.Add(item);
         }
+        HasRecentTransactions = RecentTransactions.Count > 0;
     });
 
     [RelayCommand]
@@ -74,7 +89,15 @@ public partial class DashboardViewModel(
     [RelayCommand]
     private Task ShowTransactionsAsync() => navigation.GoToTransactionsAsync();
 
-    partial void OnSelectedPeriodChanged(PeriodOption value) => _ = LoadAsync();
+    partial void OnSelectedPeriodChanged(PeriodOption value)
+    {
+        IsCustomPeriod = value.Value == DateRangePreset.Custom;
+        _ = LoadAsync();
+    }
+
+    partial void OnHasExpenseDataChanged(bool value) => OnPropertyChanged(nameof(HasNoExpenseData));
+
+    partial void OnHasRecentTransactionsChanged(bool value) => OnPropertyChanged(nameof(HasNoRecentTransactions));
 
     partial void OnCustomFromChanged(DateTime value)
     {

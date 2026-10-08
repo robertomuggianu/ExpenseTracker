@@ -3,93 +3,68 @@
     x:Class="ExpenseTracker.Presentation.Views.CategoriesPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
     x:Name="Page"
     Title="Categorie">
     <ScrollView>
         <VerticalStackLayout Spacing="0">
-            <Border Style="{StaticResource HeroCard}">
+            <Border Style="{StaticResource HeroCard}" Padding="16,14,16,18">
                 <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
-                    <Label Text="ORGANIZZA" TextColor="#FFD7D9" FontSize="12" FontAttributes="Bold" CharacterSpacing="1.8" />
-                    <Label Grid.Row="1" Text="Categorie" TextColor="White" FontSize="30" FontAttributes="Bold" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Button Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}" />
+                        <Label Grid.Column="1" Text="ORGANIZZA" TextColor="#FFD7D9" FontSize="12" FontAttributes="Bold" CharacterSpacing="1.8" VerticalTextAlignment="Center" />
+                    </Grid>
+                    <Label Grid.Row="1" Text="Categorie" TextColor="White" FontSize="26" FontAttributes="Bold" />
                     <Label Grid.Row="2" Text="Riconosci subito dove vanno i tuoi soldi." TextColor="#FFD7D9" />
                 </Grid>
             </Border>
 
-            <VerticalStackLayout Padding="18,20,18,40" Spacing="16">
+            <VerticalStackLayout Padding="16,14,16,32" Spacing="12">
                 <Grid ColumnDefinitions="*,Auto">
                     <VerticalStackLayout>
-                        <Label Text="Macro-categorie" Style="{StaticResource SectionTitle}" />
-                        <Label Text="Entrate e uscite, ordinate e riconoscibili" Style="{StaticResource MutedLabel}" FontSize="12" />
+                        <Label Text="Categorie" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Entrate e uscite, tutte in un unico elenco" Style="{StaticResource MutedLabel}" FontSize="12" />
                     </VerticalStackLayout>
-                    <Button Grid.Column="1" Text="+  Nuova" Command="{Binding NewMacroCommand}" />
+                    <Button Grid.Column="1" Text="+  Nuova" Command="{Binding NewCategoryCommand}" />
                 </Grid>
 
-                <Border Style="{StaticResource Card}" IsVisible="{Binding IsMacroEditorVisible}" Stroke="{StaticResource Primary}">
+                <Border Style="{StaticResource Card}" IsVisible="{Binding IsEditorVisible}" Stroke="{StaticResource Primary}">
                     <VerticalStackLayout Spacing="12">
-                        <Label Text="Macro-categoria" FontSize="19" FontAttributes="Bold" />
+                        <Label Text="Categoria" FontSize="19" FontAttributes="Bold" />
                         <Label Text="Nome" FontAttributes="Bold" FontSize="12" />
-                        <Border Style="{StaticResource InputCard}"><Entry Placeholder="Es. Casa" Text="{Binding MacroName}" /></Border>
+                        <Border Style="{StaticResource InputCard}"><Entry Placeholder="Es. Education" Text="{Binding CategoryName}" /></Border>
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                             <VerticalStackLayout Spacing="5">
                                 <Label Text="Tipo" FontAttributes="Bold" FontSize="12" />
-                                <Border Style="{StaticResource InputCard}"><Picker ItemsSource="{Binding Types}" ItemDisplayBinding="{Binding Label}" SelectedItem="{Binding SelectedMacroType}" /></Border>
+                                <controls:ChoiceField ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedCategoryType}" DisplayMemberPath="Label" Title="Tipo" />
                             </VerticalStackLayout>
                             <VerticalStackLayout Grid.Column="1" Spacing="5">
                                 <Label Text="Colore" FontAttributes="Bold" FontSize="12" />
-                                <Border Style="{StaticResource InputCard}"><Entry Placeholder="#E2383F" Text="{Binding MacroColor}" /></Border>
+                                <Border Style="{StaticResource InputCard}"><Entry Placeholder="#E2383F" Text="{Binding CategoryColor}" /></Border>
                             </VerticalStackLayout>
                         </Grid>
-                        <HorizontalStackLayout><CheckBox IsChecked="{Binding MacroIsActive}" /><Label Text="Macro-categoria attiva" VerticalTextAlignment="Center" /></HorizontalStackLayout>
-                        <Button Text="Salva macro-categoria" Command="{Binding SaveMacroCommand}" />
-                    </VerticalStackLayout>
-                </Border>
-
-                <Border Style="{StaticResource Card}" IsVisible="{Binding IsCategoryEditorVisible}" Stroke="{StaticResource Primary}">
-                    <VerticalStackLayout Spacing="12">
-                        <Label Text="Categoria" FontSize="19" FontAttributes="Bold" />
-                        <Label Text="Macro-categoria" FontAttributes="Bold" FontSize="12" />
-                        <Border Style="{StaticResource InputCard}">
-                            <Picker Title="Seleziona la macro-categoria" ItemsSource="{Binding MacroCategories}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedParentMacro}" />
-                        </Border>
-                        <Label Text="Nome" FontAttributes="Bold" FontSize="12" />
-                        <Border Style="{StaticResource InputCard}"><Entry Placeholder="Es. Affitto" Text="{Binding CategoryName}" /></Border>
                         <HorizontalStackLayout><CheckBox IsChecked="{Binding CategoryIsActive}" /><Label Text="Categoria attiva" VerticalTextAlignment="Center" /></HorizontalStackLayout>
                         <Button Text="Salva categoria" Command="{Binding SaveCategoryCommand}" />
                     </VerticalStackLayout>
                 </Border>
 
-                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Groups}" Spacing="12">
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Categories}" Spacing="10">
                     <BindableLayout.ItemTemplate>
                         <DataTemplate>
                             <Border Style="{StaticResource Card}">
-                                <VerticalStackLayout Spacing="12">
-                                    <Grid ColumnDefinitions="52,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
-                                        <Border Grid.RowSpan="2" WidthRequest="52" HeightRequest="52" Padding="0" StrokeThickness="0"
-                                                BackgroundColor="{Binding MacroCategory.Color}" StrokeShape="RoundRectangle 18">
-                                            <Label Text="◉" TextColor="White" FontSize="24" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
-                                        </Border>
-                                        <Label Grid.Column="1" Text="{Binding MacroCategory.Name}" FontSize="18" FontAttributes="Bold" />
-                                        <Border Grid.Column="2" Padding="10,4" StrokeThickness="0" BackgroundColor="#24E2383F" StrokeShape="RoundRectangle 12">
-                                            <Label Text="{Binding TypeLabel}" TextColor="{StaticResource PrimaryGlow}" FontSize="11" FontAttributes="Bold" />
-                                        </Border>
-                                        <Label Grid.Row="1" Grid.Column="1" Text="Categorie collegate" Style="{StaticResource MutedLabel}" FontSize="12" />
-                                    </Grid>
-
-                                    <FlexLayout Direction="Row" Wrap="Wrap" BindableLayout.ItemsSource="{Binding Categories}">
-                                        <BindableLayout.ItemTemplate>
-                                            <DataTemplate>
-                                                <Button Text="{Binding Name}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"
-                                                        Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditCategoryCommand}" CommandParameter="{Binding .}" />
-                                            </DataTemplate>
-                                        </BindableLayout.ItemTemplate>
-                                    </FlexLayout>
-
-                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                                        <Button Text="+  Aggiungi categoria" Command="{Binding Source={x:Reference Page}, Path=BindingContext.NewCategoryCommand}" CommandParameter="{Binding .}" />
-                                        <Button Grid.Column="1" Text="Modifica gruppo" Style="{StaticResource SecondaryButton}"
-                                                Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditMacroCommand}" CommandParameter="{Binding .}" />
-                                    </Grid>
-                                </VerticalStackLayout>
+                                <Grid ColumnDefinitions="52,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
+                                    <Border Grid.RowSpan="2" WidthRequest="52" HeightRequest="52" Padding="0" StrokeThickness="0"
+                                            BackgroundColor="{Binding Color}" StrokeShape="RoundRectangle 18">
+                                        <Label Text="●" TextColor="White" FontSize="24" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                    </Border>
+                                    <Label Grid.Column="1" Text="{Binding Name}" FontSize="18" FontAttributes="Bold" />
+                                    <Border Grid.Column="2" Padding="10,4" StrokeThickness="0" BackgroundColor="#24E2383F" StrokeShape="RoundRectangle 12">
+                                        <Label Text="{Binding TypeLabel}" TextColor="{StaticResource PrimaryGlow}" FontSize="11" FontAttributes="Bold" />
+                                    </Border>
+                                    <Label Grid.Row="1" Grid.Column="1" Text="Tocca per modificare" Style="{StaticResource MutedLabel}" FontSize="12" />
+                                    <Button Grid.Row="1" Grid.Column="2" Text="Modifica" Style="{StaticResource TextButton}"
+                                            Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditCategoryCommand}" CommandParameter="{Binding .}" />
+                                </Grid>
                             </Border>
                         </DataTemplate>
                     </BindableLayout.ItemTemplate>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="ExpenseTracker.Presentation.Controls.ChoiceSelectionPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="#B0000000">
+    <Grid Padding="14">
+        <Border VerticalOptions="End" Padding="20,18,20,16"
+                BackgroundColor="{AppThemeBinding Light={StaticResource LightSurface}, Dark={StaticResource DarkSurface}}"
+                Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
+                StrokeShape="RoundRectangle 26">
+            <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12" MaximumHeightRequest="620">
+                <Border WidthRequest="42" HeightRequest="4" Padding="0" HorizontalOptions="Center"
+                        BackgroundColor="{StaticResource Gray500}" StrokeThickness="0" StrokeShape="RoundRectangle 2" />
+                <Label Grid.Row="1" Text="{Binding Title}" Style="{StaticResource SectionTitle}" />
+                <CollectionView Grid.Row="2" ItemsSource="{Binding Items}" SelectionMode="None" MaximumHeightRequest="450">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Padding="12,11" Margin="0,0,0,6" StrokeThickness="0"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource LightSurfaceAlt}, Dark={StaticResource DarkSurfaceAlt}}"
+                                    StrokeShape="RoundRectangle 14">
+                                <Grid ColumnDefinitions="32,*" ColumnSpacing="10">
+                                    <Label Text="{Binding Indicator}" TextColor="{StaticResource Primary}" FontSize="20"
+                                           VerticalTextAlignment="Center" HorizontalTextAlignment="Center" />
+                                    <Label Grid.Column="1" Text="{Binding Label}" FontSize="16" VerticalTextAlignment="Center" />
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnItemTapped" CommandParameter="{Binding .}" />
+                                    </Grid.GestureRecognizers>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+                <Button Grid.Row="3" Text="Annulla" Style="{StaticResource SecondaryButton}" Clicked="OnCancelClicked" />
+            </Grid>
+        </Border>
+    </Grid>
+</ContentPage>

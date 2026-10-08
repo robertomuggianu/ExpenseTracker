@@ -14,24 +14,21 @@ public static class FinancialAggregator
             items.Where(item => item.Type == TransactionType.Expense).Sum(item => item.Amount));
     }
 
-    public static IReadOnlyList<ExpenseGroup> GroupExpensesByMacroCategory(
+    public static IReadOnlyList<ExpenseGroup> GroupExpensesByCategory(
         IEnumerable<Transaction> transactions,
         IReadOnlyCollection<Category> categories,
-        IReadOnlyCollection<MacroCategory> macroCategories,
         DateRange range)
     {
         ArgumentNullException.ThrowIfNull(transactions);
 
         var categoryMap = categories.ToDictionary(item => item.Id);
-        var macroMap = macroCategories.ToDictionary(item => item.Id);
-
         return transactions
             .Where(item => item.Type == TransactionType.Expense && range.Contains(item.OccurredAtUtc))
-            .GroupBy(item => categoryMap[item.CategoryId].MacroCategoryId)
+            .GroupBy(item => item.CategoryId)
             .Select(group =>
             {
-                var macro = macroMap[group.Key];
-                return new ExpenseGroup(macro.Id, macro.Name, macro.Color, group.Sum(item => item.Amount));
+                var category = categoryMap[group.Key];
+                return new ExpenseGroup(category.Id, category.Name, category.Color, group.Sum(item => item.Amount));
             })
             .OrderByDescending(item => item.Total)
             .ToArray();

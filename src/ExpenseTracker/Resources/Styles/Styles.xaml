@@ -154,6 +154,19 @@
         </Setter>
     </Style>
 
+    <Style x:Key="HeaderMenuButton" TargetType="Button">
+        <Setter Property="Text" Value="☰" />
+        <Setter Property="TextColor" Value="{StaticResource White}" />
+        <Setter Property="BackgroundColor" Value="#26FFFFFF" />
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="WidthRequest" Value="46" />
+        <Setter Property="HeightRequest" Value="46" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinimumHeightRequest" Value="46" />
+        <Setter Property="MinimumWidthRequest" Value="46" />
+    </Style>
+
     <Style TargetType="Entry">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource LightText}, Dark={StaticResource DarkText}}" />
         <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource LightTextMuted}, Dark={StaticResource DarkTextMuted}}" />

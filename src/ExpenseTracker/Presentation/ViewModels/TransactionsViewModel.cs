@@ -14,15 +14,11 @@ public partial class TransactionsViewModel(
     IUserDialogService dialogs,
     IAppNavigationService navigation) : ViewModelBase
 {
-    private IReadOnlyList<Category> _allCategories = [];
-
     public IReadOnlyList<PeriodOption> Periods { get; } = PeriodOption.All;
 
     public IReadOnlyList<TransactionTypeOption> Types { get; } = TransactionTypeOption.Optional;
 
     public ObservableCollection<AccountFilterOption> Accounts { get; } = [];
-
-    public ObservableCollection<MacroCategoryFilterOption> MacroCategories { get; } = [];
 
     public ObservableCollection<CategoryFilterOption> Categories { get; } = [];
 
@@ -42,9 +38,6 @@ public partial class TransactionsViewModel(
 
     [ObservableProperty]
     public partial TransactionTypeOption SelectedType { get; set; } = TransactionTypeOption.Optional[0];
-
-    [ObservableProperty]
-    public partial MacroCategoryFilterOption? SelectedMacroCategory { get; set; }
 
     [ObservableProperty]
     public partial CategoryFilterOption? SelectedCategory { get; set; }
@@ -92,28 +85,6 @@ public partial class TransactionsViewModel(
         await LoadTransactionsCoreAsync();
     });
 
-    partial void OnSelectedMacroCategoryChanged(MacroCategoryFilterOption? value)
-    {
-        Categories.Clear();
-        Categories.Add(new CategoryFilterOption(null, "Tutte le categorie"));
-        if (value?.Id is Guid macroId)
-        {
-            foreach (var item in _allCategories.Where(item => item.MacroCategoryId == macroId))
-            {
-                Categories.Add(new CategoryFilterOption(item.Id, item.Name));
-            }
-        }
-        else
-        {
-            foreach (var item in _allCategories)
-            {
-                Categories.Add(new CategoryFilterOption(item.Id, item.Name));
-            }
-        }
-
-        SelectedCategory = Categories[0];
-    }
-
     partial void OnSelectedTransactionChanged(TransactionListItem? value) =>
         HasSelectedTransaction = value is not null;
 
@@ -129,16 +100,15 @@ public partial class TransactionsViewModel(
 
         SelectedAccount = Accounts.FirstOrDefault(item => item.Id == accountId) ?? Accounts[0];
 
-        var macroId = SelectedMacroCategory?.Id;
-        MacroCategories.Clear();
-        MacroCategories.Add(new MacroCategoryFilterOption(null, "Tutte le macro-categorie"));
-        foreach (var item in await categoryService.GetMacroCategoriesAsync())
+        var categoryId = SelectedCategory?.Id;
+        Categories.Clear();
+        Categories.Add(new CategoryFilterOption(null, "Tutte le categorie"));
+        foreach (var item in await categoryService.GetCategoriesAsync())
         {
-            MacroCategories.Add(new MacroCategoryFilterOption(item.Id, item.Name));
+            Categories.Add(new CategoryFilterOption(item.Id, item.Name));
         }
 
-        _allCategories = await categoryService.GetCategoriesAsync();
-        SelectedMacroCategory = MacroCategories.FirstOrDefault(item => item.Id == macroId) ?? MacroCategories[0];
+        SelectedCategory = Categories.FirstOrDefault(item => item.Id == categoryId) ?? Categories[0];
     }
 
     private async Task LoadTransactionsCoreAsync()
@@ -149,7 +119,6 @@ public partial class TransactionsViewModel(
             range.ToUtcExclusive,
             SelectedAccount?.Id,
             SelectedType.Value,
-            SelectedMacroCategory?.Id,
             SelectedCategory?.Id);
         var items = await transactionService.GetTransactionsAsync(filter);
         Transactions.Clear();

@@ -15,14 +15,11 @@ public partial class TransactionEditorViewModel(
     IUserDialogService dialogs,
     IAppNavigationService navigation) : ViewModelBase
 {
-    private IReadOnlyList<MacroCategory> _allMacros = [];
     private IReadOnlyList<Category> _allCategories = [];
 
     public IReadOnlyList<TransactionTypeOption> Types { get; } = TransactionTypeOption.Required;
 
     public ObservableCollection<AccountSummary> Accounts { get; } = [];
-
-    public ObservableCollection<MacroCategory> MacroCategories { get; } = [];
 
     public ObservableCollection<Category> Categories { get; } = [];
 
@@ -34,9 +31,6 @@ public partial class TransactionEditorViewModel(
 
     [ObservableProperty]
     public partial AccountSummary? SelectedAccount { get; set; }
-
-    [ObservableProperty]
-    public partial MacroCategory? SelectedMacroCategory { get; set; }
 
     [ObservableProperty]
     public partial Category? SelectedCategory { get; set; }
@@ -73,8 +67,7 @@ public partial class TransactionEditorViewModel(
             Accounts.Add(item);
         }
 
-        _allMacros = (await categoryService.GetMacroCategoriesAsync()).Where(item => item.IsActive).ToArray();
-        _allCategories = (await categoryService.GetCategoriesAsync()).Where(item => item.IsActive).ToArray();
+        _allCategories = (await categoryService.GetCategoriesAsync(activeOnly: true)).ToArray();
 
         if (transactionId.HasValue)
         {
@@ -82,10 +75,7 @@ public partial class TransactionEditorViewModel(
                 ?? throw new DomainValidationException("Il movimento selezionato non esiste.");
             var localDate = item.OccurredAtUtc.ToLocalTime();
             SelectedType = Types.Single(option => option.Value == item.Type);
-            RefreshMacroCategories();
             SelectedAccount = Accounts.SingleOrDefault(account => account.Account.Id == item.AccountId);
-            SelectedMacroCategory = _allMacros.SingleOrDefault(macro =>
-                _allCategories.Any(category => category.Id == item.CategoryId && category.MacroCategoryId == macro.Id));
             RefreshCategories();
             SelectedCategory = Categories.SingleOrDefault(category => category.Id == item.CategoryId);
             Date = localDate.Date;
@@ -138,12 +128,6 @@ public partial class TransactionEditorViewModel(
 
     partial void OnSelectedTypeChanged(TransactionTypeOption value)
     {
-        RefreshMacroCategories();
-        SelectedMacroCategory = MacroCategories.FirstOrDefault();
-    }
-
-    partial void OnSelectedMacroCategoryChanged(MacroCategory? value)
-    {
         RefreshCategories();
         SelectedCategory = Categories.FirstOrDefault();
     }
@@ -151,9 +135,7 @@ public partial class TransactionEditorViewModel(
     private void ResetForm()
     {
         SelectedType = Types[1];
-        RefreshMacroCategories();
         SelectedAccount = Accounts.FirstOrDefault(item => item.Account.IsPrimary) ?? Accounts.FirstOrDefault();
-        SelectedMacroCategory = MacroCategories.FirstOrDefault();
         RefreshCategories();
         SelectedCategory = Categories.FirstOrDefault();
         Date = DateTime.Today;
@@ -164,28 +146,13 @@ public partial class TransactionEditorViewModel(
         Notes = null;
     }
 
-    private void RefreshMacroCategories()
-    {
-        var selectedId = SelectedMacroCategory?.Id;
-        MacroCategories.Clear();
-        foreach (var item in _allMacros.Where(item => item.Type == SelectedType.Value))
-        {
-            MacroCategories.Add(item);
-        }
-
-        SelectedMacroCategory = MacroCategories.FirstOrDefault(item => item.Id == selectedId);
-    }
-
     private void RefreshCategories()
     {
         var selectedId = SelectedCategory?.Id;
         Categories.Clear();
-        if (SelectedMacroCategory is not null)
+        foreach (var item in _allCategories.Where(item => item.Type == SelectedType.Value))
         {
-            foreach (var item in _allCategories.Where(item => item.MacroCategoryId == SelectedMacroCategory.Id))
-            {
-                Categories.Add(item);
-            }
+            Categories.Add(item);
         }
 
         SelectedCategory = Categories.FirstOrDefault(item => item.Id == selectedId);

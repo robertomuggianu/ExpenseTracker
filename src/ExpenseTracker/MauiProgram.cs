@@ -34,9 +34,12 @@ public static class MauiProgram
 		builder.Services.AddSingleton<TransactionService>();
 		builder.Services.AddSingleton<ReportingService>();
 		builder.Services.AddSingleton<ICsvExportService, CsvExportService>();
+		builder.Services.AddSingleton<ITransactionImportParser, TransactionImportParser>();
+		builder.Services.AddSingleton<TransactionImportService>();
 		builder.Services.AddSingleton<IUserDialogService, UserDialogService>();
 		builder.Services.AddSingleton<IAppNavigationService, AppNavigationService>();
 		builder.Services.AddSingleton<IFileShareService, FileShareService>();
+		builder.Services.AddSingleton<IImportFilePickerService, ImportFilePickerService>();
 
 		builder.Services.AddTransient<DashboardViewModel>();
 		builder.Services.AddTransient<TransactionsViewModel>();

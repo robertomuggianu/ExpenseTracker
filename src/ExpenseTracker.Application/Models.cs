@@ -71,7 +71,6 @@ public sealed record TransactionFilter(
     DateTime? ToUtcExclusive = null,
     Guid? AccountId = null,
     TransactionType? Type = null,
-    Guid? MacroCategoryId = null,
     Guid? CategoryId = null);
 
 public sealed record AccountInput(
@@ -82,14 +81,12 @@ public sealed record AccountInput(
     bool IsPrimary,
     bool IsActive);
 
-public sealed record MacroCategoryInput(
+public sealed record CategoryInput(
     Guid? Id,
     string Name,
     TransactionType Type,
     string Color,
     bool IsActive);
-
-public sealed record CategoryInput(Guid? Id, Guid MacroCategoryId, string Name, bool IsActive);
 
 public sealed record TransactionInput(
     Guid? Id,
@@ -109,17 +106,11 @@ public sealed record AccountSummary(Account Account, decimal CurrentBalance)
     public bool IsInactive => !Account.IsActive;
 }
 
-public sealed record MacroCategoryGroup(MacroCategory MacroCategory, IReadOnlyList<Category> Categories)
-{
-    public string TypeLabel => MacroCategory.Type == TransactionType.Income ? "Entrata" : "Uscita";
-}
-
 public sealed record TransactionListItem(
     Transaction Transaction,
     string AccountName,
     string CategoryName,
-    string MacroCategoryName,
-    string MacroCategoryColor)
+    string CategoryColor)
 {
     public decimal SignedAmount => Transaction.Type == TransactionType.Income
         ? Transaction.Amount
@@ -133,7 +124,7 @@ public sealed record PeriodTotals(decimal Income, decimal Expense)
     public decimal Difference => Income - Expense;
 }
 
-public sealed record ExpenseGroup(Guid MacroCategoryId, string Name, string Color, decimal Total);
+public sealed record ExpenseGroup(Guid CategoryId, string Name, string Color, decimal Total);
 
 public sealed record TrendPoint(DateTime Date, decimal Income, decimal Expense);
 
@@ -141,12 +132,12 @@ public sealed record DashboardSummary(
     decimal PrimaryAccountBalance,
     decimal ActiveAccountsBalance,
     PeriodTotals Totals,
-    IReadOnlyList<ExpenseGroup> ExpensesByMacroCategory,
+    IReadOnlyList<ExpenseGroup> ExpensesByCategory,
     IReadOnlyList<TransactionListItem> RecentTransactions);
 
 public sealed record AnalyticsSummary(
     PeriodTotals Totals,
     IReadOnlyList<TrendPoint> Trend,
-    IReadOnlyList<ExpenseGroup> ExpensesByMacroCategory);
+    IReadOnlyList<ExpenseGroup> ExpensesByCategory);
 
 public sealed record CsvExportResult(string FileName, string Content);

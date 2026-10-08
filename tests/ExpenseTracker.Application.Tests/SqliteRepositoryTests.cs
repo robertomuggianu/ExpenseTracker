@@ -14,19 +14,29 @@ public sealed class SqliteRepositoryTests
             await using (var repository = new SqliteExpenseRepository(path))
             {
                 await repository.InitializeAsync();
-                var firstMacros = await repository.GetMacroCategoriesAsync();
                 var firstCategories = await repository.GetCategoriesAsync();
                 await repository.InitializeAsync();
 
-                Assert.Equal(5, firstMacros.Count);
-                Assert.Equal(9, firstCategories.Count);
-                Assert.Equal(firstMacros.Count, (await repository.GetMacroCategoriesAsync()).Count);
+                Assert.Equal(27, firstCategories.Count);
+                (string Name, TransactionType Type)[] importedCategorySet =
+                [
+                    ("Benzina", TransactionType.Expense), ("Cafe", TransactionType.Expense),
+                    ("Education", TransactionType.Expense), ("Gifts", TransactionType.Expense),
+                    ("Groceries", TransactionType.Expense), ("Health", TransactionType.Expense),
+                    ("Home", TransactionType.Expense), ("Leisure", TransactionType.Expense),
+                    ("Other", TransactionType.Expense), ("Restaurants", TransactionType.Expense),
+                    ("Spese per macchina", TransactionType.Expense), ("Subscription", TransactionType.Expense),
+                    ("Transportation", TransactionType.Expense), ("Uscite", TransactionType.Expense),
+                    ("Vape", TransactionType.Expense), ("Gift", TransactionType.Income),
+                    ("Other", TransactionType.Income), ("Paycheck", TransactionType.Income)
+                ];
+                Assert.All(importedCategorySet, expected =>
+                    Assert.Contains(firstCategories, item => item.Name == expected.Name && item.Type == expected.Type));
                 Assert.Equal(firstCategories.Count, (await repository.GetCategoriesAsync()).Count);
 
                 var account = new Account(Guid.NewGuid(), "Test", 10m, isPrimary: true);
                 await repository.SaveAccountsAsync([account]);
-                var incomeMacro = firstMacros.Single(item => item.Type == TransactionType.Income);
-                var incomeCategory = firstCategories.First(item => item.MacroCategoryId == incomeMacro.Id);
+                var incomeCategory = firstCategories.First(item => item.Type == TransactionType.Income);
                 var transaction = new Transaction(
                     Guid.NewGuid(),
                     DateTime.UtcNow,

@@ -23,8 +23,8 @@ internal sealed class AccountRecord
     public DateTime UpdatedAtUtc { get; set; }
 }
 
-[Table("MacroCategories")]
-internal sealed class MacroCategoryRecord
+[Table("Categories")]
+internal sealed class CategoryRecord
 {
     [PrimaryKey]
     public string Id { get; set; } = string.Empty;
@@ -34,19 +34,6 @@ internal sealed class MacroCategoryRecord
     public int Type { get; set; }
 
     public string Color { get; set; } = string.Empty;
-
-    public bool IsActive { get; set; }
-}
-
-[Table("Categories")]
-internal sealed class CategoryRecord
-{
-    [PrimaryKey]
-    public string Id { get; set; } = string.Empty;
-
-    public string MacroCategoryId { get; set; } = string.Empty;
-
-    public string Name { get; set; } = string.Empty;
 
     public bool IsActive { get; set; }
 }

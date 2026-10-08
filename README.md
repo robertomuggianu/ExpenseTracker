@@ -5,7 +5,7 @@ ExpenseTracker è un'applicazione personale offline-first realizzata con .NET MA
 ## Funzioni MVP
 
 - gestione di più conti con un solo conto principale e saldo calcolato;
-- macro-categorie e categorie di entrata/uscita disattivabili senza eliminare lo storico;
+- categorie di entrata/uscita con colore personalizzabile, disattivabili senza eliminare lo storico;
 - inserimento, modifica, filtro, dettaglio ed eliminazione dei movimenti;
 - dashboard e statistiche per settimana, mese, anno o periodo personalizzato;
 - grafici a torta e linee con LiveCharts2;
@@ -38,13 +38,12 @@ Pacchetti principali:
 Il file `expense-tracker.db3` viene creato in `FileSystem.AppDataDirectory`. Lo schema versione 1 contiene:
 
 - `Accounts`;
-- `MacroCategories`;
-- `Categories`, collegata a `MacroCategories`;
+- `Categories`, con tipo e colore;
 - `Transactions`, collegata a `Accounts` e `Categories`.
 
 Gli importi sono salvati in centesimi interi e convertiti in `decimal` nel dominio. Le relazioni usano foreign key con eliminazione protetta. Un indice univoco parziale garantisce al massimo un conto principale. `PRAGMA user_version` abilita migrazioni incrementali future senza cancellare il database.
 
-Al primo avvio vengono inserite macro-categorie e categorie predefinite. Il seed viene eseguito solo se le tabelle delle categorie sono vuote.
+Al primo avvio vengono inserite le categorie predefinite. Il seed viene eseguito solo se la tabella delle categorie è vuota. I database creati con la versione precedente vengono migrati automaticamente: ogni categoria conserva lo storico e acquisisce tipo e colore dal vecchio gruppo.
 
 ## Build, test e avvio
 
@@ -68,7 +67,7 @@ dotnet run --project src/ExpenseTracker/ExpenseTracker.csproj -f net10.0-windows
 
 ## Esportazione CSV
 
-Apri la sezione **Esportazione**, scegli se esportare tutti i movimenti oppure applicare periodo, conto, tipo, macro-categoria e categoria, quindi seleziona **Crea e condividi CSV**. Il file viene scritto nella cache consentita dell'app e passato al pannello di condivisione MAUI.
+Apri la sezione **Esportazione**, scegli se esportare tutti i movimenti oppure applicare periodo, conto, tipo e categoria, quindi seleziona **Crea e condividi CSV**. Il file viene scritto nella cache consentita dell'app e passato al pannello di condivisione MAUI.
 
 Il tracciato usa `;`, data ISO 8601 e importi invariant culture:
 

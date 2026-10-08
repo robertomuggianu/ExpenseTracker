@@ -1,4 +1,5 @@
 using ExpenseTracker.Presentation.ViewModels;
+using ExpenseTracker.Presentation.Controls;
 
 namespace ExpenseTracker.Presentation.Views;
 
@@ -26,6 +27,7 @@ public partial class TransactionEditorPage : ContentPage, IQueryAttributable
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        if (ChoiceSelectionPage.IsOpen) return;
         if (!_queryApplied)
         {
             await _viewModel.LoadAsync();

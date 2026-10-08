@@ -12,13 +12,7 @@ public interface IExpenseRepository
 
     Task SaveAccountsAsync(IReadOnlyCollection<Account> accounts, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<MacroCategory>> GetMacroCategoriesAsync(CancellationToken cancellationToken = default);
-
-    Task<MacroCategory?> GetMacroCategoryAsync(Guid id, CancellationToken cancellationToken = default);
-
-    Task SaveMacroCategoryAsync(MacroCategory macroCategory, CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyList<Category>> GetCategoriesAsync(Guid? macroCategoryId = null, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Category>> GetCategoriesAsync(CancellationToken cancellationToken = default);
 
     Task<Category?> GetCategoryAsync(Guid id, CancellationToken cancellationToken = default);
 
