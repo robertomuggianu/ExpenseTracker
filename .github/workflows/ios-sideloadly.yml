@@ -62,7 +62,7 @@ jobs:
           test -d "$app"
           executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Info.plist")
           test -f "$app/$executable"
-          xcrun lipo -verify_arch arm64 "$app/$executable"
+          xcrun lipo "$app/$executable" -verify_arch arm64
           platform=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleSupportedPlatforms:0' "$app/Info.plist")
           test "$platform" = "iPhoneOS"
           mkdir -p "$RUNNER_TEMP/ios-package/Payload" "$GITHUB_WORKSPACE/artifacts"
