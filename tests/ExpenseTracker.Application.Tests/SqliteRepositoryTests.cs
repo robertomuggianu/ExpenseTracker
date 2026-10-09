@@ -67,7 +67,7 @@ public sealed class SqliteRepositoryTests
             }
 
             using var check = new SQLiteConnection(path);
-            Assert.Equal(invalidData ? 2 : 4, check.ExecuteScalar<int>("PRAGMA user_version;"));
+            Assert.Equal(invalidData ? 2 : 5, check.ExecuteScalar<int>("PRAGMA user_version;"));
             Assert.Equal(1, check.ExecuteScalar<int>("SELECT COUNT(*) FROM Transactions;"));
             Assert.Equal(0, check.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE name = 'TransactionsV3';"));
             if (!invalidData)

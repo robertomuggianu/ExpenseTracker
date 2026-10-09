@@ -19,6 +19,8 @@ public partial class AppShell : Shell
         TransactionsContent.ContentTemplate = Resolve<TransactionsPage>(services);
         NewTransactionContent.ContentTemplate = Resolve<TransactionEditorPage>(services);
         StatisticsContent.ContentTemplate = Resolve<StatisticsPage>(services);
+        PlanningContent.ContentTemplate = Resolve<PlanningPage>(services);
+        AssistantContent.ContentTemplate = Resolve<AssistantPage>(services);
         MoreContent.ContentTemplate = Resolve<MorePage>(services);
         AccountsContent.ContentTemplate = Resolve<AccountsPage>(services);
         CategoriesContent.ContentTemplate = Resolve<CategoriesPage>(services);
@@ -37,7 +39,7 @@ public partial class AppShell : Shell
         try
         {
             var accounts = (await accountService.GetAccountsAsync()).Where(item => item.Account.IsActive).ToArray();
-            MenuBalance = "Saldo: " + MoneyFormatter.Format(accounts.Sum(item => item.CurrentBalance), CurrencySelection.SingleOrDefault(accounts.Select(item => item.Account.Currency)));
+            MenuBalance = accounts.Any(a => a.HasCurrencyMismatch) ? "Verifica le valute dei conti" : "Saldo: " + MoneyFormatter.Format(accounts.Sum(item => item.CurrentBalance), CurrencySelection.SingleOrDefault(accounts.Select(item => item.Account.Currency)));
         }
         catch (Exception exception)
         {

@@ -8,7 +8,7 @@ public static class FinancialAggregator
     {
         ArgumentNullException.ThrowIfNull(transactions);
 
-        var items = transactions.Where(item => range.Contains(item.OccurredAtUtc)).ToArray();
+        var items = transactions.Where(item => range.Contains(item.OccurredAtUtc) && item.TransferId is null).ToArray();
         return new PeriodTotals(
             items.Where(item => item.Type == TransactionType.Income).Sum(item => item.Amount),
             items.Where(item => item.Type == TransactionType.Expense).Sum(item => item.Amount));
@@ -29,7 +29,7 @@ public static class FinancialAggregator
 
         var categoryMap = categories.ToDictionary(item => item.Id);
         return transactions
-            .Where(item => item.Type == type && range.Contains(item.OccurredAtUtc))
+            .Where(item => item.Type == type && range.Contains(item.OccurredAtUtc) && item.TransferId is null)
             .GroupBy(item => item.CategoryId)
             .Select(group =>
             {
@@ -45,7 +45,7 @@ public static class FinancialAggregator
         ArgumentNullException.ThrowIfNull(transactions);
 
         return transactions
-            .Where(item => range.Contains(item.OccurredAtUtc))
+            .Where(item => range.Contains(item.OccurredAtUtc) && item.TransferId is null)
             .GroupBy(item => item.OccurredAtUtc.ToLocalTime().Date)
             .OrderBy(group => group.Key)
             .Select(group => new TrendPoint(

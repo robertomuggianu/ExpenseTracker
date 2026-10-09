@@ -10,7 +10,7 @@ public sealed class TransactionImportTests
     public async Task CsvImport_ReadsNativeExpenseTrackerExport()
     {
         const string csv = "Id;Data;Tipo;Conto;Categoria;Descrizione;Importo;Valuta;Note\n"
-                           + "1;2026-07-14T18:30:00Z;Uscita;Conto principale;Groceries;Spesa;25.78;EUR;Settimanale";
+                           + "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa;2026-07-14T18:30:00Z;Uscita;Conto principale;Groceries;Spesa;25.78;EUR;Settimanale";
         await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
         var parsed = await new TransactionImportParser().ParseAsync(stream, "movimenti.csv");
 
@@ -21,7 +21,7 @@ public sealed class TransactionImportTests
     }
 
     [Fact]
-    public async Task XlsxImport_ImportsIncomeExpensesAndTransferAdjustment_AndIsIdempotent()
+    public async Task XlsxImport_ImportsIncomeExpensesAndTransferPair_AndIsIdempotent()
     {
         var databasePath = Path.Combine(Path.GetTempPath(), $"expense-import-{Guid.NewGuid():N}.db3");
         try
@@ -32,16 +32,16 @@ public sealed class TransactionImportTests
 
             await using var firstStream = new MemoryStream(workbook);
             var first = await service.ImportAsync(firstStream, "backup.xlsx");
-            Assert.Equal(3, first.Created);
+            Assert.Equal(4, first.Created);
             Assert.Equal(0, first.Updated);
             Assert.Equal(0, first.SkippedTransfers);
-            Assert.Equal(1, first.AccountsCreated);
+            Assert.Equal(2, first.AccountsCreated);
 
             await using var secondStream = new MemoryStream(workbook);
             var second = await service.ImportAsync(secondStream, "backup.xlsx");
             Assert.Equal(0, second.Created);
-            Assert.Equal(3, second.Updated);
-            Assert.Equal(3, (await repository.GetTransactionsAsync()).Count);
+            Assert.Equal(4, second.Updated);
+            Assert.Equal(4, (await repository.GetTransactionsAsync()).Count);
         }
         finally
         {

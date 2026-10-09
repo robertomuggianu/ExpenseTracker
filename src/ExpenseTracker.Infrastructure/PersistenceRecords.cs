@@ -42,6 +42,7 @@ internal sealed class CategoryRecord
 [Table("Transactions")]
 internal sealed class TransactionRecord
 {
+    public string? TransferId { get; set; }
     [PrimaryKey]
     public string Id { get; set; } = string.Empty;
 
@@ -64,4 +65,11 @@ internal sealed class TransactionRecord
     public DateTime CreatedAtUtc { get; set; }
 
     public DateTime UpdatedAtUtc { get; set; }
+}
+
+[Table("AppState")]
+internal sealed class AppStateRecord
+{
+    [PrimaryKey] public string Key { get; set; } = string.Empty;
+    public string Value { get; set; } = string.Empty;
 }

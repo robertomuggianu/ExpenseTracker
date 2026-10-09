@@ -51,6 +51,7 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
         }
 
         BalanceCurrency = CurrencySelection.SingleOrDefault(Accounts.Where(item => item.Account.IsActive).Select(item => item.Account.Currency));
+        if (Accounts.Any(a => a.HasCurrencyMismatch)) ErrorMessage = "Il saldo esclude movimenti con valuta errata: correggili dalla lista Movimenti.";
         TotalBalance = Accounts.Where(item => item.Account.IsActive).Sum(item => item.CurrentBalance);
     }
 
@@ -71,7 +72,7 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
     {
         EditingId = summary.Account.Id;
         Name = summary.Account.Name;
-        OpeningBalance = summary.Account.OpeningBalance.ToString("0.00", CultureInfo.CurrentCulture);
+        OpeningBalance = summary.Account.OpeningBalance.ToString("0.00", CultureInfo.GetCultureInfo("it-IT"));
         Currency = summary.Account.Currency;
         IsPrimary = summary.Account.IsPrimary;
         IsActive = summary.Account.IsActive;
@@ -81,7 +82,7 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
     [RelayCommand]
     private Task SaveAsync() => RunAsync(async () =>
     {
-        if (!TryParseDecimal(OpeningBalance, out var balance))
+        if (!AmountParser.TryParse(OpeningBalance, out var balance))
         {
             throw new DomainValidationException("Inserisci un saldo iniziale valido.");
         }
@@ -117,8 +118,4 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
         await accountService.SetActiveAsync(summary.Account.Id, !summary.Account.IsActive);
         await LoadCoreAsync();
     });
-
-    private static bool TryParseDecimal(string value, out decimal result) =>
-        decimal.TryParse(value, NumberStyles.Number, CultureInfo.CurrentCulture, out result)
-        || decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out result);
 }

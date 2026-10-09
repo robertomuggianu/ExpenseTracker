@@ -20,20 +20,24 @@ public sealed class TransactionService(IExpenseRepository repository)
 
     public async Task<Transaction> SaveAsync(TransactionInput input, CancellationToken cancellationToken = default)
     {
+        var original = input.Id.HasValue ? await repository.GetTransactionAsync(input.Id.Value, cancellationToken) : null;
+        if (original?.TransferId is not null) throw new DomainValidationException("Per correggere un trasferimento, elimina la coppia e ricreala dalla sezione Trasferimenti.");
         var account = await repository.GetAccountAsync(input.AccountId, cancellationToken)
             ?? throw new DomainValidationException("Il conto selezionato non esiste.");
-        if (!account.IsActive)
+        if (!account.IsActive && original?.AccountId != account.Id)
         {
             throw new DomainValidationException("Il conto selezionato non è attivo.");
         }
 
         var category = await repository.GetCategoryAsync(input.CategoryId, cancellationToken)
             ?? throw new DomainValidationException("La categoria selezionata non esiste.");
-        if (!category.IsActive)
+        if (!category.IsActive && original?.CategoryId != category.Id)
         {
             throw new DomainValidationException("La categoria selezionata non è attiva.");
         }
 
+        if (!string.Equals(input.Currency.Trim(), account.Currency, StringComparison.OrdinalIgnoreCase))
+            throw new DomainValidationException("La valuta del movimento deve coincidere con quella del conto.");
         TransactionRules.EnsureCategoryCompatible(input.Type, category);
 
         var transaction = input.Id.HasValue
@@ -66,6 +70,8 @@ public sealed class TransactionService(IExpenseRepository repository)
         await repository.SaveTransactionAsync(transaction, cancellationToken);
         return transaction;
     }
+
+    public Task<IReadOnlyDictionary<Guid, int>> GetCategoryUsageAsync() => repository.GetCategoryUsageAsync();
 
     public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
         repository.DeleteTransactionAsync(id, cancellationToken);

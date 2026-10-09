@@ -4,8 +4,10 @@
     <VerticalStackLayout Padding="20,24" Spacing="18">
       <Label Text="Il tuo spazio" Style="{StaticResource PageTitle}"/>
       <Label Text="Personalizza le categorie e gestisci i tuoi dati." Style="{StaticResource MutedLabel}"/>
+      <Button Text="Assistente AI  ›" Style="{StaticResource SecondaryButton}" Clicked="OnAssistant"/>
       <Border Style="{StaticResource Card}">
         <VerticalStackLayout Spacing="12">
+          <Button Text="Budget, ricorrenze e trasferimenti  ›" Style="{StaticResource SecondaryButton}" Clicked="OnPlanning"/>
           <Label Text="Organizza" Style="{StaticResource SectionTitle}"/>
           <Button Text="Categorie e colori  ›" Style="{StaticResource SecondaryButton}" Clicked="OnCategories"/>
           <Button Text="Conti e saldi  ›" Style="{StaticResource SecondaryButton}" Clicked="OnAccounts"/>

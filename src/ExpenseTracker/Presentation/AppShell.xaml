@@ -34,13 +34,15 @@
             <Image Source="category_repeat.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
             <Button Grid.Column="1" Text="Esporta e importa" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Export" Clicked="OnNavigate"/>
           </Grid>
+          <Button Text="Budget, ricorrenze e trasferimenti" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Planning" Clicked="OnNavigate"/>
+          <Button Text="Assistente AI" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Assistant" Clicked="OnNavigate"/>
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
             <Image Source="tab_plus.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
             <Button Grid.Column="1" Text="Nuovo movimento" Style="{StaticResource DrawerButton}" CommandParameter="//Main/NewTransaction" Clicked="OnNavigate"/>
           </Grid>
         </VerticalStackLayout>
       </ScrollView>
-      <Label Grid.Row="2" Text="Il tuo bilancio, con calma. · v1.2" TextColor="{StaticResource DarkTextMuted}" FontSize="11"/>
+      <Label Grid.Row="2" Text="Il tuo bilancio, con calma. · v1.4" TextColor="{StaticResource DarkTextMuted}" FontSize="11"/>
     </Grid>
   </Shell.FlyoutContent>
   <FlyoutItem Route="Main" Title="ExpenseTracker" Shell.TabBarIsVisible="False">
@@ -51,6 +53,8 @@
     <Tab Title="Categorie" Route="Categories"><ShellContent x:Name="CategoriesContent"/></Tab>
     <Tab Title="Esporta e importa" Route="Export"><ShellContent x:Name="ExportContent"/></Tab>
     <Tab Title="Nuovo movimento" Route="NewTransaction"><ShellContent x:Name="NewTransactionContent"/></Tab>
+    <Tab Title="Pianifica" Route="Planning"><ShellContent x:Name="PlanningContent"/></Tab>
+    <Tab Title="Assistente" Route="Assistant"><ShellContent x:Name="AssistantContent"/></Tab>
     <Tab Title="Altro" Route="More"><ShellContent x:Name="MoreContent"/></Tab>
   </FlyoutItem>
 </Shell>

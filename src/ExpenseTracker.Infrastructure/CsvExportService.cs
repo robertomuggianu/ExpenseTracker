@@ -14,11 +14,11 @@ public sealed record CsvTransactionRow(
     string? Description,
     decimal Amount,
     string Currency,
-    string? Notes);
+    string? Notes, Guid? TransferId = null);
 
 public static class CsvFormatter
 {
-    public const string Header = "Id;Data;Tipo;Conto;Categoria;Descrizione;Importo;Valuta;Note";
+    public const string Header = "Id;Data;Tipo;Conto;Categoria;Descrizione;Importo;Valuta;Note;TransferId";
 
     public static string Format(IEnumerable<CsvTransactionRow> rows)
     {
@@ -36,7 +36,8 @@ public static class CsvFormatter
                 row.Description ?? string.Empty,
                 row.Amount.ToString("0.00################", CultureInfo.InvariantCulture),
                 row.Currency,
-                row.Notes ?? string.Empty
+                row.Notes ?? string.Empty,
+                row.TransferId?.ToString("D") ?? string.Empty
             };
             builder.AppendLine(string.Join(';', values.Select(Escape)));
         }
@@ -75,7 +76,7 @@ public sealed class CsvExportService(IExpenseRepository repository) : ICsvExport
             item.Description,
             item.Amount,
             item.Currency,
-            item.Notes));
+            item.Notes, item.TransferId));
 
         var fileName = $"movimenti-{DateTime.UtcNow:yyyyMMdd-HHmmss}.csv";
         return new CsvExportResult(fileName, CsvFormatter.Format(rows));

@@ -5,13 +5,34 @@ using CommunityToolkit.Mvvm.Input;
 using ExpenseTracker.Application;
 using ExpenseTracker.Presentation.Services;
 using LiveChartsCore;
+using LiveChartsCore.Kernel;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
 namespace ExpenseTracker.Presentation.ViewModels;
 public partial class DashboardViewModel(ReportingService reportingService, IAppNavigationService navigation,
-    ICsvExportService csvExportService, IFileShareService fileShareService) : ViewModelBase
+    ICsvExportService csvExportService, IFileShareService fileShareService, AccountService accountService) : ViewModelBase
 {
+    public ObservableCollection<string> Currencies { get; } = [];
+    [ObservableProperty] public partial string SelectedCurrency { get; set; } = "EUR";
+    private bool loadingCurrencies;
+    private bool refreshPending;
+    private DateRange displayedRange;
+    [ObservableProperty] public partial string? BalanceWarning { get; set; }
+    partial void OnSelectedCurrencyChanged(string value) { if (!loadingCurrencies) { refreshPending = true; _ = LoadAsync(); } }
+    [RelayCommand] private Task OpenCategoryAsync(CategoryBreakdownItem item)
+    {
+        var range = displayedRange;
+        return navigation.GoToTransactionsAsync(new(range.FromUtc, range.ToUtcExclusive,
+            Type: IsIncomeSelected ? ExpenseTracker.Domain.TransactionType.Income : ExpenseTracker.Domain.TransactionType.Expense,
+            CategoryId: item.CategoryId, Currency: ReportCurrency));
+    }
+    [RelayCommand] private Task OpenChartAsync(IEnumerable<ChartPoint> points)
+    {
+        var series = points.FirstOrDefault()?.Context.Series;
+        var index = ChartSeries.ToList().FindIndex(s => ReferenceEquals(s, series));
+        return index >= 0 && index < CategoryBreakdown.Count ? OpenCategoryAsync(CategoryBreakdown[index]) : Task.CompletedTask;
+    }
     public ObservableCollection<TransactionListItem> RecentTransactions { get; } = [];
     public ObservableCollection<CategoryBreakdownItem> CategoryBreakdown { get; } = [];
     private IReadOnlyList<ExpenseGroup> expenseGroups = [];
@@ -43,7 +64,7 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
         CategoryBreakdown.Clear();
         foreach (var item in groups)
             CategoryBreakdown.Add(new CategoryBreakdownItem(item.Name, item.Color, $"category_{item.Icon}.png", item.Total,
-                ChartTotal == 0 ? "0%" : (item.Total / ChartTotal).ToString("P0", CultureInfo.GetCultureInfo("it-IT")), ReportCurrency));
+                ChartTotal == 0 ? "0%" : (item.Total / ChartTotal).ToString("P0", CultureInfo.GetCultureInfo("it-IT")), ReportCurrency, item.CategoryId));
         OnPropertyChanged(nameof(ChartTotal));
     }
     [ObservableProperty] public partial DateTime SelectedMonth { get; set; } = new(DateTime.Today.Year, DateTime.Today.Month, 1);
@@ -60,19 +81,31 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
     [ObservableProperty] public partial bool HasRecentTransactions { get; set; }
     public bool HasNoChartData => !HasChartData;
     public bool HasNoRecentTransactions => !HasRecentTransactions;
-    [RelayCommand] public Task LoadAsync() => RunAsync(LoadCoreAsync);
+    [RelayCommand] public Task LoadAsync() => RunAsync(async () =>
+    {
+        loadingCurrencies = true;
+        try { var accounts = await accountService.GetAccountsAsync(); Currencies.Clear(); foreach (var code in accounts.Select(a => a.Account.Currency).Distinct()) Currencies.Add(code); if (!Currencies.Contains(SelectedCurrency)) SelectedCurrency = Currencies.FirstOrDefault() ?? "EUR"; }
+        finally { loadingCurrencies = false; }
+        do { refreshPending = false; await LoadCoreAsync(); } while (refreshPending);
+    });
     private async Task LoadCoreAsync()
     {
-        var summary = await reportingService.GetDashboardAsync(MonthlyPeriods.FullMonth(SelectedMonth));
+        var month = SelectedMonth; var currency = SelectedCurrency;
+        var range = MonthlyPeriods.FullMonth(month);
+        var summary = await reportingService.GetDashboardAsync(range, currency: currency);
+        if (month != SelectedMonth || currency != SelectedCurrency) { refreshPending = true; return; }
+        displayedRange = range;
+        BalanceWarning = summary.BalanceWarning;
         BalanceCurrency = summary.BalanceCurrency;
         ReportCurrency = summary.ReportCurrency;
         TotalBalance = summary.ActiveAccountsBalance;
         Income = summary.Totals.Income;
         Expense = summary.Totals.Expense;
         Difference = summary.Totals.Difference;
-        var comparison = MonthlyPeriods.Comparison(SelectedMonth, DateTime.Today);
-        var current = await reportingService.GetAnalyticsAsync(comparison.Current);
-        var previous = await reportingService.GetAnalyticsAsync(comparison.Previous);
+        var comparison = MonthlyPeriods.Comparison(month, DateTime.Today);
+        var current = await reportingService.GetAnalyticsAsync(comparison.Current, currency: currency);
+        var previous = await reportingService.GetAnalyticsAsync(comparison.Previous, currency: currency);
+        if (month != SelectedMonth || currency != SelectedCurrency) { refreshPending = true; return; }
         var delta = current.Totals.Expense - previous.Totals.Expense;
         var period = comparison.Partial ? "allo stesso punto del mese scorso" : "al mese precedente";
         ComparisonText = current.ReportCurrency is not null && current.ReportCurrency == previous.ReportCurrency
@@ -86,19 +119,19 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
         foreach (var item in summary.RecentTransactions) RecentTransactions.Add(item);
         HasRecentTransactions = RecentTransactions.Count > 0;
     }
-    [RelayCommand] private Task PreviousMonthAsync() => RunAsync(async () => { SelectedMonth = SelectedMonth.AddMonths(-1); await LoadCoreAsync(); });
-    [RelayCommand] private Task NextMonthAsync() => RunAsync(async () => { SelectedMonth = SelectedMonth.AddMonths(1); await LoadCoreAsync(); });
-    [RelayCommand] private Task CurrentMonthAsync() => RunAsync(async () => { SelectedMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1); await LoadCoreAsync(); });
+    [RelayCommand] private Task PreviousMonthAsync() { SelectedMonth = SelectedMonth.AddMonths(-1); refreshPending = true; return LoadAsync(); }
+    [RelayCommand] private Task NextMonthAsync() { SelectedMonth = SelectedMonth.AddMonths(1); refreshPending = true; return LoadAsync(); }
+    [RelayCommand] private Task CurrentMonthAsync() { SelectedMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1); refreshPending = true; return LoadAsync(); }
     [RelayCommand] private Task ExportMonthAsync() => RunAsync(async () =>
     {
         var range = MonthlyPeriods.FullMonth(SelectedMonth);
         await fileShareService.ShareAsync(await csvExportService.ExportAsync(new TransactionFilter(range.FromUtc, range.ToUtcExclusive)));
     });
     [RelayCommand] private Task NewTransactionAsync() => navigation.GoToTransactionEditorAsync();
-    [RelayCommand] private Task ShowTransactionsAsync() => navigation.GoToTransactionsAsync();
+    [RelayCommand] private Task ShowTransactionsAsync() => navigation.GoToTransactionsAsync(new(displayedRange.FromUtc, displayedRange.ToUtcExclusive, Currency: ReportCurrency));
     partial void OnSelectedMonthChanged(DateTime value) => OnPropertyChanged(nameof(MonthLabel));
     partial void OnHasChartDataChanged(bool value) => OnPropertyChanged(nameof(HasNoChartData));
     partial void OnHasRecentTransactionsChanged(bool value) => OnPropertyChanged(nameof(HasNoRecentTransactions));
 }
 
-public sealed record CategoryBreakdownItem(string Name, string Color, string IconSource, decimal Total, string Percentage, string? Currency);
+public sealed record CategoryBreakdownItem(string Name, string Color, string IconSource, decimal Total, string Percentage, string? Currency, Guid CategoryId = default);

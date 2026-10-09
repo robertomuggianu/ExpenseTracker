@@ -1,6 +1,6 @@
 # ExpenseTracker
 
-ExpenseTracker è un'applicazione personale offline-first realizzata con .NET MAUI 10, C#, XAML e MVVM. Conti, categorie e movimenti restano nel database SQLite del dispositivo; non sono presenti backend, login o sincronizzazione cloud.
+ExpenseTracker è un'applicazione personale offline-first realizzata con .NET MAUI 10, C#, XAML e MVVM. Conti, categorie e movimenti restano nel database SQLite del dispositivo. L'assistente opzionale usa un servizio locale sul PC con Ollama, senza sincronizzazione cloud.
 
 ## Funzioni MVP
 
@@ -21,6 +21,7 @@ L'interfaccia usa un tema scuro con superfici arrotondate e accenti viola. Il co
 - `src/ExpenseTracker.Application`: casi d'uso, filtri, aggregazioni e contratti di persistenza/esportazione. Dipende solo da Domain.
 - `src/ExpenseTracker.Infrastructure`: repository SQLite, migrazione/seed e generatore CSV. Dipende da Application.
 - `src/ExpenseTracker`: host MAUI e layer Presentation con pagine XAML, ViewModel Toolkit, navigazione Shell e composizione DI.
+- `src/ExpenseTracker.AssistantServer`: servizio ASP.NET Core locale per i resoconti dell'assistente con Ollama.
 - `tests/ExpenseTracker.Application.Tests`: test xUnit delle regole, aggregazioni, CSV e inizializzazione SQLite.
 
 La direzione dei riferimenti è `Presentation -> Infrastructure/Application -> Domain`. Le ViewModel usano servizi applicativi e non eseguono query SQL.
@@ -39,15 +40,16 @@ Pacchetti principali:
 
 ## Database
 
-Il file `expense-tracker.db3` viene creato in `FileSystem.AppDataDirectory`. Lo schema versione 4 contiene:
+Il file `expense-tracker.db3` viene creato in `FileSystem.AppDataDirectory`. Lo schema versione 5 contiene:
 
 - `Accounts`;
 - `Categories`, con tipo, colore e icona;
-- `Transactions`, collegata a `Accounts` e `Categories`.
+- `Transactions`, collegata a `Accounts` e `Categories`, con collegamento dei trasferimenti;
+- `AppState`, per budget e ricorrenze.
 
 Gli importi sono salvati in centesimi interi e convertiti in `decimal` nel dominio. Le relazioni usano foreign key con eliminazione protetta. Un indice univoco parziale garantisce al massimo un conto principale. `PRAGMA user_version` abilita migrazioni incrementali future senza cancellare il database.
 
-L'inizializzazione aggiunge soltanto le categorie predefinite mancanti, riconoscendole per nome e tipo. I database precedenti vengono migrati automaticamente: ogni categoria conserva lo storico e acquisisce tipo e colore dal vecchio gruppo.
+L'inizializzazione aggiunge soltanto le categorie predefinite mancanti, riconoscendole per identificativi stabili anche dopo una rinomina. I database precedenti vengono migrati automaticamente: ogni categoria conserva lo storico e acquisisce tipo e colore dal vecchio gruppo.
 
 La migrazione alla versione 3 ripara i database nei quali i movimenti fanno ancora riferimento alla tabella temporanea `CategoriesV2`. Conserva i movimenti, verifica le relazioni e annulla la riparazione in caso di dati incoerenti. Le migrazioni 2 e 3 sono transazionali. Per aggiornare un dispositivo interessato, installare la nuova versione sopra quella esistente, senza disinstallare l'app.
 
@@ -115,3 +117,11 @@ Id;Data;Tipo;Conto;Categoria;Descrizione;Importo;Valuta;Note
 ```
 
 Virgolette, punti e virgola e ritorni a capo nei campi testuali vengono gestiti secondo le regole CSV.
+
+## Versione 1.3
+
+Funzioni, correzioni, verifiche e limiti sono descritti in [docs/versione-1.3.md](docs/versione-1.3.md).
+
+## Versione 1.4 · Assistente locale
+
+Resoconto del mese e confronto con i giorni corrispondenti del mese precedente, con totali calcolati in C#, collegamento a Ollama sul PC, chiave di accesso, annullamento e gestione offline. La procedura completa per avviare il servizio e collegare l'iPhone è in [docs/assistente-locale.md](docs/assistente-locale.md).

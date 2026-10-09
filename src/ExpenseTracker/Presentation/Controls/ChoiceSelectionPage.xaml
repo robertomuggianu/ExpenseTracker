@@ -10,11 +10,12 @@
                 BackgroundColor="{AppThemeBinding Light={StaticResource LightSurface}, Dark={StaticResource DarkSurface}}"
                 Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
                 StrokeShape="RoundRectangle 26">
-            <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12" MaximumHeightRequest="620">
+            <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="12" MaximumHeightRequest="620">
                 <Border WidthRequest="42" HeightRequest="4" Padding="0" HorizontalOptions="Center"
                         BackgroundColor="{StaticResource Gray500}" StrokeThickness="0" StrokeShape="RoundRectangle 2" />
                 <Label Grid.Row="1" Text="{Binding Title}" Style="{StaticResource SectionTitle}" />
-                <CollectionView Grid.Row="2" ItemsSource="{Binding Items}" SelectionMode="None" MaximumHeightRequest="450">
+                <SearchBar Grid.Row="2" Placeholder="Cerca" TextChanged="OnSearchChanged"/>
+                <CollectionView Grid.Row="3" ItemsSource="{Binding Items}" SelectionMode="None" MaximumHeightRequest="450">
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
                             <Border Padding="12,11" Margin="0,0,0,6" StrokeThickness="0"
@@ -33,7 +34,7 @@
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
-                <Button Grid.Row="3" Text="Annulla" Style="{StaticResource SecondaryButton}" Clicked="OnCancelClicked" />
+                <Button Grid.Row="4" Text="Annulla" Style="{StaticResource SecondaryButton}" Clicked="OnCancelClicked" />
             </Grid>
         </Border>
     </Grid>

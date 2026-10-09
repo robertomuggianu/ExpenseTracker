@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -8,6 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="LiveChartsCore.SkiaSharpView" Version="2.0.5" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -16,12 +18,22 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Compile Include="..\..\src\ExpenseTracker\Presentation\Services\PresentationContracts.cs" Link="Presentation\PresentationContracts.cs" />
+    <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\AssistantViewModel.cs" Link="Presentation\AssistantViewModel.cs" />
+    <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\ViewModelBase.cs" Link="Presentation\ViewModelBase.cs" />
+    <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\TransactionEditorViewModel.cs" Link="Presentation\TransactionEditorViewModel.cs" />
+    <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\TransactionsViewModel.cs" Link="Presentation\TransactionsViewModel.cs" />
+    <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\StatisticsViewModel.cs" Link="Presentation\StatisticsViewModel.cs" />
+    <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\DashboardViewModel.cs" Link="Presentation\DashboardViewModel.cs" />
+    <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\PlanningViewModel.cs" Link="Presentation\PlanningViewModel.cs" />
+    <Compile Include="..\..\src\ExpenseTracker\Presentation\Services\AmountParser.cs" Link="Presentation\AmountParser.cs" />
     <Compile Include="..\..\src\ExpenseTracker\Presentation\Services\MoneyFormatter.cs" Link="Presentation\MoneyFormatter.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ExpenseTracker.Application\ExpenseTracker.Application.csproj" />
     <ProjectReference Include="..\..\src\ExpenseTracker.Infrastructure\ExpenseTracker.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\ExpenseTracker.AssistantServer\ExpenseTracker.AssistantServer.csproj" />
   </ItemGroup>
 
 </Project>

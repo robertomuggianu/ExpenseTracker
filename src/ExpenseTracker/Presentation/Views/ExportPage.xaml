@@ -21,7 +21,7 @@
                                 <Label Text="Compatibile con Excel (.xlsx) e CSV." Style="{StaticResource MutedLabel}" FontSize="12" />
                             </VerticalStackLayout>
                         </Grid>
-                        <Label Text="Il formato dell'app precedente viene riconosciuto automaticamente. Conti e categorie mancanti vengono creati senza duplicare i movimenti già importati."
+                        <Label Text="Il formato dell'app precedente viene riconosciuto automaticamente. Conti e categorie mancanti vengono creati. La reimportazione dello stesso file conserva i movimenti; file esterni modificati possono produrre nuovi movimenti."
                                Style="{StaticResource MutedLabel}" FontSize="13" LineHeight="1.2" />
                         <Button Text="Scegli file e importa" Command="{Binding ImportCommand}" />
                         <Label Text="{Binding ImportSummary}" TextColor="{StaticResource Income}" FontAttributes="Bold" FontSize="12" />

@@ -4,17 +4,8 @@ namespace ExpenseTracker.Application;
 
 public sealed class AccountService(IExpenseRepository repository)
 {
-    public async Task<IReadOnlyList<AccountSummary>> GetAccountsAsync(CancellationToken cancellationToken = default)
-    {
-        var accounts = await repository.GetAccountsAsync(cancellationToken);
-        var transactions = await repository.GetTransactionsAsync(cancellationToken: cancellationToken);
-
-        return accounts
-            .OrderByDescending(item => item.IsPrimary)
-            .ThenBy(item => item.Name)
-            .Select(item => new AccountSummary(item, item.CalculateCurrentBalance(transactions)))
-            .ToArray();
-    }
+    public Task<IReadOnlyList<AccountSummary>> GetAccountsAsync(CancellationToken cancellationToken = default) =>
+        repository.GetAccountSummariesAsync(cancellationToken);
 
     public Task<Account?> GetAccountAsync(Guid id, CancellationToken cancellationToken = default) =>
         repository.GetAccountAsync(id, cancellationToken);
@@ -29,6 +20,9 @@ public sealed class AccountService(IExpenseRepository repository)
 
         if (input.Id.HasValue)
         {
+            if (!string.Equals(account.Currency, input.Currency.Trim(), StringComparison.OrdinalIgnoreCase)
+                && (await repository.GetTransactionsAsync(new TransactionFilter(AccountId: account.Id), cancellationToken)).Count > 0)
+                throw new DomainValidationException("Non puoi cambiare la valuta di un conto con movimenti. Crea un nuovo conto.");
             account.Update(input.Name, input.OpeningBalance, input.Currency);
         }
         else

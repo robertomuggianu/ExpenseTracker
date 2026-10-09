@@ -72,6 +72,7 @@
                                             <Label Grid.Row="1" Grid.Column="1" Text="{Binding Account.Currency, StringFormat='Valuta {0}'}" Style="{StaticResource MutedLabel}" FontSize="12" />
                                             <Label Grid.Row="1" Grid.Column="2" Text="Non attivo" TextColor="{StaticResource Expense}" FontSize="12" IsVisible="{Binding IsInactive}" />
                                         </Grid>
+                                        <Label Text="{Binding BalanceWarning}" TextColor="{StaticResource Expense}" IsVisible="{Binding HasCurrencyMismatch}"/>
                                         <BoxView HeightRequest="1" BackgroundColor="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" />
                                         <FlexLayout Direction="Row" Wrap="Wrap" JustifyContent="Start">
                                             <Button Text="Modifica" Style="{StaticResource TextButton}" Margin="0,0,6,0"

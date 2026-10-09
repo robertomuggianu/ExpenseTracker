@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui" x:Class="ExpenseTracker.Presentation.Views.StatisticsPage" Title="Statistiche">
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui" x:Class="ExpenseTracker.Presentation.Views.StatisticsPage" x:Name="Page" Title="Statistiche">
   <ScrollView>
     <VerticalStackLayout Spacing="0">
       <controls:PageHeader Heading="Statistiche" Subtitle="Uno sguardo al tuo bilancio"/>
@@ -14,6 +14,8 @@
               <controls:ChoiceField ItemsSource="{Binding Periods}" SelectedItem="{Binding SelectedPeriod}" DisplayMemberPath="Label" Title="Periodo"/>
               <controls:ChoiceField Grid.Column="1" ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount}" DisplayMemberPath="Name" Title="Conto"/>
             </Grid>
+            <controls:ChoiceField Title="Valuta del report" ItemsSource="{Binding Currencies}" SelectedItem="{Binding SelectedCurrency}"/>
+            <DatePicker IsVisible="{Binding IsReferencePeriod}" Date="{Binding ReferenceDate}"/>
             <Grid IsVisible="{Binding IsCustomPeriod}" ColumnDefinitions="*,*" ColumnSpacing="8">
               <Border Style="{StaticResource InputCard}">
                 <DatePicker Date="{Binding CustomFrom}"/>
@@ -74,8 +76,28 @@
         </Border>
         <Label Text="Distribuzione uscite" Style="{StaticResource SectionTitle}"/>
         <Border Style="{StaticResource Card}" Padding="10,16">
-          <lvc:PieChart BackgroundColor="{StaticResource DarkSurface}" Series="{Binding ExpenseSeries}" HeightRequest="300" LegendPosition="Bottom"/>
+          <VerticalStackLayout Spacing="14">
+              <controls:CategoryChart/>
+            <Label Text="Nessuna spesa in questo periodo" IsVisible="{Binding HasNoChartData}" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center"/>
+          </VerticalStackLayout>
         </Border>
+          <VerticalStackLayout BindableLayout.ItemsSource="{Binding CategoryBreakdown}" Spacing="10">
+            <BindableLayout.ItemTemplate>
+              <DataTemplate>
+                <Border Style="{StaticResource Card}" Padding="12,14">
+                  <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding Source={x:Reference Page}, Path=BindingContext.OpenCategoryCommand}" CommandParameter="{Binding .}"/></Border.GestureRecognizers>
+                  <Grid ColumnDefinitions="42,*,Auto,Auto" ColumnSpacing="10">
+                    <Border WidthRequest="42" HeightRequest="42" Padding="10" BackgroundColor="{Binding Color}" StrokeShape="Ellipse"><Image Source="{Binding IconSource}"/></Border>
+                    <Label Grid.Column="1" Text="{Binding Name}" FontSize="15" FontAttributes="Bold" VerticalTextAlignment="Center" LineBreakMode="TailTruncation"/>
+                    <Label Grid.Column="2" Text="{Binding Percentage}" Style="{StaticResource MutedLabel}" FontSize="13" VerticalTextAlignment="Center"/>
+                    <Label Grid.Column="3" FontSize="15" FontAttributes="Bold" VerticalTextAlignment="Center">
+                      <Label.Text><MultiBinding Converter="{StaticResource MoneyConverter}"><Binding Path="Total"/><Binding Path="Currency"/></MultiBinding></Label.Text>
+                    </Label>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </BindableLayout.ItemTemplate>
+          </VerticalStackLayout>
         <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
         <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
       </VerticalStackLayout>

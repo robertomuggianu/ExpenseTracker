@@ -14,6 +14,7 @@ public sealed record ChoiceSelectionItem(object Value, string Label, bool IsSele
 public partial class ChoiceSelectionPage : ContentPage
 {
     private static int _openCount;
+    private bool closing;
     private readonly TaskCompletionSource<(bool Accepted, object? Value)> _completion = new();
 
     public static bool IsOpen => Volatile.Read(ref _openCount) > 0;
@@ -50,11 +51,18 @@ public partial class ChoiceSelectionPage : ContentPage
         if (e.Parameter is ChoiceSelectionItem item) _ = CloseAsync(true, item.Value);
     }
 
+    private void OnSearchChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (BindingContext is not ChoiceSelectionModel model) return;
+        model.Items.Clear();
+        foreach (var item in model.Source.Where(i => i.Label.Contains(e.NewTextValue ?? "", StringComparison.OrdinalIgnoreCase))) model.Items.Add(item);
+    }
     private void OnCancelClicked(object? sender, EventArgs e) => _ = CloseAsync(false, null);
 
     private async Task CloseAsync(bool accepted, object? value)
     {
-        if (_completion.Task.IsCompleted) return;
+        if (closing || _completion.Task.IsCompleted) return;
+        closing = true;
         await Shell.Current.Navigation.PopModalAsync(false);
         _completion.TrySetResult((accepted, value));
     }

@@ -13,12 +13,6 @@ public abstract partial class ViewModelBase : ObservableObject
     [ObservableProperty]
     public partial string? ErrorMessage { get; set; }
 
-    [RelayCommand]
-    private void OpenMenu() => Shell.Current.FlyoutIsPresented = true;
-
-    [RelayCommand]
-    private Task BackAsync() => Shell.Current.GoToAsync("..");
-
     protected async Task RunAsync(Func<Task> action)
     {
         if (IsBusy)
@@ -54,7 +48,9 @@ public sealed record PeriodOption(DateRangePreset Value, string Label)
         new(DateRangePreset.CurrentWeek, "Settimana corrente"),
         new(DateRangePreset.CurrentMonth, "Mese corrente"),
         new(DateRangePreset.CurrentYear, "Anno corrente"),
-        new(DateRangePreset.Custom, "Periodo personalizzato")
+        new(DateRangePreset.Custom, "Periodo personalizzato"),
+        new(DateRangePreset.SelectedMonth, "Mese scelto"),
+        new(DateRangePreset.SelectedYear, "Anno scelto")
     ];
 }
 
