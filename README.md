@@ -10,10 +10,10 @@ ExpenseTracker è un'applicazione personale offline-first realizzata con .NET MA
 - schermata Mese con navigazione tra mesi e confronto delle spese con il mese precedente;
 - statistiche per settimana, mese, anno o periodo personalizzato, grafici a ciambella e andamento giornaliero/mensile con LiveCharts2;
 - inserimento rapido con le categorie più usate, conto principale preselezionato e dettagli facoltativi;
-- cronologia raggruppata per giorno e navigazione in basso: Mese, Movimenti, Aggiungi, Analisi, Altro;
+- cronologia raggruppata per giorno, ricerca e filtri automatici, navigazione dal menu laterale;
 - esportazione CSV completa, filtrata o del mese selezionato e importazione CSV/XLSX.
 
-L'interfaccia usa un tema scuro con superfici arrotondate e accenti viola. Il colore di ogni categoria è condiviso tra selezione, movimenti e grafici. Per il mese corrente il confronto usa i giorni trascorsi in entrambi i mesi; per un mese passato usa i due mesi completi.
+L'interfaccia usa un tema scuro verde petrolio con superfici arrotondate, accenti menta e il pulsante di aggiunta ambrato. Il colore di ogni categoria è condiviso tra selezione, movimenti e grafici. Per il mese corrente il confronto usa i giorni trascorsi in entrambi i mesi; per un mese passato usa i due mesi completi.
 
 ## Architettura
 
@@ -125,3 +125,7 @@ Funzioni, correzioni, verifiche e limiti sono descritti in [docs/versione-1.3.md
 ## Versione 1.4 · Assistente locale
 
 Resoconto del mese e confronto con i giorni corrispondenti del mese precedente, con totali calcolati in C#, collegamento a Ollama sul PC, chiave di accesso, annullamento e gestione offline. La procedura completa per avviare il servizio e collegare l'iPhone è in [docs/assistente-locale.md](docs/assistente-locale.md).
+
+## Versione 1.4.1 · Interfaccia e stabilità
+
+Home semplificata, lista Movimenti ridisegnata, testate unificate e comandi di Pianifica rivisti. Correzioni e controlli sull'iPhone sono descritti in [docs/versione-1.4.1.md](docs/versione-1.4.1.md).

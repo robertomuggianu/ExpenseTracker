@@ -11,7 +11,7 @@ using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
 namespace ExpenseTracker.Presentation.ViewModels;
 public partial class DashboardViewModel(ReportingService reportingService, IAppNavigationService navigation,
-    ICsvExportService csvExportService, IFileShareService fileShareService, AccountService accountService) : ViewModelBase
+    AccountService accountService) : ViewModelBase
 {
     public ObservableCollection<string> Currencies { get; } = [];
     [ObservableProperty] public partial string SelectedCurrency { get; set; } = "EUR";
@@ -33,7 +33,6 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
         var index = ChartSeries.ToList().FindIndex(s => ReferenceEquals(s, series));
         return index >= 0 && index < CategoryBreakdown.Count ? OpenCategoryAsync(CategoryBreakdown[index]) : Task.CompletedTask;
     }
-    public ObservableCollection<TransactionListItem> RecentTransactions { get; } = [];
     public ObservableCollection<CategoryBreakdownItem> CategoryBreakdown { get; } = [];
     private IReadOnlyList<ExpenseGroup> expenseGroups = [];
     private IReadOnlyList<ExpenseGroup> incomeGroups = [];
@@ -78,9 +77,7 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
     [ObservableProperty] public partial string ComparisonText { get; set; } = string.Empty;
     [ObservableProperty] public partial IEnumerable<ISeries> ChartSeries { get; set; } = [];
     [ObservableProperty] public partial bool HasChartData { get; set; }
-    [ObservableProperty] public partial bool HasRecentTransactions { get; set; }
     public bool HasNoChartData => !HasChartData;
-    public bool HasNoRecentTransactions => !HasRecentTransactions;
     [RelayCommand] public Task LoadAsync() => RunAsync(async () =>
     {
         loadingCurrencies = true;
@@ -115,23 +112,13 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
         expenseGroups = summary.ExpensesByCategory;
         incomeGroups = summary.IncomeByCategory;
         UpdateChart();
-        RecentTransactions.Clear();
-        foreach (var item in summary.RecentTransactions) RecentTransactions.Add(item);
-        HasRecentTransactions = RecentTransactions.Count > 0;
     }
     [RelayCommand] private Task PreviousMonthAsync() { SelectedMonth = SelectedMonth.AddMonths(-1); refreshPending = true; return LoadAsync(); }
     [RelayCommand] private Task NextMonthAsync() { SelectedMonth = SelectedMonth.AddMonths(1); refreshPending = true; return LoadAsync(); }
     [RelayCommand] private Task CurrentMonthAsync() { SelectedMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1); refreshPending = true; return LoadAsync(); }
-    [RelayCommand] private Task ExportMonthAsync() => RunAsync(async () =>
-    {
-        var range = MonthlyPeriods.FullMonth(SelectedMonth);
-        await fileShareService.ShareAsync(await csvExportService.ExportAsync(new TransactionFilter(range.FromUtc, range.ToUtcExclusive)));
-    });
     [RelayCommand] private Task NewTransactionAsync() => navigation.GoToTransactionEditorAsync();
-    [RelayCommand] private Task ShowTransactionsAsync() => navigation.GoToTransactionsAsync(new(displayedRange.FromUtc, displayedRange.ToUtcExclusive, Currency: ReportCurrency));
     partial void OnSelectedMonthChanged(DateTime value) => OnPropertyChanged(nameof(MonthLabel));
     partial void OnHasChartDataChanged(bool value) => OnPropertyChanged(nameof(HasNoChartData));
-    partial void OnHasRecentTransactionsChanged(bool value) => OnPropertyChanged(nameof(HasNoRecentTransactions));
 }
 
 public sealed record CategoryBreakdownItem(string Name, string Color, string IconSource, decimal Total, string Percentage, string? Currency, Guid CategoryId = default);

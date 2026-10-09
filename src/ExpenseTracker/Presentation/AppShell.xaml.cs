@@ -56,5 +56,11 @@ public partial class AppShell : Shell
     }
 
     private static DataTemplate Resolve<TPage>(IServiceProvider services) where TPage : Page =>
-        new(() => services.GetRequiredService<TPage>());
+        new(() =>
+        {
+            var page = services.GetRequiredService<TPage>();
+            // Apply to the resolved page: a setting on Shell alone is not sufficient on every platform.
+            Shell.SetNavBarIsVisible(page, false);
+            return page;
+        });
 }

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ExpenseTracker.Application;
@@ -25,6 +26,12 @@ public sealed record BudgetItem(BudgetProgress Item)
 public partial class PlanningViewModel(PlanningService planning, TransferService transfers, AccountService accounts,
     CategoryService categories, IUserDialogService dialogs) : ViewModelBase
 {
+    public bool CanInteract => !IsBusy;
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.PropertyName == nameof(IsBusy)) OnPropertyChanged(nameof(CanInteract));
+    }
     public ObservableCollection<AccountSummary> Accounts { get; } = [];
     public ObservableCollection<Category> Categories { get; } = [];
     public ObservableCollection<Category> ExpenseCategories { get; } = [];
@@ -65,9 +72,14 @@ public partial class PlanningViewModel(PlanningService planning, TransferService
     [RelayCommand] public Task LoadAsync() => RunAsync(async () =>
     {
         var accountId = RuleAccount?.Account.Id;
+        var sourceId = SourceAccount?.Account.Id;
+        var destinationId = DestinationAccount?.Account.Id;
         Accounts.Clear(); foreach (var a in await accounts.GetAccountsAsync()) if (a.Account.IsActive) Accounts.Add(a);
-        RuleAccount = Accounts.FirstOrDefault(a => a.Account.Id == accountId) ?? Accounts.FirstOrDefault();
-        SourceAccount ??= RuleAccount;
+        RuleAccount = accountId.HasValue ? Accounts.FirstOrDefault(a => a.Account.Id == accountId)
+            : editingRule is not null ? Accounts.FirstOrDefault(a => a.Account.Id == editingRule.AccountId)
+            : Accounts.FirstOrDefault(a => a.Account.IsPrimary) ?? Accounts.FirstOrDefault();
+        SourceAccount = sourceId.HasValue ? Accounts.FirstOrDefault(a => a.Account.Id == sourceId) : RuleAccount;
+        DestinationAccount = destinationId.HasValue ? Accounts.FirstOrDefault(a => a.Account.Id == destinationId) : null;
         Currencies.Clear(); foreach (var code in Accounts.Select(a => a.Account.Currency).Distinct()) Currencies.Add(code);
         if (!Currencies.Contains(BudgetCurrency)) BudgetCurrency = Currencies.FirstOrDefault() ?? "EUR";
         var categoryId = RuleCategory?.Id; var budgetCategoryId = BudgetCategory?.Id;
@@ -113,7 +125,13 @@ public partial class PlanningViewModel(PlanningService planning, TransferService
     [RelayCommand] private Task ConfirmRuleAsync(RuleItem item) => RunAsync(async () => { await planning.ConfirmAsync(item.Rule.Id, item.Rule.NextDate, DateTime.Today); StatusMessage = "Movimento registrato."; await RefreshAsync(); });
     [RelayCommand] private Task SkipRuleAsync(RuleItem item) => RunAsync(async () => { if (await dialogs.ConfirmAsync("Salta scadenza", $"Saltare il {item.Rule.NextDate:dd/MM/yyyy} senza registrare movimenti?", "Salta", "Annulla")) { await planning.SkipAsync(item.Rule.Id, item.Rule.NextDate); await RefreshAsync(); } });
     [RelayCommand] private Task PauseRuleAsync(RuleItem item) => RunAsync(async () => { await planning.SetRuleActiveAsync(item.Rule.Id, !item.Rule.IsActive); await RefreshAsync(); });
-    [RelayCommand] private Task RemoveRuleAsync(RuleItem item) => RunAsync(async () => { if (await dialogs.ConfirmAsync("Elimina ricorrenza", "I movimenti già confermati resteranno nello storico.", "Elimina", "Annulla")) { await planning.RemoveRuleAsync(item.Rule.Id); await RefreshAsync(); } });
+    [RelayCommand] private Task RemoveRuleAsync(RuleItem item) => RunAsync(async () =>
+    {
+        if (!await dialogs.ConfirmAsync("Elimina ricorrenza", "I movimenti già confermati resteranno nello storico.", "Elimina", "Annulla")) return;
+        await planning.RemoveRuleAsync(item.Rule.Id);
+        if (editingRule?.Id == item.Rule.Id) { editingRule = null; IsRuleEditorVisible = false; OnPropertyChanged(nameof(CanChangeSchedule)); }
+        await RefreshAsync();
+    });
     [RelayCommand] private Task SaveTransferAsync() => RunAsync(async () =>
     {
         if (SourceAccount is null || DestinationAccount is null || !AmountParser.TryParse(TransferAmount, out var amount)) throw new DomainValidationException("Completa conti e importo del trasferimento.");

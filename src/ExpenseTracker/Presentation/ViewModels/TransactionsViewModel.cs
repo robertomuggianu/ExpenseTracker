@@ -14,6 +14,7 @@ public partial class TransactionsViewModel(TransactionService transactionService
     private int filterVersion;
     private int visibleCount = 100;
     private int searchVersion;
+    private bool loadRequested;
     public IReadOnlyList<PeriodOption> Periods => PeriodOption.All;
     public IReadOnlyList<TransactionTypeOption> Types => TransactionTypeOption.Optional;
     public ObservableCollection<AccountFilterOption> Accounts { get; } = [];
@@ -21,6 +22,12 @@ public partial class TransactionsViewModel(TransactionService transactionService
     public ObservableCollection<string> Currencies { get; } = [];
     public ObservableCollection<TransactionListItem> Transactions { get; } = [];
     public ObservableCollection<TransactionDayGroup> Groups { get; } = [];
+    public ObservableCollection<VisibleCurrencyTotals> VisibleTotals { get; } = [];
+    public bool HasVisibleTotals => VisibleTotals.Count > 0;
+    public bool HasStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
+    public bool HasSearch => !string.IsNullOrWhiteSpace(SearchText);
+    public string FiltersToggleLabel => FiltersVisible ? "Chiudi filtri ⌃" : "Filtri ⌄";
+    public string VisibleCountLabel => $"{Transactions.Count} movimenti" + (HasMore ? " · altri disponibili" : "");
     [ObservableProperty] public partial bool FiltersVisible { get; set; }
     [ObservableProperty] public partial PeriodOption SelectedPeriod { get; set; } = PeriodOption.All[1];
     [ObservableProperty] public partial DateTime CustomFrom { get; set; } = DateTime.Today.AddMonths(-1);
@@ -33,13 +40,30 @@ public partial class TransactionsViewModel(TransactionService transactionService
     [ObservableProperty] public partial string SearchText { get; set; } = "";
     [ObservableProperty] public partial string FilterSummary { get; set; } = "";
     [ObservableProperty] public partial string? StatusMessage { get; set; }
-    [ObservableProperty] public partial string TotalsLabel { get; set; } = "";
     [ObservableProperty] public partial bool HasMore { get; set; }
     [ObservableProperty] public partial TransactionListItem? SelectedTransaction { get; set; }
     [ObservableProperty] public partial bool HasSelectedTransaction { get; set; }
     public bool IsCustomPeriod => SelectedPeriod.Value == DateRangePreset.Custom;
     public bool IsReferencePeriod => SelectedPeriod.Value is DateRangePreset.SelectedMonth or DateRangePreset.SelectedYear;
     [RelayCommand] private void ToggleFilters() => FiltersVisible = !FiltersVisible;
+    partial void OnFiltersVisibleChanged(bool value) => OnPropertyChanged(nameof(FiltersToggleLabel));
+    partial void OnStatusMessageChanged(string? value) => OnPropertyChanged(nameof(HasStatusMessage));
+    [RelayCommand] private void ClearSearch() => SearchText = "";
+    [RelayCommand] private Task ResetFiltersAsync()
+    {
+        loadingFilters = true;
+        try
+        {
+            SelectedPeriod = Periods.Single(p => p.Value == DateRangePreset.CurrentMonth);
+            SelectedAccount = Accounts.FirstOrDefault(a => a.Id is null);
+            SelectedCategory = Categories.FirstOrDefault(c => c.Id is null);
+            SelectedType = Types[0]; SelectedCurrency = "Tutte le valute"; SearchText = "";
+            SelectedTransaction = null; ++searchVersion;
+        }
+        finally { loadingFilters = false; }
+        ++filterVersion; visibleCount = 100;
+        return ApplyFiltersAsync();
+    }
     [RelayCommand] private void CloseDetail() => SelectedTransaction = null;
     [RelayCommand] private void ShowDetail(TransactionListItem item) => SelectedTransaction = item;
     [RelayCommand] private Task EditAsync(TransactionListItem item) => navigation.GoToTransactionEditorAsync(item.Transaction.Id);
@@ -54,12 +78,17 @@ public partial class TransactionsViewModel(TransactionService transactionService
     partial void OnCustomFromChanged(DateTime value) { if (IsCustomPeriod) RequestRefresh(); }
     partial void OnCustomToChanged(DateTime value) { if (IsCustomPeriod) RequestRefresh(); }
     partial void OnReferenceDateChanged(DateTime value) { if (IsReferencePeriod) RequestRefresh(); }
-    partial void OnSearchTextChanged(string value) { var version = ++searchVersion; _ = DebounceSearchAsync(version); }
+    partial void OnSearchTextChanged(string value) { OnPropertyChanged(nameof(HasSearch)); var version = ++searchVersion; _ = DebounceSearchAsync(version); }
     private async Task DebounceSearchAsync(int version) { await Task.Delay(250); if (version == searchVersion) RequestRefresh(); }
     private void RequestRefresh() { filterVersion++; visibleCount = 100; if (!loadingFilters) _ = ApplyFiltersAsync(); }
     [RelayCommand] private Task ApplyFiltersAsync() => RunAsync(LoadLatestAsync);
     [RelayCommand] private Task LoadMoreAsync() => RunAsync(async () => { visibleCount += 100; await LoadLatestAsync(); });
-    [RelayCommand] public Task LoadAsync() => RunAsync(async () =>
+    [RelayCommand] public Task LoadAsync()
+    {
+        loadRequested = true;
+        return RunAsync(LoadLatestAsync);
+    }
+    private async Task LoadOptionsAsync()
     {
         StatusMessage = requests.Message; requests.Message = null;
         loadingFilters = true;
@@ -74,6 +103,7 @@ public partial class TransactionsViewModel(TransactionService transactionService
             if (requests.Filter is { } pending)
             {
                 requests.Filter = null;
+                visibleCount = 100;
                 SelectedPeriod = Periods.Single(p => p.Value == DateRangePreset.Custom);
                 CustomFrom = pending.FromUtc?.ToLocalTime().Date ?? DateTime.Today;
                 CustomTo = pending.ToUtcExclusive?.ToLocalTime().AddDays(-1).Date ?? DateTime.Today;
@@ -84,22 +114,25 @@ public partial class TransactionsViewModel(TransactionService transactionService
             }
         }
         finally { loadingFilters = false; }
-        await LoadLatestAsync();
-    });
+    }
     private async Task LoadLatestAsync()
     {
         int version;
-        do { version = filterVersion; await LoadCoreAsync(version); } while (version != filterVersion);
+        do
+        {
+            if (loadRequested) { loadRequested = false; await LoadOptionsAsync(); }
+            version = filterVersion; await LoadCoreAsync(version);
+        } while (loadRequested || version != filterVersion);
     }
     private async Task LoadCoreAsync(int version)
     {
         if (IsCustomPeriod && CustomFrom.Date > CustomTo.Date)
-        { Groups.Clear(); Transactions.Clear(); SelectedTransaction = null; TotalsLabel = ""; FilterSummary = "Intervallo non valido"; HasMore = false; throw new DomainValidationException("La data iniziale deve precedere quella finale."); }
+        { Groups.Clear(); Transactions.Clear(); VisibleTotals.Clear(); HasMore = false; OnPropertyChanged(nameof(HasVisibleTotals)); OnPropertyChanged(nameof(VisibleCountLabel)); SelectedTransaction = null; FilterSummary = "Intervallo non valido"; throw new DomainValidationException("La data iniziale deve precedere quella finale."); }
         var range = DateRangeFactory.Create(SelectedPeriod.Value, IsReferencePeriod ? ReferenceDate : DateTime.Now, CustomFrom, CustomTo);
         var filter = new TransactionFilter(range.FromUtc, range.ToUtcExclusive, SelectedAccount?.Id, SelectedType.Value, SelectedCategory?.Id,
             SearchText, SelectedCurrency == "Tutte le valute" ? null : SelectedCurrency, visibleCount + 1);
         var items = await transactionService.GetTransactionsAsync(filter);
-        if (version != filterVersion) return;
+        if (version != filterVersion || loadRequested) return;
         HasMore = items.Count > visibleCount;
         var displayed = items.Take(visibleCount).ToArray();
         var selectedId = SelectedTransaction?.Transaction.Id;
@@ -107,9 +140,10 @@ public partial class TransactionsViewModel(TransactionService transactionService
         Groups.Clear(); foreach (var group in displayed.GroupBy(i => i.LocalDate.Date).OrderByDescending(g => g.Key)) Groups.Add(new(group.Key, group));
         SelectedTransaction = displayed.FirstOrDefault(i => i.Transaction.Id == selectedId);
         FilterSummary = $"{range.FromUtc.ToLocalTime():dd/MM/yyyy} – {range.ToUtcExclusive.ToLocalTime().AddDays(-1):dd/MM/yyyy} · {SelectedAccount?.Name} · {SelectedType.Label} · {SelectedCategory?.Name} · {SelectedCurrency}";
-        TotalsLabel = $"{displayed.Length} movimenti visualizzati" + (HasMore ? " · altri disponibili" : "") + "\n" +
-            string.Join(" · ", displayed.Where(i => i.Transaction.TransferId is null).GroupBy(i => i.Transaction.Currency)
-                .Select(g => $"{g.Key}: entrate {MoneyFormatter.Format(g.Where(i => i.SignedAmount > 0).Sum(i => i.SignedAmount), g.Key)}, spese {MoneyFormatter.Format(-g.Where(i => i.SignedAmount < 0).Sum(i => i.SignedAmount), g.Key)}"));
+        VisibleTotals.Clear();
+        foreach (var group in displayed.Where(i => i.Transaction.TransferId is null).GroupBy(i => i.Transaction.Currency).OrderBy(g => g.Key))
+            VisibleTotals.Add(new(group.Key, group.Where(i => i.SignedAmount > 0).Sum(i => i.SignedAmount), -group.Where(i => i.SignedAmount < 0).Sum(i => i.SignedAmount)));
+        OnPropertyChanged(nameof(VisibleCountLabel)); OnPropertyChanged(nameof(HasVisibleTotals));
     }
     [RelayCommand] private Task DeleteAsync(TransactionListItem item) => RunAsync(async () =>
     {
@@ -117,6 +151,13 @@ public partial class TransactionsViewModel(TransactionService transactionService
         if (!await dialogs.ConfirmAsync("Elimina movimento", message, "Elimina", "Annulla")) return;
         await transactionService.DeleteAsync(item.Transaction.Id); SelectedTransaction = null; await LoadLatestAsync();
     });
+}
+public sealed record VisibleCurrencyTotals(string Currency, decimal Income, decimal Expense)
+{
+    public string IncomeHeading => $"Entrate · {Currency}";
+    public string ExpenseHeading => $"Spese · {Currency}";
+    public string IncomeLabel => MoneyFormatter.Format(Income, Currency);
+    public string ExpenseLabel => MoneyFormatter.Format(Expense, Currency);
 }
 public sealed class TransactionDayGroup(DateTime date, IEnumerable<TransactionListItem> items) : ObservableCollection<TransactionListItem>(items)
 {

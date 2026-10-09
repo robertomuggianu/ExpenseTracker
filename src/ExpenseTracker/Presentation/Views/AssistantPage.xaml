@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+<ContentPage Shell.NavBarIsVisible="False" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
              x:Class="ExpenseTracker.Presentation.Views.AssistantPage" Title="Assistente">
   <ScrollView x:Name="ConversationScroll">
-    <VerticalStackLayout Padding="18,16,18,40" Spacing="14">
+    <VerticalStackLayout Spacing="0">
       <controls:PageHeader Heading="Assistente" Subtitle="Un resoconto delle tue spese"/>
+      <VerticalStackLayout Padding="18,18,18,40" Spacing="14">
       <Label Text="Il PC deve essere acceso e sulla stessa rete Wi-Fi. Al modello inviamo totali e categorie: controlla sempre i dati sotto il resoconto." Style="{StaticResource MutedLabel}"/>
       <Border Style="{StaticResource Card}">
         <VerticalStackLayout Spacing="10" IsEnabled="{Binding CanInteract}">
@@ -42,6 +43,7 @@
         <BindableLayout.EmptyView><Label Text="Scegli un resoconto per iniziare. La conversazione resta disponibile durante questa sessione." Style="{StaticResource MutedLabel}"/></BindableLayout.EmptyView>
       </VerticalStackLayout>
       <Button Text="Svuota conversazione" Command="{Binding ClearConversationCommand}" IsEnabled="{Binding CanInteract}" Style="{StaticResource TextButton}"/>
+      </VerticalStackLayout>
     </VerticalStackLayout>
   </ScrollView>
 </ContentPage>

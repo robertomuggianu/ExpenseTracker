@@ -36,9 +36,18 @@ public sealed class PlanningService(IExpenseRepository repository)
         try
         {
             if (string.IsNullOrWhiteSpace(rule.Name)) throw new DomainValidationException("Inserisci il nome della ricorrenza.");
+            if (rule.Id == Guid.Empty || !Enum.IsDefined(rule.Frequency) || rule.NextIndex < 0)
+                throw new DomainValidationException("La ricorrenza contiene un calendario non valido.");
             await ValidateAsync(rule.AccountId, rule.CategoryId, rule.Type, rule.Currency);
             if (rule.Amount <= 0 || decimal.Round(rule.Amount, 2) != rule.Amount) throw new DomainValidationException("Inserisci un importo positivo con al massimo due decimali.");
             var state = await GetAsync();
+            if (state.Rules.FirstOrDefault(r => r.Id == rule.Id) is { } existing)
+            {
+                if (existing.StartDate != rule.StartDate || existing.Frequency != rule.Frequency)
+                    throw new DomainValidationException("Per cambiare il calendario, sospendi la ricorrenza e creane una nuova.");
+                // A form opened before confirmation/pause must not rewind or reactivate the rule.
+                rule = rule with { NextIndex = existing.NextIndex, IsActive = existing.IsActive };
+            }
             state.Rules.RemoveAll(r => r.Id == rule.Id);
             state.Rules.Add(rule);
             await repository.SaveStateAsync(Key, JsonSerializer.Serialize(state));

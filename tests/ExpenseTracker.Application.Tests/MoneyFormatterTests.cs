@@ -5,6 +5,18 @@ namespace ExpenseTracker.Application.Tests;
 
 public sealed class MoneyFormatterTests
 {
+    [Fact]
+    public void DefaultFormatting_UsesItalianDecimalsOnEnglishDevices()
+    {
+        var previous = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
+            Assert.Contains("1.234,56", MoneyFormatter.Format(1234.56m, "EUR"));
+        }
+        finally { CultureInfo.CurrentCulture = previous; }
+    }
+
     [Theory]
     [InlineData("en-GB", "EUR", "€", "£")]
     [InlineData("it-IT", "GBP", "£", "€")]
