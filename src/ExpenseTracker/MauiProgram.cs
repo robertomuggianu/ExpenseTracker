@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 
 using ExpenseTracker.Application;
 using ExpenseTracker.Infrastructure;
@@ -31,14 +31,25 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IExpenseRepository>(_ =>
 			new SqliteExpenseRepository(Path.Combine(FileSystem.AppDataDirectory, "expense-tracker.db3")));
 		builder.Services.AddSingleton<AccountService>();
+        builder.Services.AddSingleton<PlanningService>();
+        builder.Services.AddSingleton<TransferService>();
+        builder.Services.AddTransient<PlanningViewModel>();
+        builder.Services.AddTransient<PlanningPage>();
 		builder.Services.AddSingleton<CategoryService>();
 		builder.Services.AddSingleton<TransactionService>();
 		builder.Services.AddSingleton<ReportingService>();
+		builder.Services.AddSingleton<AssistantReportService>();
+		builder.Services.AddSingleton<IAssistantSettings, AssistantSettings>();
+		builder.Services.AddSingleton<IAssistantClient>(_ => new AssistantClient(new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = Timeout.InfiniteTimeSpan }));
+		builder.Services.AddTransient<AssistantViewModel>();
+		builder.Services.AddTransient<AssistantPage>();
 		builder.Services.AddSingleton<ICsvExportService, CsvExportService>();
 		builder.Services.AddSingleton<ITransactionImportParser, TransactionImportParser>();
 		builder.Services.AddSingleton<TransactionImportService>();
 		builder.Services.AddSingleton<IUserDialogService, UserDialogService>();
-		builder.Services.AddSingleton<IAppNavigationService, AppNavigationService>();
+		builder.Services.AddSingleton<IAppPreferences, AppPreferences>();
+        builder.Services.AddSingleton<NavigationRequests>();
+        builder.Services.AddSingleton<IAppNavigationService, AppNavigationService>();
 		builder.Services.AddSingleton<IFileShareService, FileShareService>();
 		builder.Services.AddSingleton<IImportFilePickerService, ImportFilePickerService>();
 

@@ -16,7 +16,7 @@ public partial class ExportViewModel(
     CategoryService categoryService,
     IUserDialogService dialogs) : ViewModelBase
 {
-    public IReadOnlyList<PeriodOption> Periods { get; } = PeriodOption.All;
+    public IReadOnlyList<PeriodOption> Periods { get; } = PeriodOption.All.Where(p => p.Value is not DateRangePreset.SelectedMonth and not DateRangePreset.SelectedYear).ToArray();
 
     public IReadOnlyList<TransactionTypeOption> Types { get; } = TransactionTypeOption.Optional;
 
@@ -102,7 +102,7 @@ public partial class ExportViewModel(
 
         var confirmed = await dialogs.ConfirmAsync(
             "Importa movimenti",
-            $"Importare i dati da {selectedFile.FileName}? Se il file è già stato importato, i movimenti esistenti verranno aggiornati senza duplicati.",
+            $"Importare i dati da {selectedFile.FileName}? Il CSV di questa app conserva gli identificativi. Per file esterni modificati, alcune righe possono essere riconosciute come nuovi movimenti.",
             "Importa",
             "Annulla");
         if (!confirmed)

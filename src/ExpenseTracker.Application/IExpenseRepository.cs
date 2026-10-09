@@ -27,6 +27,14 @@ public interface IExpenseRepository
     Task SaveTransactionAsync(Transaction transaction, CancellationToken cancellationToken = default);
 
     Task DeleteTransactionAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task SaveBatchAsync(IReadOnlyCollection<Account> accounts, IReadOnlyCollection<Category> categories,
+        IReadOnlyCollection<Transaction> transactions, string? stateKey = null, string? stateValue = null,
+        CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<AccountSummary>> GetAccountSummariesAsync(CancellationToken cancellationToken = default);
+    Task<string?> GetStateAsync(string key);
+    Task SaveStateAsync(string key, string value);
+    Task<IReadOnlyDictionary<Guid, int>> GetCategoryUsageAsync();
 }
 
 public interface ICsvExportService

@@ -4,39 +4,6 @@ using ExpenseTracker.Presentation.Controls;
 
 namespace ExpenseTracker.Presentation.Services;
 
-public interface IUserDialogService
-{
-    Task ShowMessageAsync(string title, string message);
-
-    Task<bool> ConfirmAsync(string title, string message, string accept, string cancel);
-}
-
-public interface IAppNavigationService
-{
-    Task GoToTransactionEditorAsync(Guid? transactionId = null);
-
-    Task GoToTransactionsAsync();
-}
-
-public interface IFileShareService
-{
-    Task ShareAsync(CsvExportResult export, CancellationToken cancellationToken = default);
-}
-
-public interface IImportFilePickerService
-{
-    Task<SelectedImportFile?> PickAsync();
-}
-
-public sealed class SelectedImportFile(string fileName, Stream content) : IAsyncDisposable
-{
-    public string FileName { get; } = fileName;
-
-    public Stream Content { get; } = content;
-
-    public ValueTask DisposeAsync() => Content.DisposeAsync();
-}
-
 public sealed class UserDialogService : IUserDialogService
 {
     public async Task ShowMessageAsync(string title, string message) =>
@@ -81,17 +48,23 @@ public sealed class ImportFilePickerService : IImportFilePickerService
     }
 }
 
-public sealed class AppNavigationService : IAppNavigationService
+public sealed class AppNavigationService(NavigationRequests requests) : IAppNavigationService
 {
-    public Task GoToTransactionEditorAsync(Guid? transactionId = null)
+    public Task GoToTransactionEditorAsync(Guid? transactionId = null, bool duplicate = false)
     {
         var route = transactionId.HasValue
             ? $"//Main/NewTransaction?transactionId={Uri.EscapeDataString(transactionId.Value.ToString("D"))}"
             : "//Main/NewTransaction";
+        if (duplicate) route += "&duplicate=true";
         return Shell.Current.GoToAsync(route);
     }
 
-    public Task GoToTransactionsAsync() => Shell.Current.GoToAsync("//Main/Transactions");
+    public Task GoToTransactionsAsync(TransactionFilter? filter = null, string? message = null)
+    {
+        requests.Filter = filter;
+        requests.Message = message;
+        return Shell.Current.GoToAsync("//Main/Transactions");
+    }
 }
 
 public sealed class FileShareService : IFileShareService
@@ -106,4 +79,13 @@ public sealed class FileShareService : IFileShareService
             File = new ShareFile(path, "text/csv")
         });
     }
+}
+
+public sealed class AppPreferences : IAppPreferences
+{
+    public string Get(string key, string fallback) => Preferences.Default.Get(key, fallback);
+    public bool Get(string key, bool fallback) => Preferences.Default.Get(key, fallback);
+    public void Set(string key, string value) => Preferences.Default.Set(key, value);
+    public void Set(string key, bool value) => Preferences.Default.Set(key, value);
+    public void Remove(string key) => Preferences.Default.Remove(key);
 }

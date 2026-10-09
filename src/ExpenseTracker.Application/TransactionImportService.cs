@@ -12,7 +12,7 @@ public sealed record ImportedTransactionRow(
     string CategoryName,
     decimal Amount,
     string Currency,
-    string? Comment);
+    string? Comment, Guid? NativeId = null, string? Description = null, Guid? TransferId = null);
 
 public sealed record ImportParseResult(
     IReadOnlyList<ImportedTransactionRow> Transactions,
@@ -56,6 +56,8 @@ public sealed class TransactionImportService(
             throw new DomainValidationException("Il file non contiene movimenti importabili.");
         }
 
+        if (parsed.Warnings.Any(w => w.Contains("riga", StringComparison.OrdinalIgnoreCase)))
+            throw new DomainValidationException("Importazione annullata: " + string.Join(" ", parsed.Warnings.Take(3)));
         var accounts = (await repository.GetAccountsAsync(cancellationToken)).ToList();
         var categories = (await repository.GetCategoriesAsync(cancellationToken)).ToList();
         var accountsCreated = 0;
@@ -86,7 +88,7 @@ public sealed class TransactionImportService(
 
         if (accountsCreated > 0)
         {
-            await repository.SaveAccountsAsync(accounts, cancellationToken);
+            // Persist together with categories and transactions after validating every row.
         }
 
         foreach (var sourceCategory in parsed.Transactions
@@ -106,11 +108,12 @@ public sealed class TransactionImportService(
                 sourceCategory.CategoryName,
                 sourceCategory.Type,
                 CategoryAppearance.SuggestColor(categories.Select(item => item.Color)));
-            await repository.SaveCategoryAsync(category, cancellationToken);
+            // No writes before the entire import has been validated.
             categories.Add(category);
             categoriesCreated++;
         }
 
+        var pending = new List<Transaction>();
         var created = 0;
         var updated = 0;
         foreach (var row in parsed.Transactions)
@@ -122,9 +125,13 @@ public sealed class TransactionImportService(
                 item.Type == row.Type
                 && string.Equals(item.Name, row.CategoryName, StringComparison.OrdinalIgnoreCase));
 
-            var id = StableGuid($"money-manager-import|{row.SourceKey}");
+            if (!string.Equals(account.Currency, row.Currency, StringComparison.OrdinalIgnoreCase))
+                throw new DomainValidationException($"Valuta {row.Currency} incompatibile con il conto {account.Name} ({account.Currency}). Importazione annullata.");
+            var id = row.NativeId ?? StableGuid($"money-manager-import|{row.SourceKey}");
             var occurredAtUtc = DateTime.SpecifyKind(row.OccurredAtLocal, DateTimeKind.Local).ToUniversalTime();
             var existing = await repository.GetTransactionAsync(id, cancellationToken);
+            if (existing?.TransferId is not null && existing.TransferId != row.TransferId)
+                throw new DomainValidationException("Il file tenta di separare un trasferimento già registrato. Importazione annullata.");
             if (existing is null)
             {
                 existing = new Transaction(
@@ -135,7 +142,7 @@ public sealed class TransactionImportService(
                     category.Id,
                     row.Amount,
                     row.Currency,
-                    row.CategoryName,
+                    row.Description,
                     row.Comment);
                 created++;
             }
@@ -148,14 +155,25 @@ public sealed class TransactionImportService(
                     category.Id,
                     row.Amount,
                     row.Currency,
-                    row.CategoryName,
+                    row.Description,
                     row.Comment);
                 updated++;
             }
 
-            await repository.SaveTransactionAsync(existing, cancellationToken);
+            existing.SetTransfer(row.TransferId);
+            pending.Add(existing);
         }
 
+        foreach (var transfer in pending.Where(t => t.TransferId.HasValue).GroupBy(t => t.TransferId))
+            if (transfer.Count() != 2 || transfer.Select(t => t.AccountId).Distinct().Count() != 2
+                || transfer.Count(t => t.Type == TransactionType.Income) != 1
+                || transfer.Count(t => t.Type == TransactionType.Expense) != 1
+                || transfer.Select(t => t.Currency).Distinct().Count() != 1
+                || transfer.Select(t => t.Amount).Distinct().Count() != 1)
+                throw new DomainValidationException("Il file contiene un trasferimento incompleto o incoerente. Esporta entrambi i conti.");
+        if (pending.Select(t => t.Id).Distinct().Count() != pending.Count)
+            throw new DomainValidationException("Il file contiene identificativi duplicati.");
+        await repository.SaveBatchAsync(accounts, categories, pending, cancellationToken: cancellationToken);
         return new TransactionImportResult(
             created,
             updated,

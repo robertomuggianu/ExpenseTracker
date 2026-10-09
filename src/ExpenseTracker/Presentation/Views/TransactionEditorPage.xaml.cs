@@ -21,8 +21,11 @@ public partial class TransactionEditorPage : ContentPage, IQueryAttributable
             && Guid.TryParse(value?.ToString(), out var parsed)
             ? parsed
             : (Guid?)null;
-        _ = _viewModel.LoadAsync(transactionId);
+        var duplicate = query.TryGetValue("duplicate", out var flag) && flag?.ToString() == "true";
+        _ = _viewModel.LoadAsync(transactionId, duplicate);
     }
+
+    protected override void OnDisappearing() { _viewModel.StoreDraft(); base.OnDisappearing(); }
 
     protected override async void OnAppearing()
     {

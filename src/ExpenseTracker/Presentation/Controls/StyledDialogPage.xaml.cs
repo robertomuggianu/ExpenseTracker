@@ -2,6 +2,7 @@ namespace ExpenseTracker.Presentation.Controls;
 
 public partial class StyledDialogPage : ContentPage
 {
+    private bool closing;
     private readonly TaskCompletionSource<bool> _completion = new();
 
     private StyledDialogPage(string title, string message, string accept, string? cancel)
@@ -38,7 +39,9 @@ public partial class StyledDialogPage : ContentPage
     private async Task CloseAsync(bool result)
     {
         if (_completion.Task.IsCompleted) return;
-        _completion.TrySetResult(result);
+        if (closing) return;
+        closing = true;
         await Shell.Current.Navigation.PopModalAsync(false);
+        _completion.TrySetResult(result);
     }
 }

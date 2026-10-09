@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
+             x:Class="ExpenseTracker.Presentation.Views.AssistantPage" Title="Assistente">
+  <ScrollView x:Name="ConversationScroll">
+    <VerticalStackLayout Padding="18,16,18,40" Spacing="14">
+      <controls:PageHeader Heading="Assistente" Subtitle="Un resoconto delle tue spese"/>
+      <Label Text="Il PC deve essere acceso e sulla stessa rete Wi-Fi. Al modello inviamo totali e categorie: controlla sempre i dati sotto il resoconto." Style="{StaticResource MutedLabel}"/>
+      <Border Style="{StaticResource Card}">
+        <VerticalStackLayout Spacing="10" IsEnabled="{Binding CanInteract}">
+          <Label Text="Collegamento al PC" Style="{StaticResource SectionTitle}"/>
+          <Entry Text="{Binding Address}" Placeholder="http://192.168.1.20:5188" Keyboard="Url" IsTextPredictionEnabled="False" IsSpellCheckEnabled="False" SemanticProperties.Description="Indirizzo del servizio Assistente sul PC"/>
+          <Entry Text="{Binding AccessKey}" Placeholder="Chiave di accesso mostrata sul PC" IsPassword="True" IsTextPredictionEnabled="False" IsSpellCheckEnabled="False" SemanticProperties.Description="Chiave di accesso"/>
+          <Button Text="Salva e verifica connessione" Command="{Binding CheckConnectionCommand}" Style="{StaticResource SecondaryButton}"/>
+        </VerticalStackLayout>
+      </Border>
+      <VerticalStackLayout Spacing="10" IsEnabled="{Binding CanInteract}">
+        <controls:ChoiceField Title="Valuta del resoconto" ItemsSource="{Binding Currencies}" SelectedItem="{Binding SelectedCurrency}"/>
+        <Button Text="Riassumi questo mese" Command="{Binding SummarizeMonthCommand}"/>
+        <Button Text="Confronta con il mese precedente" Command="{Binding CompareMonthsCommand}" Style="{StaticResource SecondaryButton}"/>
+        <Label Text="Confrontiamo i giorni trascorsi di questo mese con gli stessi giorni del precedente, fino all'ultimo giorno disponibile." Style="{StaticResource MutedLabel}"/>
+      </VerticalStackLayout>
+      <Label Text="{Binding StatusMessage}" Style="{StaticResource MutedLabel}"/>
+      <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
+      <HorizontalStackLayout IsVisible="{Binding IsBusy}" Spacing="12">
+        <ActivityIndicator IsRunning="{Binding IsBusy}"/>
+        <Button Text="Annulla" Command="{Binding CancelCommand}" Style="{StaticResource TextButton}"/>
+      </HorizontalStackLayout>
+      <VerticalStackLayout x:Name="MessagesLayout" BindableLayout.ItemsSource="{Binding Messages}" Spacing="12">
+        <BindableLayout.ItemTemplate>
+          <DataTemplate>
+            <Border Style="{StaticResource Card}">
+              <VerticalStackLayout Spacing="8">
+                <Label Text="{Binding Role}" FontAttributes="Bold" TextColor="{StaticResource PrimaryGlow}"/>
+                <Label Text="{Binding Text}" LineBreakMode="WordWrap"/>
+                <Label Text="{Binding Facts}" IsVisible="{Binding HasFacts}" Style="{StaticResource MutedLabel}"/>
+                <Label Text="{Binding Model}" IsVisible="{Binding HasModel}" Style="{StaticResource MutedLabel}" FontSize="11"/>
+              </VerticalStackLayout>
+            </Border>
+          </DataTemplate>
+        </BindableLayout.ItemTemplate>
+        <BindableLayout.EmptyView><Label Text="Scegli un resoconto per iniziare. La conversazione resta disponibile durante questa sessione." Style="{StaticResource MutedLabel}"/></BindableLayout.EmptyView>
+      </VerticalStackLayout>
+      <Button Text="Svuota conversazione" Command="{Binding ClearConversationCommand}" IsEnabled="{Binding CanInteract}" Style="{StaticResource TextButton}"/>
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

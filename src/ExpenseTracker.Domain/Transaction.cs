@@ -13,7 +13,8 @@ public sealed class Transaction
         string? description = null,
         string? notes = null,
         DateTime? createdAtUtc = null,
-        DateTime? updatedAtUtc = null)
+        DateTime? updatedAtUtc = null,
+        Guid? transferId = null)
     {
         if (id == Guid.Empty || accountId == Guid.Empty || categoryId == Guid.Empty)
         {
@@ -26,9 +27,12 @@ public sealed class Transaction
         Update(occurredAtUtc, type, accountId, categoryId, amount, currency, description, notes);
         CreatedAtUtc = createdAtUtc ?? DateTime.UtcNow;
         UpdatedAtUtc = updatedAtUtc ?? CreatedAtUtc;
+        TransferId = transferId;
     }
 
     public Guid Id { get; }
+    public Guid? TransferId { get; private set; }
+    public void SetTransfer(Guid? transferId) => TransferId = transferId;
 
     public DateTime OccurredAtUtc { get; private set; }
 
@@ -65,12 +69,12 @@ public sealed class Transaction
             throw new DomainValidationException("Conto e categoria sono obbligatori.");
         }
 
-        if (amount <= 0)
+        if (decimal.Round(amount, 2, MidpointRounding.AwayFromZero) <= 0)
         {
             throw new DomainValidationException("L'importo deve essere maggiore di zero.");
         }
 
-        if (string.IsNullOrWhiteSpace(currency) || currency.Trim().Length != 3)
+        if (string.IsNullOrWhiteSpace(currency) || currency.Trim().Length != 3 || !currency.Trim().All(c => char.IsAsciiLetter(c)))
         {
             throw new DomainValidationException("La valuta deve essere un codice di tre lettere.");
         }

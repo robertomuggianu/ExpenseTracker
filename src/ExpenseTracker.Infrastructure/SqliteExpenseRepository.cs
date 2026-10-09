@@ -8,7 +8,7 @@ namespace ExpenseTracker.Infrastructure;
 
 public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposable
 {
-    private const int CurrentSchemaVersion = 4;
+    private const int CurrentSchemaVersion = 5;
     private readonly SQLiteAsyncConnection _connection;
     private readonly SemaphoreSlim _initializationGate = new(1, 1);
     private bool _initialized;
@@ -59,6 +59,13 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
 
             if (version < 4) await ApplyVersionFourAsync();
 
+            if (version < 5) await _connection.RunInTransactionAsync(db =>
+            {
+                db.Execute("ALTER TABLE Transactions ADD COLUMN TransferId TEXT NULL;");
+                db.CreateTable<AppStateRecord>();
+                db.Execute("CREATE INDEX IF NOT EXISTS IX_Transactions_TransferId ON Transactions (TransferId);");
+                db.Execute("PRAGMA user_version = 5;");
+            });
             await SeedCategoriesAsync();
             _initialized = true;
         }
@@ -170,7 +177,14 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
             arguments.Add(filter.CategoryId.Value.ToString("D"));
         }
 
-        sql += " ORDER BY OccurredAtUtc DESC";
+        if (!string.IsNullOrWhiteSpace(filter?.Currency)) { sql += " AND Currency = ?"; arguments.Add(filter.Currency); }
+        if (!string.IsNullOrWhiteSpace(filter?.Search))
+        {
+            sql += " AND (instr(lower(coalesce(Description, '')), lower(?)) > 0 OR instr(lower(coalesce(Notes, '')), lower(?)) > 0)";
+            arguments.Add(filter.Search.Trim()); arguments.Add(filter.Search.Trim());
+        }
+        sql += " ORDER BY OccurredAtUtc DESC, Id";
+        if (filter?.Limit is not null) { sql += " LIMIT ? OFFSET ?"; arguments.Add(filter.Limit.Value); arguments.Add(filter.Offset); }
         var records = await _connection.QueryAsync<TransactionRecord>(sql, arguments.ToArray());
         return records.Select(ToDomain).ToArray();
     }
@@ -199,7 +213,10 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
     public async Task DeleteTransactionAsync(Guid id, CancellationToken cancellationToken = default)
     {
         await EnsureReadyAsync(cancellationToken);
-        await _connection.DeleteAsync<TransactionRecord>(id.ToString("D"));
+        var existing = await _connection.FindAsync<TransactionRecord>(id.ToString("D"));
+        if (existing?.TransferId is not null)
+            await _connection.ExecuteAsync("DELETE FROM Transactions WHERE TransferId = ?", existing.TransferId);
+        else await _connection.DeleteAsync<TransactionRecord>(id.ToString("D"));
     }
 
     public async ValueTask DisposeAsync()
@@ -207,6 +224,53 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
         await _connection.CloseAsync();
         _initializationGate.Dispose();
     }
+
+    public async Task SaveBatchAsync(IReadOnlyCollection<Account> accounts, IReadOnlyCollection<Category> categories,
+        IReadOnlyCollection<Transaction> transactions, string? stateKey = null, string? stateValue = null,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureReadyAsync(cancellationToken);
+        var accountRecords = accounts.Select(ToRecord).OrderBy(a => a.IsPrimary).ToArray();
+        var categoryRecords = categories.Select(ToRecord).ToArray();
+        var transactionRecords = transactions.Select(ToRecord).ToArray();
+        await _connection.RunInTransactionAsync(db =>
+        {
+            foreach (var item in accountRecords) { cancellationToken.ThrowIfCancellationRequested(); if (db.Find<AccountRecord>(item.Id) is null) db.Insert(item); else db.Update(item); }
+            foreach (var item in categoryRecords) { cancellationToken.ThrowIfCancellationRequested(); if (db.Find<CategoryRecord>(item.Id) is null) db.Insert(item); else db.Update(item); }
+            foreach (var item in transactionRecords) { cancellationToken.ThrowIfCancellationRequested(); if (db.Find<TransactionRecord>(item.Id) is null) db.Insert(item); else db.Update(item); }
+            if (stateKey is not null) db.InsertOrReplace(new AppStateRecord { Key = stateKey, Value = stateValue ?? "" });
+        });
+    }
+
+    public async Task<IReadOnlyList<AccountSummary>> GetAccountSummariesAsync(CancellationToken cancellationToken = default)
+    {
+        var accounts = await GetAccountsAsync(cancellationToken);
+        var totals = (await _connection.QueryAsync<AccountBalanceRow>(
+            "SELECT a.Id AS AccountId, COALESCE(SUM(CASE WHEN t.Currency = a.Currency THEN CASE WHEN t.Type = 1 THEN t.AmountMinor ELSE -t.AmountMinor END ELSE 0 END), 0) AS Delta, MAX(CASE WHEN t.Currency != a.Currency THEN 1 ELSE 0 END) AS InvalidCurrency FROM Accounts a LEFT JOIN Transactions t ON t.AccountId = a.Id GROUP BY a.Id"))
+            .ToDictionary(r => r.AccountId);
+        return accounts.Select(a => new AccountSummary(a, a.OpeningBalance + FromMinorUnits(totals[a.Id.ToString("D")].Delta))
+            { HasCurrencyMismatch = totals[a.Id.ToString("D")].InvalidCurrency != 0 }).ToArray();
+    }
+    private sealed class AccountBalanceRow
+    {
+        public string AccountId { get; set; } = "";
+        public long Delta { get; set; }
+        public int InvalidCurrency { get; set; }
+    }
+
+    public async Task<string?> GetStateAsync(string key)
+    {
+        await EnsureReadyAsync(default);
+        return (await _connection.FindAsync<AppStateRecord>(key))?.Value;
+    }
+    public Task SaveStateAsync(string key, string value) => SaveBatchAsync([], [], [], key, value);
+    public async Task<IReadOnlyDictionary<Guid, int>> GetCategoryUsageAsync()
+    {
+        await EnsureReadyAsync(default);
+        var rows = await _connection.QueryAsync<CategoryUsage>("SELECT CategoryId, COUNT(*) AS Count FROM Transactions WHERE TransferId IS NULL GROUP BY CategoryId");
+        return rows.ToDictionary(r => Guid.Parse(r.CategoryId), r => r.Count);
+    }
+    private sealed class CategoryUsage { public string CategoryId { get; set; } = ""; public int Count { get; set; } }
 
     private Task EnsureReadyAsync(CancellationToken cancellationToken) => InitializeAsync(cancellationToken);
 
@@ -452,7 +516,8 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
         var existing = await _connection.Table<CategoryRecord>().ToListAsync();
         foreach (var definition in definitions)
         {
-            if (existing.Any(item =>
+            var seedId = definition.Id ?? StableGuid($"reference-category|{definition.Type}|{definition.Name.ToUpperInvariant()}").ToString("D");
+            if (existing.Any(item => item.Id == seedId) || existing.Any(item =>
                     item.Type == definition.Type
                     && string.Equals(item.Name, definition.Name, StringComparison.OrdinalIgnoreCase)))
             {
@@ -511,6 +576,7 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
     private static TransactionRecord ToRecord(Transaction item) => new()
     {
         Id = item.Id.ToString("D"),
+        TransferId = item.TransferId?.ToString("D"),
         OccurredAtUtc = item.OccurredAtUtc,
         Type = (int)item.Type,
         AccountId = item.AccountId.ToString("D"),
@@ -526,5 +592,6 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
     private static Transaction ToDomain(TransactionRecord item) => new(
         Guid.Parse(item.Id), item.OccurredAtUtc, (TransactionType)item.Type,
         Guid.Parse(item.AccountId), Guid.Parse(item.CategoryId), FromMinorUnits(item.AmountMinor),
-        item.Currency, item.Description, item.Notes, item.CreatedAtUtc, item.UpdatedAtUtc);
+        item.Currency, item.Description, item.Notes, item.CreatedAtUtc, item.UpdatedAtUtc,
+        Guid.TryParse(item.TransferId, out var transferId) ? transferId : null);
 }

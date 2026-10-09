@@ -48,7 +48,7 @@ public sealed class Account
             throw new DomainValidationException("Il nome del conto è obbligatorio.");
         }
 
-        if (string.IsNullOrWhiteSpace(currency) || currency.Trim().Length != 3)
+        if (string.IsNullOrWhiteSpace(currency) || currency.Trim().Length != 3 || !currency.Trim().All(c => char.IsAsciiLetter(c)))
         {
             throw new DomainValidationException("La valuta deve essere un codice di tre lettere.");
         }
@@ -85,7 +85,10 @@ public sealed class Account
     {
         ArgumentNullException.ThrowIfNull(transactions);
 
-        return transactions
+        var items = transactions.Where(item => item.AccountId == Id).ToArray();
+        if (items.Any(item => item.Currency != Currency))
+            throw new DomainValidationException($"Il conto {Name} contiene movimenti in un'altra valuta: correggili dalla lista Movimenti.");
+        return items
             .Where(item => item.AccountId == Id)
             .Aggregate(
                 OpeningBalance,

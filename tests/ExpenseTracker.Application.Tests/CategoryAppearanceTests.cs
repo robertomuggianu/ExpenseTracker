@@ -28,6 +28,9 @@ public sealed class CategoryAppearanceTests
             {
                 raw.Execute("ALTER TABLE Categories DROP COLUMN Icon;");
                 raw.Execute("UPDATE Categories SET Color = '#E2383F' WHERE Name IN ('Spesa', 'Ristoranti');");
+                raw.Execute("DROP INDEX IX_Transactions_TransferId;");
+                raw.Execute("ALTER TABLE Transactions DROP COLUMN TransferId;");
+                raw.Execute("DROP TABLE AppState;");
                 raw.Execute("PRAGMA user_version = 3;");
             }
 

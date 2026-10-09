@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Security.Cryptography;
 using System.IO.Compression;
 using System.Text;
 using System.Xml.Linq;
@@ -21,7 +22,7 @@ public sealed class TransactionImportParser : ITransactionImportParser
         var extension = Path.GetExtension(fileName);
         if (extension.Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
         {
-            return Task.FromResult(ParseWorkbook(stream, cancellationToken));
+            return Task.Run(() => ParseWorkbook(stream, cancellationToken), cancellationToken);
         }
 
         if (extension.Equals(".csv", StringComparison.OrdinalIgnoreCase))
@@ -93,8 +94,8 @@ public sealed class TransactionImportParser : ITransactionImportParser
                         var originalComment = NormalizeOptional(cells.GetValueOrDefault(7));
                         var comment = originalComment is null
                             ? $"Trasferimento importato da {source}"
-                            : $"Trasferimento importato da {source} · {originalComment}";
-                        rows.Add(CreateImportedRow(
+                            : $"Trasferimento importato da {source} Ã‚Â· {originalComment}";
+                        var received = CreateImportedRow(
                             date,
                             TransactionType.Income,
                             destination,
@@ -102,7 +103,11 @@ public sealed class TransactionImportParser : ITransactionImportParser
                             amount,
                             currency,
                             comment,
-                            duplicateCounters));
+                            duplicateCounters);
+                        var transferId = new Guid(SHA256.HashData(Encoding.UTF8.GetBytes("transfer|" + received.SourceKey)).AsSpan(0, 16));
+                        rows.Add(received with { TransferId = transferId });
+                        rows.Add(CreateImportedRow(date, TransactionType.Expense, source, "Trasferimento inviato", amount,
+                            currency, originalComment, duplicateCounters) with { TransferId = transferId });
                         adjustedTransfers++;
                     }
                     catch (Exception exception) when (exception is FormatException or DomainValidationException)
@@ -143,7 +148,7 @@ public sealed class TransactionImportParser : ITransactionImportParser
 
         if (adjustedTransfers > 0)
         {
-            warnings.Add($"{adjustedTransfers} trasferimento importato come rettifica positiva sul conto destinatario.");
+            warnings.Add($"{adjustedTransfers} trasferimento importato con addebito e accredito collegati, escluso dai report entrate e spese.");
         }
 
         return new ImportParseResult(rows, 0, warnings);
@@ -156,7 +161,8 @@ public sealed class TransactionImportParser : ITransactionImportParser
     {
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
         var content = await reader.ReadToEndAsync(cancellationToken);
-        var delimiter = content.Count(character => character == ';') >= content.Count(character => character == ',') ? ';' : ',';
+        var firstLine = content.Split('\n').FirstOrDefault() ?? "";
+        var delimiter = firstLine.Contains(';') ? ';' : ',';
         var csvRows = ParseDelimited(content, delimiter);
         var headerIndex = csvRows.FindIndex(row =>
             row.Any(cell => cell.Equals("Data", StringComparison.OrdinalIgnoreCase)
@@ -191,7 +197,14 @@ public sealed class TransactionImportParser : ITransactionImportParser
                 var amount = ParseAmount(Get(values, headers, "Importo", "Amount in account currency"));
                 var currency = Get(values, headers, "Valuta", "Account currency");
                 var comment = NormalizeOptional(Get(values, headers, "Note", "Comment", optional: true));
-                rows.Add(CreateImportedRow(date, type, account, category, amount, currency, comment, duplicateCounters));
+                var idText = Get(values, headers, "Id", optional: true);
+                Guid? nativeId = Guid.TryParse(idText, out var id) && id != Guid.Empty ? id : null;
+                if (headers.ContainsKey("Id") && nativeId is null) throw new DomainValidationException("identificativo movimento non valido");
+                var transferText = Get(values, headers, "TransferId", optional: true);
+                Guid? transferId = Guid.TryParse(transferText, out var tid) && tid != Guid.Empty ? tid : null;
+                if (!string.IsNullOrWhiteSpace(transferText) && transferId is null) throw new DomainValidationException("identificativo trasferimento non valido");
+                rows.Add(CreateImportedRow(date, type, account, category, amount, currency, comment, duplicateCounters)
+                    with { NativeId = nativeId, Description = NormalizeOptional(Get(values, headers, "Descrizione", optional: true)), TransferId = transferId });
             }
             catch (Exception exception) when (exception is FormatException or DomainValidationException)
             {
@@ -335,24 +348,21 @@ public sealed class TransactionImportParser : ITransactionImportParser
             return DateTime.FromOADate(serial);
         }
 
-        if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var invariant)
-            || DateTime.TryParse(value, CultureInfo.CurrentCulture, DateTimeStyles.AssumeLocal, out invariant))
-        {
-            return invariant;
-        }
-
-        throw new FormatException("data non valida");
+        // Native exports use ISO; external Italian dates use day/month/year explicitly.
+        if (DateTimeOffset.TryParseExact(value, ["O", "yyyy-MM-dd'T'HH:mm:ss'Z'", "yyyy-MM-dd'T'HH:mm:ss.FFFFFFFK"],
+                CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var iso)) return iso.LocalDateTime;
+        if (DateTime.TryParseExact(value, ["yyyy-MM-dd", "dd/MM/yyyy", "d/M/yyyy", "dd/MM/yyyy HH:mm", "dd/MM/yyyy HH:mm:ss"],
+                CultureInfo.GetCultureInfo("it-IT"), DateTimeStyles.None, out var local)) return local;
+        throw new FormatException("data non valida: usa ISO oppure giorno/mese/anno");
     }
 
     private static decimal ParseAmount(string value)
     {
-        if (decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var amount)
-            || decimal.TryParse(value, NumberStyles.Number, CultureInfo.CurrentCulture, out amount))
-        {
+        var normalized = value.Trim().Replace(',', '.');
+        if (decimal.TryParse(normalized, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
+            CultureInfo.InvariantCulture, out var amount) && decimal.Round(Math.Abs(amount), 2) > 0)
             return Math.Abs(amount);
-        }
-
-        throw new FormatException("importo non valido");
+        throw new FormatException("importo non valido: usa virgola o punto decimale, senza separatori delle migliaia");
     }
 
     private static TransactionType ParseType(string value) => value.Trim().ToLowerInvariant() switch
@@ -401,7 +411,7 @@ public sealed class TransactionImportParser : ITransactionImportParser
     }
 
     private static string? NormalizeOptional(string? value) =>
-        string.IsNullOrWhiteSpace(value) || value.Trim() == "13" ? null : value.Trim();
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static string Get(
         IReadOnlyList<string> values,

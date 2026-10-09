@@ -7,7 +7,9 @@ public enum DateRangePreset
     CurrentWeek,
     CurrentMonth,
     CurrentYear,
-    Custom
+    Custom,
+    SelectedMonth,
+    SelectedYear
 }
 
 public readonly record struct DateRange(DateTime FromUtc, DateTime ToUtcExclusive)
@@ -34,10 +36,12 @@ public static class DateRangeFactory
                 from = today.AddDays(-daysFromMonday);
                 toInclusive = from.AddDays(6);
                 break;
+            case DateRangePreset.SelectedMonth:
             case DateRangePreset.CurrentMonth:
                 from = new DateTime(today.Year, today.Month, 1);
                 toInclusive = from.AddMonths(1).AddDays(-1);
                 break;
+            case DateRangePreset.SelectedYear:
             case DateRangePreset.CurrentYear:
                 from = new DateTime(today.Year, 1, 1);
                 toInclusive = new DateTime(today.Year, 12, 31);
@@ -71,7 +75,7 @@ public sealed record TransactionFilter(
     DateTime? ToUtcExclusive = null,
     Guid? AccountId = null,
     TransactionType? Type = null,
-    Guid? CategoryId = null);
+    Guid? CategoryId = null, string? Search = null, string? Currency = null, int? Limit = null, int Offset = 0);
 
 public sealed record AccountInput(
     Guid? Id,
@@ -102,6 +106,8 @@ public sealed record TransactionInput(
 
 public sealed record AccountSummary(Account Account, decimal CurrentBalance)
 {
+    public bool HasCurrencyMismatch { get; init; }
+    public string BalanceWarning => HasCurrencyMismatch ? "Saldo parziale: correggi i movimenti con valuta diversa." : "";
     public string DisplayName => Account.IsPrimary ? $"{Account.Name} • Principale" : Account.Name;
 
     public bool IsInactive => !Account.IsActive;
@@ -114,6 +120,7 @@ public sealed record TransactionListItem(
     string CategoryColor,
     string CategoryIcon = "tag")
 {
+    public bool CanEdit => Transaction.TransferId is null;
     public string IconSource => $"category_{CategoryIcon}.png";
     public DateTime LocalDate => Transaction.OccurredAtUtc.ToLocalTime();
     public string DisplayDescription => string.IsNullOrWhiteSpace(Transaction.Description) ? CategoryName : Transaction.Description;
@@ -121,7 +128,7 @@ public sealed record TransactionListItem(
         ? Transaction.Amount
         : -Transaction.Amount;
 
-    public string TypeLabel => Transaction.Type == TransactionType.Income ? "Entrata" : "Uscita";
+    public string TypeLabel => Transaction.TransferId is not null ? "Trasferimento" : Transaction.Type == TransactionType.Income ? "Entrata" : "Uscita";
 }
 
 public sealed record PeriodTotals(decimal Income, decimal Expense)
@@ -143,6 +150,7 @@ public sealed record DashboardSummary(
     IReadOnlyList<ExpenseGroup> ExpensesByCategory,
     IReadOnlyList<TransactionListItem> RecentTransactions)
 {
+    public string? BalanceWarning { get; init; }
     public string? BalanceCurrency { get; init; } = "EUR";
     public string PrimaryCurrency { get; init; } = "EUR";
     public IReadOnlyList<ExpenseGroup> IncomeByCategory { get; init; } = [];
