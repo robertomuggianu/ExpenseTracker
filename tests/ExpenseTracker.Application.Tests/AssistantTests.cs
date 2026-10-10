@@ -91,7 +91,7 @@ public sealed class AssistantTests
         Assert.Equal("Spese aumentate del 20%.", response.Text);
     }
 
-    [Theory] [InlineData(401, "chiave")] [InlineData(503, "Ollama")] [InlineData(429, "già")]
+    [Theory] [InlineData(401, "key")] [InlineData(503, "Ollama")] [InlineData(429, "already")] [InlineData(426, "Update")]
     public async Task Client_TranslatesOperationalErrors(int status, string word)
     {
         using var http = new HttpClient(new Handler((_, _) => Task.FromResult(new HttpResponseMessage((HttpStatusCode)status))));
@@ -130,6 +130,8 @@ public sealed class AssistantTests
     private sealed class PendingClient : IAssistantClient
     {
         public int Calls;
+        public Task<AssistantInterpretation> InterpretAsync(AssistantConnection c, AssistantQuestionRequest r, CancellationToken token = default) => throw new NotImplementedException();
+        public Task<AssistantChatAnswer> AnswerAsync(AssistantConnection c, AssistantChatEvidence r, CancellationToken token = default) => throw new NotImplementedException();
         public Task<AssistantHealth> CheckAsync(AssistantConnection c, CancellationToken token = default) => Task.FromResult(new AssistantHealth("qwen2.5:3b"));
         public async Task<AssistantReportResponse> GenerateAsync(AssistantConnection c, AssistantReportRequest r, CancellationToken token = default)
         { Calls++; await Task.Delay(Timeout.Infinite, token); return new("Mai", "test"); }
@@ -140,21 +142,21 @@ public sealed class AssistantTests
         var account = new Account(Guid.NewGuid(), "Conto", 0, isPrimary: true); await repo.SaveAccountsAsync([account]);
         var cat = (await repo.GetCategoriesAsync()).First(c => c.Type == TransactionType.Expense);
         await repo.SaveTransactionAsync(new(Guid.NewGuid(), DateTime.UtcNow, TransactionType.Expense, account.Id, cat.Id, 10m));
-        var client = new PendingClient(); var vm = new AssistantViewModel(new(repo), new(repo), client, new Settings());
+        var client = new PendingClient(); var vm = new AssistantViewModel(new(repo), new(repo), client, new Settings(), new(repo));
         await vm.LoadCommand.ExecuteAsync(null);
         var task = vm.SummarizeMonthCommand.ExecuteAsync(null);
         for (var i = 0; i < 100 && client.Calls == 0; i++) await Task.Delay(10);
         Assert.Equal(1, client.Calls); Assert.False(vm.CanInteract);
         await vm.CompareMonthsCommand.ExecuteAsync(null); Assert.Equal(1, client.Calls);
         vm.CancelCommand.Execute(null); await task;
-        Assert.False(vm.IsBusy); Assert.Equal("Richiesta annullata.", vm.StatusMessage);
+        Assert.False(vm.IsBusy); Assert.Equal("Request cancelled.", vm.StatusMessage);
         Assert.Single(vm.Messages); Assert.Null(vm.ErrorMessage);
     });
 
     [Fact] public Task ViewModel_EmptyDatabaseDoesNotSendToModel() => WithDatabase(async repo =>
     {
-        var client = new PendingClient(); var vm = new AssistantViewModel(new(repo), new(repo), client, new Settings());
+        var client = new PendingClient(); var vm = new AssistantViewModel(new(repo), new(repo), client, new Settings(), new(repo));
         await vm.LoadCommand.ExecuteAsync(null); await vm.SummarizeMonthCommand.ExecuteAsync(null);
-        Assert.Equal(0, client.Calls); Assert.Contains("Non ci sono movimenti", Assert.Single(vm.Messages).Text);
+        Assert.Equal(0, client.Calls); Assert.Contains("No transactions", Assert.Single(vm.Messages).Text);
     });
 }

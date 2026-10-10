@@ -48,7 +48,7 @@
           </Grid>
         </VerticalStackLayout>
       </ScrollView>
-      <Label Grid.Row="2" Text="Il tuo bilancio, con calma. · v1.4.1" TextColor="{StaticResource DarkTextMuted}" FontSize="11"/>
+      <Label Grid.Row="2" Text="Il tuo bilancio, con calma. · v1.5.3" TextColor="{StaticResource DarkTextMuted}" FontSize="11"/>
     </Grid>
   </Shell.FlyoutContent>
   <FlyoutItem Route="Main" Title="ExpenseTracker" Shell.TabBarIsVisible="False">

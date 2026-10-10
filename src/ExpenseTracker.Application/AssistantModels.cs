@@ -21,11 +21,11 @@ public sealed record AssistantConnection(string Address, string AccessKey)
         if (!Uri.TryCreate(Address.Trim().TrimEnd('/') + "/", UriKind.Absolute, out var uri)
             || uri.Scheme is not ("http" or "https") || !string.IsNullOrEmpty(uri.UserInfo)
             || !string.IsNullOrEmpty(uri.Query) || !string.IsNullOrEmpty(uri.Fragment) || uri.AbsolutePath != "/")
-            throw new DomainValidationException("Inserisci l'indirizzo del PC, ad esempio http://192.168.1.20:5188.");
+            throw new DomainValidationException("Enter your PC address, for example http://192.168.1.20:5188.");
         if (uri.Scheme == "http" && !IsLocalHost(uri.Host))
-            throw new DomainValidationException("Per HTTP usa un indirizzo IP della rete locale oppure un nome .local.");
+            throw new DomainValidationException("For HTTP, use a local network IP address or a .local name.");
         if (AccessKey.Length is < 32 or > 256 || AccessKey.Any(c => !char.IsAsciiLetterOrDigit(c)))
-            throw new DomainValidationException("Inserisci la chiave di accesso mostrata dal servizio sul PC.");
+            throw new DomainValidationException("Enter the access key shown by the service on your PC.");
         return uri;
     }
 
@@ -43,4 +43,6 @@ public interface IAssistantClient
 {
     Task<AssistantHealth> CheckAsync(AssistantConnection connection, CancellationToken cancellationToken = default);
     Task<AssistantReportResponse> GenerateAsync(AssistantConnection connection, AssistantReportRequest report, CancellationToken cancellationToken = default);
+    Task<AssistantInterpretation> InterpretAsync(AssistantConnection connection, AssistantQuestionRequest question, CancellationToken cancellationToken = default);
+    Task<AssistantChatAnswer> AnswerAsync(AssistantConnection connection, AssistantChatEvidence evidence, CancellationToken cancellationToken = default);
 }

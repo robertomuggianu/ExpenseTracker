@@ -11,8 +11,8 @@ builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 
 builder.Services.AddSingleton(new OllamaGateway(new HttpClient(new HttpClientHandler { AllowAutoRedirect = false })
 {
     BaseAddress = new Uri(builder.Configuration["Assistant:OllamaAddress"] ?? "http://127.0.0.1:11434/"),
-    Timeout = TimeSpan.FromSeconds(120)
-}, builder.Configuration["Assistant:Model"] ?? "qwen2.5:3b"));
+    Timeout = TimeSpan.FromSeconds(180)
+}, builder.Configuration["Assistant:Model"] ?? "qwen3.5:9b"));
 builder.Services.AddSingleton<InferenceGate>();
 var app = builder.Build();
 var expectedKey = SHA256.HashData(Encoding.UTF8.GetBytes(key));
@@ -37,6 +37,26 @@ app.MapPost("/reports", async (AssistantReportRequest report, OllamaGateway olla
     try { return Results.Ok(await ollama.GenerateAsync(report, token)); }
     catch (InvalidDataException) { return Results.StatusCode(502); }
     catch (System.Text.Json.JsonException) { return Results.StatusCode(502); }
+    catch (HttpRequestException) { return Results.StatusCode(503); }
+    catch (OperationCanceledException) when (!token.IsCancellationRequested) { return Results.StatusCode(504); }
+    finally { gate.Semaphore.Release(); }
+});
+app.MapPost("/chat/interpret", async (AssistantQuestionRequest question, OllamaGateway ollama, InferenceGate gate, CancellationToken token) =>
+{
+    if (!AssistantChatPolicy.ValidQuestionRequest(question)) return Results.BadRequest();
+    if (!await gate.Semaphore.WaitAsync(0, token)) return Results.StatusCode(429);
+    try { return Results.Ok(await ollama.InterpretAsync(question, token)); }
+    catch (InvalidDataException) { return Results.StatusCode(502); }
+    catch (HttpRequestException) { return Results.StatusCode(503); }
+    catch (OperationCanceledException) when (!token.IsCancellationRequested) { return Results.StatusCode(504); }
+    finally { gate.Semaphore.Release(); }
+});
+app.MapPost("/chat/answer", async (AssistantChatEvidence evidence, OllamaGateway ollama, InferenceGate gate, CancellationToken token) =>
+{
+    if (evidence.Periods is null) return Results.StatusCode(426);
+    if (!AssistantChatPolicy.ValidEvidence(evidence) || !ReportNumberGuard.UsesProvidedNumbers(evidence.CalculatedAnswer, evidence.Facts)) return Results.BadRequest();
+    if (!await gate.Semaphore.WaitAsync(0, token)) return Results.StatusCode(429);
+    try { return Results.Ok(await ollama.AnswerAsync(evidence, token)); }
     catch (HttpRequestException) { return Results.StatusCode(503); }
     catch (OperationCanceledException) when (!token.IsCancellationRequested) { return Results.StatusCode(504); }
     finally { gate.Semaphore.Release(); }

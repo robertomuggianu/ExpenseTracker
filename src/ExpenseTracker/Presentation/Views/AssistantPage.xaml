@@ -1,49 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ContentPage Shell.NavBarIsVisible="False" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
-             x:Class="ExpenseTracker.Presentation.Views.AssistantPage" Title="Assistente">
-  <ScrollView x:Name="ConversationScroll">
-    <VerticalStackLayout Spacing="0">
-      <controls:PageHeader Heading="Assistente" Subtitle="Un resoconto delle tue spese"/>
-      <VerticalStackLayout Padding="18,18,18,40" Spacing="14">
-      <Label Text="Il PC deve essere acceso e sulla stessa rete Wi-Fi. Al modello inviamo totali e categorie: controlla sempre i dati sotto il resoconto." Style="{StaticResource MutedLabel}"/>
-      <Border Style="{StaticResource Card}">
-        <VerticalStackLayout Spacing="10" IsEnabled="{Binding CanInteract}">
-          <Label Text="Collegamento al PC" Style="{StaticResource SectionTitle}"/>
-          <Entry Text="{Binding Address}" Placeholder="http://192.168.1.20:5188" Keyboard="Url" IsTextPredictionEnabled="False" IsSpellCheckEnabled="False" SemanticProperties.Description="Indirizzo del servizio Assistente sul PC"/>
-          <Entry Text="{Binding AccessKey}" Placeholder="Chiave di accesso mostrata sul PC" IsPassword="True" IsTextPredictionEnabled="False" IsSpellCheckEnabled="False" SemanticProperties.Description="Chiave di accesso"/>
-          <Button Text="Salva e verifica connessione" Command="{Binding CheckConnectionCommand}" Style="{StaticResource SecondaryButton}"/>
+             x:Class="ExpenseTracker.Presentation.Views.AssistantPage" Title="Assistant">
+  <Grid RowDefinitions="Auto,*,Auto">
+    <controls:PageHeader Heading="Assistant" Subtitle="Your spending, in conversation"/>
+    <ScrollView Grid.Row="1" x:Name="ConversationScroll">
+      <VerticalStackLayout Padding="18,14,18,18" Spacing="12">
+        <Grid ColumnDefinitions="*,Auto">
+          <Label Text="Your spending chat" Style="{StaticResource SectionTitle}" VerticalOptions="Center"/>
+          <Button Grid.Column="1" Text="Connection" Command="{Binding ToggleConnectionSettingsCommand}" Style="{StaticResource TextButton}"/>
+        </Grid>
+        <Border Style="{StaticResource Card}" IsVisible="{Binding ConnectionSettingsVisible}">
+          <VerticalStackLayout Spacing="10" IsEnabled="{Binding CanInteract}">
+            <Label Text="Connect to your PC" Style="{StaticResource SectionTitle}"/>
+            <Label Text="Your PC and Ollama must be running. We send your question, category names and calculated figures, without transaction notes, descriptions or account names." Style="{StaticResource MutedLabel}"/>
+            <Entry Text="{Binding Address}" Placeholder="http://192.168.1.20:5188" Keyboard="Url" IsTextPredictionEnabled="False" IsSpellCheckEnabled="False"/>
+            <Entry Text="{Binding AccessKey}" Placeholder="Access key shown on your PC" IsPassword="True" IsTextPredictionEnabled="False" IsSpellCheckEnabled="False"/>
+            <Button Text="Save and check" Command="{Binding CheckConnectionCommand}" Style="{StaticResource SecondaryButton}"/>
+          </VerticalStackLayout>
+        </Border>
+        <controls:ChoiceField Title="Currency for your next question" ItemsSource="{Binding Currencies}" SelectedItem="{Binding SelectedCurrency}" IsEnabled="{Binding CanInteract}"/>
+        <Label Text="This month up to today; last month in full. Comparisons use equivalent days unless you request the full previous month. Changing currency resets the context." Style="{StaticResource MutedLabel}"/>
+        <FlexLayout Wrap="Wrap" IsEnabled="{Binding CanInteract}">
+          <Button Text="Summary" Margin="0,0,8,6" Command="{Binding SuggestQuestionCommand}" CommandParameter="Summarise this month." Style="{StaticResource SecondaryButton}"/>
+          <Button Text="Compare" Margin="0,0,8,6" Command="{Binding SuggestQuestionCommand}" CommandParameter="Compare my spending this month with last month." Style="{StaticResource SecondaryButton}"/>
+          <Button Text="Categories" Margin="0,0,8,6" Command="{Binding SuggestQuestionCommand}" CommandParameter="Which categories increased most compared with last month?" Style="{StaticResource SecondaryButton}"/>
+        </FlexLayout>
+        <Label Text="{Binding StatusMessage}" Style="{StaticResource MutedLabel}"/>
+        <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
+        <VerticalStackLayout x:Name="MessagesLayout" BindableLayout.ItemsSource="{Binding Messages}" Spacing="12">
+          <BindableLayout.ItemTemplate>
+            <DataTemplate>
+              <Border Style="{StaticResource Card}">
+                <Border.Triggers>
+                  <DataTrigger TargetType="Border" Binding="{Binding Role}" Value="You">
+                    <Setter Property="HorizontalOptions" Value="End"/>
+                    <Setter Property="Margin" Value="36,0,0,0"/>
+                  </DataTrigger>
+                </Border.Triggers>
+                <VerticalStackLayout Spacing="8">
+                  <Label Text="{Binding Role}" FontAttributes="Bold" TextColor="{StaticResource PrimaryGlow}"/>
+                  <HorizontalStackLayout IsVisible="{Binding IsPending}" Spacing="10" SemanticProperties.Description="Waiting for the assistant's response">
+                    <ActivityIndicator IsRunning="{Binding IsPending}" Color="{StaticResource PrimaryGlow}" WidthRequest="20" HeightRequest="20"/>
+                    <Label Text="Thinking…" VerticalOptions="Center" Style="{StaticResource MutedLabel}"/>
+                  </HorizontalStackLayout>
+                  <Label Text="{Binding Text}" IsVisible="{Binding HasText}" LineBreakMode="WordWrap"/>
+                  <BoxView HeightRequest="1" Opacity="0.2" IsVisible="{Binding HasFacts}"/>
+                  <Label Text="{Binding Facts}" IsVisible="{Binding HasFacts}" Style="{StaticResource MutedLabel}" FontSize="12"/>
+                  <Label Text="{Binding Model}" IsVisible="{Binding HasModel}" Style="{StaticResource MutedLabel}" FontSize="11"/>
+                </VerticalStackLayout>
+              </Border>
+            </DataTemplate>
+          </BindableLayout.ItemTemplate>
+          <BindableLayout.EmptyView>
+            <Label Text="Ask about spending, averages or changes by category. Follow up with “and last month?”. This chat stays in memory for the current session." Style="{StaticResource MutedLabel}"/>
+          </BindableLayout.EmptyView>
         </VerticalStackLayout>
-      </Border>
-      <VerticalStackLayout Spacing="10" IsEnabled="{Binding CanInteract}">
-        <controls:ChoiceField Title="Valuta del resoconto" ItemsSource="{Binding Currencies}" SelectedItem="{Binding SelectedCurrency}"/>
-        <Button Text="Riassumi questo mese" Command="{Binding SummarizeMonthCommand}"/>
-        <Button Text="Confronta con il mese precedente" Command="{Binding CompareMonthsCommand}" Style="{StaticResource SecondaryButton}"/>
-        <Label Text="Confrontiamo i giorni trascorsi di questo mese con gli stessi giorni del precedente, fino all'ultimo giorno disponibile." Style="{StaticResource MutedLabel}"/>
+        <Button Text="Cancel response" IsVisible="{Binding IsAwaitingResponse}" Command="{Binding CancelCommand}" Style="{StaticResource TextButton}"/>
+        <Button Text="Clear conversation" Command="{Binding ClearConversationCommand}" IsEnabled="{Binding CanInteract}" Style="{StaticResource TextButton}"/>
       </VerticalStackLayout>
-      <Label Text="{Binding StatusMessage}" Style="{StaticResource MutedLabel}"/>
-      <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
-      <HorizontalStackLayout IsVisible="{Binding IsBusy}" Spacing="12">
-        <ActivityIndicator IsRunning="{Binding IsBusy}"/>
-        <Button Text="Annulla" Command="{Binding CancelCommand}" Style="{StaticResource TextButton}"/>
-      </HorizontalStackLayout>
-      <VerticalStackLayout x:Name="MessagesLayout" BindableLayout.ItemsSource="{Binding Messages}" Spacing="12">
-        <BindableLayout.ItemTemplate>
-          <DataTemplate>
-            <Border Style="{StaticResource Card}">
-              <VerticalStackLayout Spacing="8">
-                <Label Text="{Binding Role}" FontAttributes="Bold" TextColor="{StaticResource PrimaryGlow}"/>
-                <Label Text="{Binding Text}" LineBreakMode="WordWrap"/>
-                <Label Text="{Binding Facts}" IsVisible="{Binding HasFacts}" Style="{StaticResource MutedLabel}"/>
-                <Label Text="{Binding Model}" IsVisible="{Binding HasModel}" Style="{StaticResource MutedLabel}" FontSize="11"/>
-              </VerticalStackLayout>
-            </Border>
-          </DataTemplate>
-        </BindableLayout.ItemTemplate>
-        <BindableLayout.EmptyView><Label Text="Scegli un resoconto per iniziare. La conversazione resta disponibile durante questa sessione." Style="{StaticResource MutedLabel}"/></BindableLayout.EmptyView>
-      </VerticalStackLayout>
-      <Button Text="Svuota conversazione" Command="{Binding ClearConversationCommand}" IsEnabled="{Binding CanInteract}" Style="{StaticResource TextButton}"/>
-      </VerticalStackLayout>
-    </VerticalStackLayout>
-  </ScrollView>
+    </ScrollView>
+    <Border Grid.Row="2" Style="{StaticResource Card}" Margin="12,0,12,12" Padding="12,8">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <Editor Text="{Binding Question}" Placeholder="Ask about this month or last month…" MaxLength="1000" AutoSize="TextChanges" MaximumHeightRequest="120" MinimumHeightRequest="48" IsEnabled="{Binding CanInteract}" SemanticProperties.Description="Question for the assistant"/>
+        <Button Grid.Column="1" Text="Send" Command="{Binding SendCommand}" IsEnabled="{Binding CanSend}" VerticalOptions="Center"/>
+      </Grid>
+    </Border>
+  </Grid>
 </ContentPage>

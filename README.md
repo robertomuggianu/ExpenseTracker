@@ -63,6 +63,14 @@ La valutazione per iOS 26.6.1 e carte BCC Alpi Marittime è in [docs/wallet-valu
 
 ## Build, test e avvio
 
+Per avviare l'emulatore Android configurato sul PC, da PowerShell nella cartella del progetto:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-emulator.ps1
+```
+
+Lo script usa `MAUI_Emulator_API_36`, rendering software e avvio senza caricare lo snapshot. Questa combinazione ha risolto la schermata nera verificata nell'emulatore il 10/10/2026: i controlli e i dati della Home erano caricati, ma non venivano disegnati. App e database vengono conservati. L'avvio a freddo può richiedere circa un minuto o più: aspettare la schermata iniziale di Android prima di aprire l'app. Lasciare il terminale aperto. Per un altro dispositivo usare `-Avd NOME`; per un SDK in un percorso diverso usare `-AndroidSdk PERCORSO`.
+
 ```powershell
 dotnet restore ExpenseTracker.slnx
 dotnet build src/ExpenseTracker/ExpenseTracker.csproj -f net10.0-android
@@ -129,3 +137,14 @@ Resoconto del mese e confronto con i giorni corrispondenti del mese precedente, 
 ## Versione 1.4.1 · Interfaccia e stabilità
 
 Home semplificata, lista Movimenti ridisegnata, testate unificate e comandi di Pianifica rivisti. Correzioni e controlli sull'iPhone sono descritti in [docs/versione-1.4.1.md](docs/versione-1.4.1.md).
+
+## Versione 1.5 · Chat sui due mesi
+
+Domande libere su mese corrente e precedente: totali, categorie, medie, conteggi e importo massimo. Il modello interpreta la domanda, l'app calcola i dati e la risposta mostra periodo, valuta e fatti utilizzati. La chat conserva il contesto dell'ultima domanda, con annullamento e risposta calcolata in caso di generazione non verificabile. Teoria, esempi e procedura di prova sono in [docs/chat-due-mesi.md](docs/chat-due-mesi.md). Riavviare anche il servizio sul PC per utilizzare i nuovi endpoint.
+
+La **1.5.1 (build 8)** corregge «scorso mese» interpretato come mese corrente e le dichiarazioni di movimenti assenti in presenza di dati. Date e conteggi sono ora inviati anche in campi strutturati per verificare la risposta. Aggiornare sia app sia servizio.
+
+
+La **1.5.2 (build 9)** porta la chat in inglese e mostra “Thinking…” sotto la domanda durante l’attesa, con annullamento. Il servizio usa `qwen3.5:9b` senza thinking e risposte brevi. Rafforzati i controlli dei confronti e delle false assenze; aggiornare app e riavviare servizio.
+
+La **1.5.3 (build 10)** gestisce anche gli errori di rete restituiti dal client HTTP nativo Android: interruzione, timeout e annullamento. La domanda resta disponibile per riprovare; la diagnostica degli errori inattesi indica la fase senza registrare domande, importi o chiavi. Questo aggiornamento riguarda l'app e non richiede il riavvio del servizio.

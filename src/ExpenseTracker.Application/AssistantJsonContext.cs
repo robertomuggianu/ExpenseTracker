@@ -7,4 +7,8 @@ namespace ExpenseTracker.Application;
 [JsonSerializable(typeof(AssistantReportRequest))]
 [JsonSerializable(typeof(AssistantReportResponse))]
 [JsonSerializable(typeof(AssistantHealth))]
+[JsonSerializable(typeof(AssistantQuestionRequest))]
+[JsonSerializable(typeof(AssistantInterpretation))]
+[JsonSerializable(typeof(AssistantChatEvidence))]
+[JsonSerializable(typeof(AssistantChatAnswer))]
 public partial class AssistantJsonContext : JsonSerializerContext;
