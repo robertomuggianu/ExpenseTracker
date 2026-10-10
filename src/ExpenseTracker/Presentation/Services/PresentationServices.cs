@@ -53,8 +53,8 @@ public sealed class AppNavigationService(NavigationRequests requests) : IAppNavi
     public Task GoToTransactionEditorAsync(Guid? transactionId = null, bool duplicate = false)
     {
         var route = transactionId.HasValue
-            ? $"//Main/NewTransaction?transactionId={Uri.EscapeDataString(transactionId.Value.ToString("D"))}"
-            : "//Main/NewTransaction";
+            ? $"//NewTransactionRoot/NewTransaction?transactionId={Uri.EscapeDataString(transactionId.Value.ToString("D"))}"
+            : "//NewTransactionRoot/NewTransaction";
         if (duplicate) route += "&duplicate=true";
         return Shell.Current.GoToAsync(route);
     }
@@ -63,7 +63,7 @@ public sealed class AppNavigationService(NavigationRequests requests) : IAppNavi
     {
         requests.Filter = filter;
         requests.Message = message;
-        return Shell.Current.GoToAsync("//Main/Transactions");
+        return Shell.Current.GoToAsync("//TransactionsRoot/Transactions");
     }
 }
 

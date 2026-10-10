@@ -13,13 +13,10 @@ namespace ExpenseTracker.Presentation.ViewModels;
 public partial class DashboardViewModel(ReportingService reportingService, IAppNavigationService navigation,
     AccountService accountService) : ViewModelBase
 {
-    public ObservableCollection<string> Currencies { get; } = [];
     [ObservableProperty] public partial string SelectedCurrency { get; set; } = "EUR";
-    private bool loadingCurrencies;
     private bool refreshPending;
     private DateRange displayedRange;
     [ObservableProperty] public partial string? BalanceWarning { get; set; }
-    partial void OnSelectedCurrencyChanged(string value) { if (!loadingCurrencies) { refreshPending = true; _ = LoadAsync(); } }
     [RelayCommand] private Task OpenCategoryAsync(CategoryBreakdownItem item)
     {
         var range = displayedRange;
@@ -80,9 +77,11 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
     public bool HasNoChartData => !HasChartData;
     [RelayCommand] public Task LoadAsync() => RunAsync(async () =>
     {
-        loadingCurrencies = true;
-        try { var accounts = await accountService.GetAccountsAsync(); Currencies.Clear(); foreach (var code in accounts.Select(a => a.Account.Currency).Distinct()) Currencies.Add(code); if (!Currencies.Contains(SelectedCurrency)) SelectedCurrency = Currencies.FirstOrDefault() ?? "EUR"; }
-        finally { loadingCurrencies = false; }
+        var accounts = await accountService.GetAccountsAsync();
+        // The primary active account determines the Home currency; other currencies stay separate.
+        SelectedCurrency = accounts.Where(a => a.Account.IsActive)
+            .OrderByDescending(a => a.Account.IsPrimary).ThenBy(a => a.Account.CreatedAtUtc).ThenBy(a => a.Account.Id)
+            .Select(a => a.Account.Currency).FirstOrDefault() ?? "EUR";
         do { refreshPending = false; await LoadCoreAsync(); } while (refreshPending);
     });
     private async Task LoadCoreAsync()

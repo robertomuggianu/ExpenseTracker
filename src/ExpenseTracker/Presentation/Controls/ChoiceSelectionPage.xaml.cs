@@ -23,6 +23,7 @@ public partial class ChoiceSelectionPage : ContentPage
     {
         InitializeComponent();
         BindingContext = new ChoiceSelectionModel(title, items);
+        AssistantLauncher.Attach(this);
     }
 
     public static async Task<(bool Accepted, object? Value)> ShowAsync(string title, IReadOnlyList<ChoiceSelectionItem> items)

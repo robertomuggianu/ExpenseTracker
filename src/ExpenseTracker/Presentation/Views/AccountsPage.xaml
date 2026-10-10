@@ -9,7 +9,7 @@
     <Grid>
         <ScrollView>
             <VerticalStackLayout Spacing="0">
-                <controls:PageHeader Heading="Conti" Subtitle="Le tue disponibilità, in un solo posto"/>
+                <controls:PageHeader Heading="Conti"/>
                 <VerticalStackLayout Spacing="6" Padding="20,30,20,22">
                     <Label Text="Saldo totale" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" FontSize="16"/>
                     <Label Style="{StaticResource HeroValue}" HorizontalTextAlignment="Center">
@@ -17,7 +17,7 @@
                     </Label>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout Padding="16,14,16,76" Spacing="12">
+                <VerticalStackLayout Padding="16,14,16,100" Spacing="12">
 
 
                     <Border Style="{StaticResource Card}" IsVisible="{Binding IsEditorVisible}" Stroke="{StaticResource Primary}">

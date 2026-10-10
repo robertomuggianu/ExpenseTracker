@@ -23,7 +23,7 @@ public partial class TransactionsPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (ChoiceSelectionPage.IsOpen) return;
+        if (ChoiceSelectionPage.IsOpen || Shell.Current is AppShell { IsAssistantOpen: true }) return;
         var restoreId = firstVisibleId;
         var previousFilter = _viewModel.FilterSummary;
         await _viewModel.LoadCommand.ExecuteAsync(null);

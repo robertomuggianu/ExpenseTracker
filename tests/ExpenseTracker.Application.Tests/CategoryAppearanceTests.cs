@@ -7,6 +7,17 @@ namespace ExpenseTracker.Application.Tests;
 
 public sealed class CategoryAppearanceTests
 {
+    [Theory]
+    [InlineData("Viaggi", "luggage")]
+    [InlineData("Palestra", "sport")]
+    [InlineData("Benzina", "fuel")]
+    [InlineData("Abbigliamento", "shirt")]
+    public void ExpandedIcons_InferNewCategoriesButPreserveExplicitLegacyChoices(string name, string expected)
+    {
+        Assert.Equal(expected, new Category(Guid.NewGuid(), name, TransactionType.Expense, "#123456").Icon);
+        Assert.Equal("tag", new Category(Guid.NewGuid(), name, TransactionType.Expense, "#123456", icon: "tag").Icon);
+        Assert.Equal("car", new Category(Guid.NewGuid(), name, TransactionType.Expense, "#123456", icon: "car").Icon);
+    }
     [Fact]
     public async Task Appearance_IsPersisted_AndVersionThreeUpgradePreservesCustomColors()
     {

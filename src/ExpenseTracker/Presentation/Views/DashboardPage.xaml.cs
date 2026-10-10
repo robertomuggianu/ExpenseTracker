@@ -16,7 +16,7 @@ public partial class DashboardPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (ChoiceSelectionPage.IsOpen) return;
+        if (ChoiceSelectionPage.IsOpen || Shell.Current is AppShell { IsAssistantOpen: true }) return;
         await _viewModel.LoadCommand.ExecuteAsync(null);
     }
 }

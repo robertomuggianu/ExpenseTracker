@@ -7,6 +7,53 @@ namespace ExpenseTracker.Application.Tests;
 
 public sealed class ViewModelWorkflowTests
 {
+    [Fact] public Task Dashboard_UsesPrimaryCurrencyAndKeepsOtherBalancesSeparate() => WithDatabase(async repo =>
+    {
+        var eur = Assert.Single(await repo.GetAccountsAsync());
+        eur.SetPrimary(false);
+        var usd = new Account(Guid.NewGuid(), "Dollari", 200m, "USD", isPrimary: true);
+        await repo.SaveAccountsAsync([eur, usd]);
+        var expense = (await repo.GetCategoriesAsync()).First(c => c.Type == TransactionType.Expense);
+        await repo.SaveTransactionAsync(new(Guid.NewGuid(), DateTime.UtcNow, TransactionType.Expense, eur.Id, expense.Id, 10m));
+        await repo.SaveTransactionAsync(new(Guid.NewGuid(), DateTime.UtcNow, TransactionType.Expense, usd.Id, expense.Id, 20m, "USD"));
+        var vm = new DashboardViewModel(new(repo), new Navigation(), new(repo));
+        await vm.LoadAsync();
+        Assert.Equal("USD", vm.SelectedCurrency); Assert.Equal("USD", vm.BalanceCurrency);
+        Assert.Equal(180m, vm.TotalBalance); Assert.Equal(20m, vm.Expense);
+        usd.SetPrimary(false); usd.SetActive(false); eur.SetPrimary(true);
+        await repo.SaveAccountsAsync([eur, usd]); await vm.LoadAsync();
+        Assert.Equal("EUR", vm.SelectedCurrency); Assert.Equal(90m, vm.TotalBalance); Assert.Equal(10m, vm.Expense);
+    });
+
+    [Fact] public Task Dashboard_WithoutPrimaryUsesActiveAccountInsteadOfArchivedCurrency() => WithDatabase(async repo =>
+    {
+        var eur = Assert.Single(await repo.GetAccountsAsync());
+        eur.SetPrimary(false); eur.SetActive(false);
+        var usd = new Account(Guid.NewGuid(), "Dollari", 200m, "USD");
+        await repo.SaveAccountsAsync([eur, usd]);
+        var vm = new DashboardViewModel(new(repo), new Navigation(), new(repo)); await vm.LoadAsync();
+        Assert.Equal("USD", vm.ReportCurrency); Assert.Equal(200m, vm.TotalBalance);
+        usd.SetActive(false); await repo.SaveAccountsAsync([usd]); await vm.LoadAsync();
+        Assert.Equal("EUR", vm.SelectedCurrency); Assert.Equal(0m, vm.TotalBalance);
+    });
+
+    [Fact] public Task Categories_SearchReloadAndEditingPreserveSavedAppearance() => WithDatabase(async repo =>
+    {
+        var service = new ExpenseTracker.Application.CategoryService(repo);
+        var saved = await service.SaveCategoryAsync(new(null, "Viaggio Giappone", TransactionType.Expense, "#123456", true, "luggage"));
+        var vm = new CategoriesViewModel(service); await vm.LoadAsync();
+        vm.SearchText = " giappone ";
+        Assert.Equal(saved.Id, Assert.Single(vm.VisibleCategories).Id);
+        vm.EditCategoryCommand.Execute(Assert.Single(vm.VisibleCategories));
+        Assert.Equal("luggage", vm.SelectedIcon.Key); Assert.Equal("#123456", vm.CategoryColor);
+        vm.CategoryName = "Vacanza Giappone"; await vm.SaveCategoryCommand.ExecuteAsync(null);
+        Assert.Equal("Vacanza Giappone", Assert.Single(vm.VisibleCategories).Name);
+        vm.SearchText = "assente"; Assert.Empty(vm.VisibleCategories); Assert.True(vm.HasNoCategories);
+        vm.SearchText = ""; Assert.Equal(vm.Categories.Count, vm.VisibleCategories.Count);
+        var reopened = await repo.GetCategoryAsync(saved.Id);
+        Assert.Equal("luggage", reopened!.Icon); Assert.Equal("#123456", reopened.Color);
+    });
+
     [Fact] public Task Transactions_NavigationFilterArrivingDuringQueryIsApplied() => WithDatabase(async repo =>
     {
         var account = Assert.Single(await repo.GetAccountsAsync());

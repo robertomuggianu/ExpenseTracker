@@ -5,12 +5,13 @@ ExpenseTracker è un'applicazione personale offline-first realizzata con .NET MA
 ## Funzioni MVP
 
 - gestione di più conti con un solo conto principale e saldo calcolato;
-- categorie di entrata/uscita con 16 icone e una palette di 32 colori, disattivabili senza eliminare lo storico;
+- categorie di entrata/uscita in griglia senza nomi, con 45 icone Tabler e una palette di 32 colori, disattivabili senza eliminare lo storico;
 - inserimento, modifica, filtro, dettaglio ed eliminazione dei movimenti;
-- schermata Mese con navigazione tra mesi e confronto delle spese con il mese precedente;
+- Home con valuta automatica del conto principale, navigazione tra mesi e confronto delle spese con il mese precedente;
 - statistiche per settimana, mese, anno o periodo personalizzato, grafici a ciambella e andamento giornaliero/mensile con LiveCharts2;
 - inserimento rapido con le categorie più usate, conto principale preselezionato e dettagli facoltativi;
-- cronologia raggruppata per giorno, ricerca e filtri automatici, navigazione dal menu laterale;
+- cronologia raggruppata per giorno, ricerca uniforme e filtri automatici, navigazione dal menu laterale;
+- assistente AI accessibile dal pulsante in basso a sinistra, con ritorno alla pagina precedente senza perdere i campi compilati;
 - esportazione CSV completa, filtrata o del mese selezionato e importazione CSV/XLSX.
 
 L'interfaccia usa un tema scuro verde petrolio con superfici arrotondate, accenti menta e il pulsante di aggiunta ambrato. Il colore di ogni categoria è condiviso tra selezione, movimenti e grafici. Per il mese corrente il confronto usa i giorni trascorsi in entrambi i mesi; per un mese passato usa i due mesi completi.
@@ -148,3 +149,9 @@ La **1.5.1 (build 8)** corregge «scorso mese» interpretato come mese corrente 
 La **1.5.2 (build 9)** porta la chat in inglese e mostra “Thinking…” sotto la domanda durante l’attesa, con annullamento. Il servizio usa `qwen3.5:9b` senza thinking e risposte brevi. Rafforzati i controlli dei confronti e delle false assenze; aggiornare app e riavviare servizio.
 
 La **1.5.3 (build 10)** gestisce anche gli errori di rete restituiti dal client HTTP nativo Android: interruzione, timeout e annullamento. La domanda resta disponibile per riprovare; la diagnostica degli errori inattesi indica la fase senza registrare domande, importi o chiavi. Questo aggiornamento riguarda l'app e non richiede il riavvio del servizio.
+
+La **1.5.4 (build 11)** separa le destinazioni del menu in sezioni Shell indipendenti, ciascuna con una sola scheda. Evita la gestione iOS delle schede aggiuntive nel menu nativo “Altro”, compatibile con il problema delle testate doppie su Esporta e importa, Pianifica e Assistente. Aggiornati anche i collegamenti ai movimenti e all’editor. Dettagli e verifica iPhone in [docs/versione-1.5.4.md](docs/versione-1.5.4.md).
+
+Le modifiche all’interfaccia della versione 1.6.0 (build 12) sono descritte in [docs/versione-1.6.0.md](docs/versione-1.6.0.md). Provenienza e licenza delle icone: [Tabler Icons](docs/licenses/tabler-icons.md).
+
+La **1.6.1 (build 13)** rende flottanti i pulsanti AI e “+”, rimuovendo la fascia inferiore separata su tutte le pagine. Dettagli in [docs/versione-1.6.1.md](docs/versione-1.6.1.md).

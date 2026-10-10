@@ -12,55 +12,67 @@
         <VerticalStackLayout Spacing="4">
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
             <Image Source="tab_month.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Home" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Dashboard" Clicked="OnNavigate"/>
+            <Button Grid.Column="1" Text="Home" Style="{StaticResource DrawerButton}" CommandParameter="//DashboardRoot/Dashboard" Clicked="OnNavigate"/>
           </Grid>
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
             <Image Source="category_wallet.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Conti" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Accounts" Clicked="OnNavigate"/>
+            <Button Grid.Column="1" Text="Conti" Style="{StaticResource DrawerButton}" CommandParameter="//AccountsRoot/Accounts" Clicked="OnNavigate"/>
           </Grid>
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
             <Image Source="tab_transactions.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Movimenti" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Transactions" Clicked="OnNavigate"/>
+            <Button Grid.Column="1" Text="Movimenti" Style="{StaticResource DrawerButton}" CommandParameter="//TransactionsRoot/Transactions" Clicked="OnNavigate"/>
           </Grid>
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
             <Image Source="tab_chart.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Statistiche" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Statistics" Clicked="OnNavigate"/>
+            <Button Grid.Column="1" Text="Statistiche" Style="{StaticResource DrawerButton}" CommandParameter="//StatisticsRoot/Statistics" Clicked="OnNavigate"/>
           </Grid>
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
             <Image Source="category_tag.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Categorie" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Categories" Clicked="OnNavigate"/>
+            <Button Grid.Column="1" Text="Categorie" Style="{StaticResource DrawerButton}" CommandParameter="//CategoriesRoot/Categories" Clicked="OnNavigate"/>
           </Grid>
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
             <Image Source="category_repeat.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Esporta e importa" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Export" Clicked="OnNavigate"/>
+            <Button Grid.Column="1" Text="Esporta e importa" Style="{StaticResource DrawerButton}" CommandParameter="//ExportRoot/Export" Clicked="OnNavigate"/>
           </Grid>
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
             <Image Source="tab_plan.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Pianifica" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Planning" Clicked="OnNavigate"/>
-          </Grid>
-          <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
-            <Image Source="tab_assistant.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Assistente AI" Style="{StaticResource DrawerButton}" CommandParameter="//Main/Assistant" Clicked="OnNavigate"/>
+            <Button Grid.Column="1" Text="Pianifica" Style="{StaticResource DrawerButton}" CommandParameter="//PlanningRoot/Planning" Clicked="OnNavigate"/>
           </Grid>
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
             <Image Source="tab_plus.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Nuovo movimento" Style="{StaticResource DrawerButton}" CommandParameter="//Main/NewTransaction" Clicked="OnNavigate"/>
+            <Button Grid.Column="1" Text="Nuovo movimento" Style="{StaticResource DrawerButton}" CommandParameter="//NewTransactionRoot/NewTransaction" Clicked="OnNavigate"/>
           </Grid>
         </VerticalStackLayout>
       </ScrollView>
-      <Label Grid.Row="2" Text="Il tuo bilancio, con calma. · v1.5.3" TextColor="{StaticResource DarkTextMuted}" FontSize="11"/>
+      <Label Grid.Row="2" Text="v1.6.1" TextColor="{StaticResource DarkTextMuted}" FontSize="11"/>
     </Grid>
   </Shell.FlyoutContent>
-  <FlyoutItem Route="Main" Title="ExpenseTracker" Shell.TabBarIsVisible="False">
+  <!-- One section per menu destination avoids the native iOS More tab navigation. -->
+  <FlyoutItem Route="DashboardRoot" Title="Home" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False">
     <Tab Title="Home" Route="Dashboard"><ShellContent x:Name="DashboardContent"/></Tab>
+  </FlyoutItem>
+  <FlyoutItem Route="AccountsRoot" Title="Conti" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False">
     <Tab Title="Conti" Route="Accounts"><ShellContent x:Name="AccountsContent"/></Tab>
+  </FlyoutItem>
+  <FlyoutItem Route="TransactionsRoot" Title="Movimenti" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False">
     <Tab Title="Movimenti" Route="Transactions"><ShellContent x:Name="TransactionsContent"/></Tab>
+  </FlyoutItem>
+  <FlyoutItem Route="StatisticsRoot" Title="Statistiche" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False">
     <Tab Title="Statistiche" Route="Statistics"><ShellContent x:Name="StatisticsContent"/></Tab>
+  </FlyoutItem>
+  <FlyoutItem Route="CategoriesRoot" Title="Categorie" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False">
     <Tab Title="Categorie" Route="Categories"><ShellContent x:Name="CategoriesContent"/></Tab>
+  </FlyoutItem>
+  <FlyoutItem Route="ExportRoot" Title="Esporta e importa" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False">
     <Tab Title="Esporta e importa" Route="Export"><ShellContent x:Name="ExportContent"/></Tab>
+  </FlyoutItem>
+  <FlyoutItem Route="NewTransactionRoot" Title="Nuovo movimento" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False">
     <Tab Title="Nuovo movimento" Route="NewTransaction"><ShellContent x:Name="NewTransactionContent"/></Tab>
+  </FlyoutItem>
+  <FlyoutItem Route="PlanningRoot" Title="Pianifica" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False">
     <Tab Title="Pianifica" Route="Planning"><ShellContent x:Name="PlanningContent"/></Tab>
-    <Tab Title="Assistente" Route="Assistant"><ShellContent x:Name="AssistantContent"/></Tab>
+  </FlyoutItem>
+  <FlyoutItem Route="MoreRoot" Title="Altro" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False">
     <Tab Title="Altro" Route="More"><ShellContent x:Name="MoreContent"/></Tab>
   </FlyoutItem>
 </Shell>
