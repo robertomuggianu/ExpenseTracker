@@ -1,58 +1,81 @@
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" x:Class="ExpenseTracker.Presentation.Views.PlanningPage" x:Name="Page" Title="Pianifica">
-  <ScrollView><VerticalStackLayout Spacing="14" Padding="18,16,18,40">
+<ContentPage Shell.NavBarIsVisible="False" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" x:Class="ExpenseTracker.Presentation.Views.PlanningPage" x:Name="Page" Title="Pianifica">
+  <ScrollView><VerticalStackLayout Spacing="0">
     <controls:PageHeader Heading="Pianifica" Subtitle="Budget, scadenze e trasferimenti"/>
-    <FlexLayout Wrap="Wrap"><Button Text="Budget" Command="{Binding SelectBudgetsCommand}"/><Button Text="Ricorrenze" Command="{Binding SelectRecurringCommand}"/><Button Text="Trasferisci" Command="{Binding SelectTransferCommand}"/></FlexLayout>
+    <VerticalStackLayout Padding="18,18,18,40" Spacing="16">
+    <Border Padding="4" BackgroundColor="{StaticResource DarkSurfaceAlt}" StrokeShape="RoundRectangle 18">
+      <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+        <Button Text="Budget" Style="{StaticResource PlanningTab}" Command="{Binding SelectBudgetsCommand}">
+          <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding ShowBudgets}" Value="True"><Setter Property="BackgroundColor" Value="{StaticResource Primary}"/><Setter Property="TextColor" Value="{StaticResource DarkBackground}"/></DataTrigger></Button.Triggers>
+        </Button>
+        <Button Grid.Column="1" Text="Ricorrenze" Style="{StaticResource PlanningTab}" Command="{Binding SelectRecurringCommand}">
+          <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding ShowRecurring}" Value="True"><Setter Property="BackgroundColor" Value="{StaticResource Primary}"/><Setter Property="TextColor" Value="{StaticResource DarkBackground}"/></DataTrigger></Button.Triggers>
+        </Button>
+        <Button Grid.Column="2" Text="Trasferisci" Style="{StaticResource PlanningTab}" Command="{Binding SelectTransferCommand}">
+          <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding ShowTransfer}" Value="True"><Setter Property="BackgroundColor" Value="{StaticResource Primary}"/><Setter Property="TextColor" Value="{StaticResource DarkBackground}"/></DataTrigger></Button.Triggers>
+        </Button>
+      </Grid>
+    </Border>
     <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
     <Label Text="{Binding StatusMessage}" TextColor="{StaticResource PrimaryGlow}"/>
     <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}"/>
-    <VerticalStackLayout IsVisible="{Binding ShowBudgets}" Spacing="12">
-      <Grid ColumnDefinitions="Auto,*,Auto"><Button Text="‹" Command="{Binding PreviousMonthCommand}"/><Label Grid.Column="1" Text="{Binding MonthLabel}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/><Button Grid.Column="2" Text="›" Command="{Binding NextMonthCommand}"/></Grid>
+    <VerticalStackLayout IsVisible="{Binding ShowBudgets}" IsEnabled="{Binding CanInteract}" Spacing="14">
+      <Grid ColumnDefinitions="44,*,44">
+        <Button Text="‹" Style="{StaticResource TextButton}" FontSize="28" Padding="0" Command="{Binding PreviousMonthCommand}" SemanticProperties.Description="Mese precedente"/>
+        <Label Grid.Column="1" Text="{Binding MonthLabel}" FontSize="18" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+        <Button Grid.Column="2" Text="›" Style="{StaticResource TextButton}" FontSize="28" Padding="0" Command="{Binding NextMonthCommand}" SemanticProperties.Description="Mese successivo"/>
+      </Grid>
       <Label Text="Il budget riguarda il mese selezionato. Le ricorrenze non confermate non sono incluse nello speso." Style="{StaticResource MutedLabel}"/>
       <Border Style="{StaticResource Card}"><VerticalStackLayout Spacing="10">
         <controls:ChoiceField Title="Categoria di spesa" ItemsSource="{Binding ExpenseCategories}" SelectedItem="{Binding BudgetCategory}" DisplayMemberPath="Name"/>
         <controls:ChoiceField Title="Valuta" ItemsSource="{Binding Currencies}" SelectedItem="{Binding BudgetCurrency}"/>
-        <Entry Placeholder="Limite mensile, es. 250,00" Keyboard="Numeric" Text="{Binding BudgetAmount}"/>
+        <Border Style="{StaticResource InputCard}"><Entry Placeholder="Limite mensile, es. 250,00" Keyboard="Numeric" Text="{Binding BudgetAmount}"/></Border>
         <Button Text="Salva budget" Command="{Binding SaveBudgetCommand}"/>
       </VerticalStackLayout></Border>
       <VerticalStackLayout BindableLayout.ItemsSource="{Binding Budgets}" Spacing="10"><BindableLayout.ItemTemplate><DataTemplate>
         <Border Style="{StaticResource Card}"><VerticalStackLayout Spacing="8">
           <Label Text="{Binding Name}" FontAttributes="Bold"/><Label Text="{Binding Detail}"/><ProgressBar Progress="{Binding Progress}" ProgressColor="{StaticResource PrimaryGlow}"/><Label Text="{Binding Remaining}"/>
-          <FlexLayout><Button Text="Modifica" Style="{StaticResource TextButton}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditBudgetCommand}" CommandParameter="{Binding .}"/><Button Text="Elimina" Style="{StaticResource TextButton}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.RemoveBudgetCommand}" CommandParameter="{Binding .}"/></FlexLayout>
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="8"><Button Text="Modifica" Style="{StaticResource TextButton}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditBudgetCommand}" CommandParameter="{Binding .}"/><Button Grid.Column="1" Text="Elimina" Style="{StaticResource DangerButton}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.RemoveBudgetCommand}" CommandParameter="{Binding .}"/></Grid>
         </VerticalStackLayout></Border>
       </DataTemplate></BindableLayout.ItemTemplate><BindableLayout.EmptyView><Label Text="Nessun budget per questo mese. Aggiungi il primo qui sopra."/></BindableLayout.EmptyView></VerticalStackLayout>
     </VerticalStackLayout>
-    <VerticalStackLayout IsVisible="{Binding ShowRecurring}" Spacing="12">
+    <VerticalStackLayout IsVisible="{Binding ShowRecurring}" IsEnabled="{Binding CanInteract}" Spacing="14">
       <Label Text="Abbonamenti e movimenti ricorrenti" Style="{StaticResource SectionTitle}"/>
       <Label Text="Le scadenze sono proposte: non cambiano il saldo finché non tocchi Conferma. Per cambiare il calendario, sospendi la ricorrenza e creane una nuova." Style="{StaticResource MutedLabel}"/>
-      <Button Text="Nuova ricorrenza" Command="{Binding NewRuleCommand}"/>
+      <Button Text="+  Nuova ricorrenza" HorizontalOptions="Start" Command="{Binding NewRuleCommand}"/>
       <Border Style="{StaticResource Card}" IsVisible="{Binding IsRuleEditorVisible}"><VerticalStackLayout Spacing="10">
-        <Entry Placeholder="Nome, es. Netflix o stipendio" Text="{Binding RuleName}"/>
-        <Entry Placeholder="Importo" Keyboard="Numeric" Text="{Binding RuleAmount}"/>
+        <Border Style="{StaticResource InputCard}"><Entry Placeholder="Nome, es. Netflix o stipendio" Text="{Binding RuleName}"/></Border>
+        <Border Style="{StaticResource InputCard}"><Entry Placeholder="Importo, es. 12,50" Keyboard="Numeric" Text="{Binding RuleAmount}"/></Border>
         <controls:ChoiceField Title="Tipo" ItemsSource="{Binding Types}" SelectedItem="{Binding RuleType}" DisplayMemberPath="Label"/>
         <controls:ChoiceField Title="Conto" ItemsSource="{Binding Accounts}" SelectedItem="{Binding RuleAccount}" DisplayMemberPath="DisplayName"/>
         <controls:ChoiceField Title="Categoria" ItemsSource="{Binding Categories}" SelectedItem="{Binding RuleCategory}" DisplayMemberPath="Name"/>
-        <VerticalStackLayout IsEnabled="{Binding CanChangeSchedule}"><Label Text="Prima scadenza"/><DatePicker Date="{Binding StartDate}"/><controls:ChoiceField Title="Frequenza" ItemsSource="{Binding Frequencies}" SelectedItem="{Binding Frequency}" DisplayMemberPath="Label"/></VerticalStackLayout>
+        <VerticalStackLayout IsEnabled="{Binding CanChangeSchedule}" Spacing="8"><Label Text="Prima scadenza" Style="{StaticResource MutedLabel}"/><Border Style="{StaticResource InputCard}"><DatePicker Date="{Binding StartDate}" Format="dd/MM/yyyy"/></Border><controls:ChoiceField Title="Frequenza" ItemsSource="{Binding Frequencies}" SelectedItem="{Binding Frequency}" DisplayMemberPath="Label"/></VerticalStackLayout>
         <Button Text="Salva ricorrenza" Command="{Binding SaveRuleCommand}"/><Button Text="Annulla" Command="{Binding CancelRuleCommand}" Style="{StaticResource TextButton}"/>
       </VerticalStackLayout></Border>
       <VerticalStackLayout BindableLayout.ItemsSource="{Binding Rules}" Spacing="10"><BindableLayout.ItemTemplate><DataTemplate>
         <Border Style="{StaticResource Card}"><VerticalStackLayout Spacing="8"><Label Text="{Binding Name}" FontAttributes="Bold"/><Label Text="{Binding Detail}"/>
           <Button Text="Conferma movimento" IsVisible="{Binding CanConfirm}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.ConfirmRuleCommand}" CommandParameter="{Binding .}"/>
-          <FlexLayout Wrap="Wrap">
-            <Button Text="Modifica" Style="{StaticResource TextButton}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditRuleCommand}" CommandParameter="{Binding .}"/>
-            <Button Text="Salta scadenza" Style="{StaticResource TextButton}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.SkipRuleCommand}" CommandParameter="{Binding .}"/>
-            <Button Text="{Binding PauseLabel}" Style="{StaticResource TextButton}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.PauseRuleCommand}" CommandParameter="{Binding .}"/>
-            <Button Text="Elimina" Style="{StaticResource TextButton}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.RemoveRuleCommand}" CommandParameter="{Binding .}"/>
-          </FlexLayout>
+          <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4">
+            <Button Text="Modifica" Style="{StaticResource SecondaryButton}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditRuleCommand}" CommandParameter="{Binding .}"/>
+            <Button Grid.Column="1" Text="{Binding PauseLabel}" Style="{StaticResource SecondaryButton}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.PauseRuleCommand}" CommandParameter="{Binding .}"/>
+            <Button Grid.Row="1" Text="Salta scadenza" Style="{StaticResource TextButton}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.SkipRuleCommand}" CommandParameter="{Binding .}"/>
+            <Button Grid.Row="1" Grid.Column="1" Text="Elimina" Style="{StaticResource DangerButton}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.RemoveRuleCommand}" CommandParameter="{Binding .}"/>
+          </Grid>
         </VerticalStackLayout></Border>
       </DataTemplate></BindableLayout.ItemTemplate><BindableLayout.EmptyView><Label Text="Nessuna ricorrenza. Aggiungi un abbonamento o un movimento periodico."/></BindableLayout.EmptyView></VerticalStackLayout>
     </VerticalStackLayout>
-    <VerticalStackLayout IsVisible="{Binding ShowTransfer}" Spacing="12">
+    <VerticalStackLayout IsVisible="{Binding ShowTransfer}" IsEnabled="{Binding CanInteract}" Spacing="14">
       <Label Text="Sposta denaro tra i tuoi conti" Style="{StaticResource SectionTitle}"/>
       <Label Text="Il trasferimento aggiorna entrambi i saldi senza aumentare entrate o spese. I conti devono avere la stessa valuta." Style="{StaticResource MutedLabel}"/>
-      <controls:ChoiceField Title="Dal conto" ItemsSource="{Binding Accounts}" SelectedItem="{Binding SourceAccount}" DisplayMemberPath="DisplayName"/>
-      <controls:ChoiceField Title="Al conto" ItemsSource="{Binding Accounts}" SelectedItem="{Binding DestinationAccount}" DisplayMemberPath="DisplayName"/>
-      <Entry Placeholder="Importo" Keyboard="Numeric" Text="{Binding TransferAmount}"/><DatePicker Date="{Binding TransferDate}"/><Entry Placeholder="Note facoltative" Text="{Binding TransferNotes}"/>
-      <Button Text="Registra trasferimento" Command="{Binding SaveTransferCommand}"/>
+      <Border Style="{StaticResource Card}"><VerticalStackLayout Spacing="10">
+        <controls:ChoiceField Title="Dal conto" ItemsSource="{Binding Accounts}" SelectedItem="{Binding SourceAccount}" DisplayMemberPath="DisplayName"/>
+        <controls:ChoiceField Title="Al conto" ItemsSource="{Binding Accounts}" SelectedItem="{Binding DestinationAccount}" DisplayMemberPath="DisplayName"/>
+        <Border Style="{StaticResource InputCard}"><Entry Placeholder="Importo, es. 50,00" Keyboard="Numeric" Text="{Binding TransferAmount}"/></Border>
+        <Label Text="Data" Style="{StaticResource MutedLabel}" FontSize="12"/>
+        <Border Style="{StaticResource InputCard}"><DatePicker Date="{Binding TransferDate}" Format="dd/MM/yyyy"/></Border>
+        <Border Style="{StaticResource InputCard}"><Entry Placeholder="Note facoltative" Text="{Binding TransferNotes}"/></Border>
+        <Button Text="Registra trasferimento" Command="{Binding SaveTransferCommand}"/>
+      </VerticalStackLayout></Border>
+    </VerticalStackLayout>
     </VerticalStackLayout>
   </VerticalStackLayout></ScrollView>
 </ContentPage>

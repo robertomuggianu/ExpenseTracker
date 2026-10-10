@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui" x:Class="ExpenseTracker.Presentation.Views.StatisticsPage" x:Name="Page" Title="Statistiche">
+<ContentPage Shell.NavBarIsVisible="False" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui" x:Class="ExpenseTracker.Presentation.Views.StatisticsPage" x:Name="Page" Title="Statistiche">
   <ScrollView>
     <VerticalStackLayout Spacing="0">
       <controls:PageHeader Heading="Statistiche" Subtitle="Uno sguardo al tuo bilancio"/>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ContentPage xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui" x:Class="ExpenseTracker.Presentation.Views.DashboardPage" x:Name="Page" Title="Home">
+<ContentPage Shell.NavBarIsVisible="False" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui" x:Class="ExpenseTracker.Presentation.Views.DashboardPage" x:Name="Page" Title="Home">
   <Grid>
     <ScrollView>
       <VerticalStackLayout Spacing="0">
@@ -71,36 +71,6 @@
               </Label>
             </Grid>
           </Border>
-        <Grid ColumnDefinitions="*,Auto">
-          <Label Text="Ultimi movimenti" Style="{StaticResource SectionTitle}" VerticalTextAlignment="Center"/>
-          <Button Grid.Column="1" Text="Tutti ›" Style="{StaticResource TextButton}" Command="{Binding ShowTransactionsCommand}"/>
-        </Grid>
-        <VerticalStackLayout BindableLayout.ItemsSource="{Binding RecentTransactions}" Spacing="10">
-          <BindableLayout.ItemTemplate>
-            <DataTemplate>
-              <Border Style="{StaticResource Card}" Padding="14">
-                <Grid ColumnDefinitions="44,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
-                  <Border Grid.RowSpan="2" WidthRequest="44" HeightRequest="44" Padding="10" StrokeThickness="0" BackgroundColor="{Binding CategoryColor}" StrokeShape="RoundRectangle 16">
-                    <Image Source="{Binding IconSource}"/>
-                  </Border>
-                  <Label Grid.Column="1" Text="{Binding DisplayDescription}" FontAttributes="Bold" LineBreakMode="TailTruncation"/>
-                  <Label Grid.Column="2" FontAttributes="Bold">
-                    <Label.Text>
-                      <MultiBinding Converter="{StaticResource MoneyConverter}">
-                        <Binding Path="SignedAmount"/>
-                        <Binding Path="Transaction.Currency"/>
-                      </MultiBinding>
-                    </Label.Text>
-                  </Label>
-                  <Label Grid.Row="1" Grid.Column="1" Text="{Binding CategoryName}" Style="{StaticResource MutedLabel}" FontSize="12"/>
-                  <Label Grid.Row="1" Grid.Column="2" Text="{Binding LocalDate, StringFormat='{0:dd MMM}'}" Style="{StaticResource MutedLabel}" FontSize="12"/>
-                </Grid>
-              </Border>
-            </DataTemplate>
-          </BindableLayout.ItemTemplate>
-        </VerticalStackLayout>
-        <Label Text="Nessun movimento in questo mese." IsVisible="{Binding HasNoRecentTransactions}" Style="{StaticResource MutedLabel}"/>
-        <Button Text="Esporta questo mese in CSV" Style="{StaticResource SecondaryButton}" Command="{Binding ExportMonthCommand}"/>
           <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
           <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
         </VerticalStackLayout>

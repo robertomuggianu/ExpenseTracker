@@ -26,8 +26,11 @@ public partial class AssistantPage : ContentPage
     }
     private void OnMessagesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        if (e.Action == NotifyCollectionChangedAction.Add)
+        if (e.Action is NotifyCollectionChangedAction.Add or NotifyCollectionChangedAction.Replace)
             Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(100), async () =>
-                await ConversationScroll.ScrollToAsync(MessagesLayout, ScrollToPosition.End, true));
+            {
+                if (MessagesLayout.Children.LastOrDefault() is View message)
+                    await ConversationScroll.ScrollToAsync(message, ScrollToPosition.Start, true);
+            });
     }
 }

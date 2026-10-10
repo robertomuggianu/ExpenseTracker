@@ -1,5 +1,7 @@
 # Assistente locale · prima fase · versione 1.4
 
+Questa pagina descrive il prototipo 1.4 e la configurazione di rete. Il servizio attuale usa per default `qwen3.5:9b`; per riprodurre il prototipo con il vecchio modello usare `scripts/start-assistant.ps1 -Model qwen2.5:3b`. Per la chat attuale della versione 1.5.2 in inglese, i dati inviati e le prove aggiornate vedere [Chat sui due mesi](chat-due-mesi.md).
+
 L'app prepara un riepilogo dal database SQLite dell'iPhone, lo invia al servizio ASP.NET Core sul PC e riceve un testo prodotto da Ollama con `qwen2.5:3b`. Il modello è quello già provato da Roberto. Questa versione offre **Riassumi questo mese** e **Confronta con il mese precedente**. Le domande libere con tool calling saranno una fase successiva.
 
 ## Avvio sul PC Windows
@@ -20,7 +22,7 @@ L'app prepara un riepilogo dal database SQLite dell'iPhone, lo invia al servizio
 
    ```powershell
    cd C:\Users\Roberto\Desktop\projects\ExpenseTracker
-   powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-assistant.ps1
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-assistant.ps1 -Model qwen2.5:3b
    ```
 
    `ExecutionPolicy Bypass` riguarda soltanto il processo avviato, non cambia la policy di Windows. Serve .NET SDK 10. Lo script genera una chiave casuale, mostra gli indirizzi IP privati disponibili e avvia il servizio sulla porta **5188**. Usa l'indirizzo dell'interfaccia Wi-Fi o Ethernet collegata alla rete dell'iPhone, evitando VPN/interfacce virtuali. Lascia aperto il terminale; `Ctrl+C` arresta il servizio.

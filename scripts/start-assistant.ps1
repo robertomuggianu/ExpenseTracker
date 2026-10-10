@@ -1,6 +1,6 @@
 param(
     [int]$Port = 5188,
-    [string]$Model = 'qwen2.5:3b'
+    [string]$Model = 'qwen3.5:9b'
 )
 $ErrorActionPreference = 'Stop'
 if ($Port -lt 1024 -or $Port -gt 65535) { throw 'La porta deve essere compresa tra 1024 e 65535.' }

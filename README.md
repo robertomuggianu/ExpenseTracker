@@ -10,10 +10,10 @@ ExpenseTracker è un'applicazione personale offline-first realizzata con .NET MA
 - schermata Mese con navigazione tra mesi e confronto delle spese con il mese precedente;
 - statistiche per settimana, mese, anno o periodo personalizzato, grafici a ciambella e andamento giornaliero/mensile con LiveCharts2;
 - inserimento rapido con le categorie più usate, conto principale preselezionato e dettagli facoltativi;
-- cronologia raggruppata per giorno e navigazione in basso: Mese, Movimenti, Aggiungi, Analisi, Altro;
+- cronologia raggruppata per giorno, ricerca e filtri automatici, navigazione dal menu laterale;
 - esportazione CSV completa, filtrata o del mese selezionato e importazione CSV/XLSX.
 
-L'interfaccia usa un tema scuro con superfici arrotondate e accenti viola. Il colore di ogni categoria è condiviso tra selezione, movimenti e grafici. Per il mese corrente il confronto usa i giorni trascorsi in entrambi i mesi; per un mese passato usa i due mesi completi.
+L'interfaccia usa un tema scuro verde petrolio con superfici arrotondate, accenti menta e il pulsante di aggiunta ambrato. Il colore di ogni categoria è condiviso tra selezione, movimenti e grafici. Per il mese corrente il confronto usa i giorni trascorsi in entrambi i mesi; per un mese passato usa i due mesi completi.
 
 ## Architettura
 
@@ -62,6 +62,14 @@ La migrazione 4 aggiunge l'icona, suggerita dal nome della categoria, e diversif
 La valutazione per iOS 26.6.1 e carte BCC Alpi Marittime è in [docs/wallet-valutazione.md](docs/wallet-valutazione.md). La cattura dei pagamenti Wallet non è ancora implementata né verificata sul dispositivo.
 
 ## Build, test e avvio
+
+Per avviare l'emulatore Android configurato sul PC, da PowerShell nella cartella del progetto:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-emulator.ps1
+```
+
+Lo script usa `MAUI_Emulator_API_36`, rendering software e avvio senza caricare lo snapshot. Questa combinazione ha risolto la schermata nera verificata nell'emulatore il 10/10/2026: i controlli e i dati della Home erano caricati, ma non venivano disegnati. App e database vengono conservati. L'avvio a freddo può richiedere circa un minuto o più: aspettare la schermata iniziale di Android prima di aprire l'app. Lasciare il terminale aperto. Per un altro dispositivo usare `-Avd NOME`; per un SDK in un percorso diverso usare `-AndroidSdk PERCORSO`.
 
 ```powershell
 dotnet restore ExpenseTracker.slnx
@@ -125,3 +133,18 @@ Funzioni, correzioni, verifiche e limiti sono descritti in [docs/versione-1.3.md
 ## Versione 1.4 · Assistente locale
 
 Resoconto del mese e confronto con i giorni corrispondenti del mese precedente, con totali calcolati in C#, collegamento a Ollama sul PC, chiave di accesso, annullamento e gestione offline. La procedura completa per avviare il servizio e collegare l'iPhone è in [docs/assistente-locale.md](docs/assistente-locale.md).
+
+## Versione 1.4.1 · Interfaccia e stabilità
+
+Home semplificata, lista Movimenti ridisegnata, testate unificate e comandi di Pianifica rivisti. Correzioni e controlli sull'iPhone sono descritti in [docs/versione-1.4.1.md](docs/versione-1.4.1.md).
+
+## Versione 1.5 · Chat sui due mesi
+
+Domande libere su mese corrente e precedente: totali, categorie, medie, conteggi e importo massimo. Il modello interpreta la domanda, l'app calcola i dati e la risposta mostra periodo, valuta e fatti utilizzati. La chat conserva il contesto dell'ultima domanda, con annullamento e risposta calcolata in caso di generazione non verificabile. Teoria, esempi e procedura di prova sono in [docs/chat-due-mesi.md](docs/chat-due-mesi.md). Riavviare anche il servizio sul PC per utilizzare i nuovi endpoint.
+
+La **1.5.1 (build 8)** corregge «scorso mese» interpretato come mese corrente e le dichiarazioni di movimenti assenti in presenza di dati. Date e conteggi sono ora inviati anche in campi strutturati per verificare la risposta. Aggiornare sia app sia servizio.
+
+
+La **1.5.2 (build 9)** porta la chat in inglese e mostra “Thinking…” sotto la domanda durante l’attesa, con annullamento. Il servizio usa `qwen3.5:9b` senza thinking e risposte brevi. Rafforzati i controlli dei confronti e delle false assenze; aggiornare app e riavviare servizio.
+
+La **1.5.3 (build 10)** gestisce anche gli errori di rete restituiti dal client HTTP nativo Android: interruzione, timeout e annullamento. La domanda resta disponibile per riprovare; la diagnostica degli errori inattesi indica la fase senza registrare domande, importi o chiavi. Questo aggiornamento riguarda l'app e non richiede il riavvio del servizio.

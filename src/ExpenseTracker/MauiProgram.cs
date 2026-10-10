@@ -39,6 +39,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<TransactionService>();
 		builder.Services.AddSingleton<ReportingService>();
 		builder.Services.AddSingleton<AssistantReportService>();
+		builder.Services.AddSingleton<AssistantChatService>();
 		builder.Services.AddSingleton<IAssistantSettings, AssistantSettings>();
 		builder.Services.AddSingleton<IAssistantClient>(_ => new AssistantClient(new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = Timeout.InfiniteTimeSpan }));
 		builder.Services.AddTransient<AssistantViewModel>();

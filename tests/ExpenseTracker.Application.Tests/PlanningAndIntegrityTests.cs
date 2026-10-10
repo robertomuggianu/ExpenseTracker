@@ -6,6 +6,34 @@ namespace ExpenseTracker.Application.Tests;
 
 public sealed class PlanningAndIntegrityTests
 {
+    [Fact] public Task Recurrence_StaleEditPreservesAdvancedScheduleAndPause() => WithDatabase(async repo =>
+    {
+        var (account, category) = await SetupAsync(repo); var service = new PlanningService(repo);
+        var original = new RecurringRule(Guid.NewGuid(), "Rata", account.Id, category.Id, TransactionType.Expense,
+            10m, "EUR", new(2026, 1, 31), RepeatFrequency.Monthly);
+        await service.SaveRuleAsync(original);
+        await service.ConfirmAsync(original.Id, original.NextDate, new(2026, 1, 31));
+        await service.SetRuleActiveAsync(original.Id, false);
+        await service.SaveRuleAsync(original with { Amount = 15m });
+        var saved = Assert.Single((await service.GetAsync()).Rules);
+        Assert.Equal(15m, saved.Amount); Assert.Equal(1, saved.NextIndex); Assert.False(saved.IsActive);
+        Assert.Equal(new DateTime(2026, 2, 28), saved.NextDate);
+        await service.SetRuleActiveAsync(original.Id, true);
+        await Assert.ThrowsAsync<DomainValidationException>(() => service.ConfirmAsync(original.Id, original.NextDate, new(2026, 2, 28)));
+        Assert.Single(await repo.GetTransactionsAsync());
+    });
+
+    [Fact] public Task Recurrence_ExistingCalendarCannotBeReplaced() => WithDatabase(async repo =>
+    {
+        var (account, category) = await SetupAsync(repo); var service = new PlanningService(repo);
+        var rule = new RecurringRule(Guid.NewGuid(), "Rata", account.Id, category.Id, TransactionType.Expense,
+            10m, "EUR", new(2026, 1, 31), RepeatFrequency.Monthly);
+        await service.SaveRuleAsync(rule);
+        await Assert.ThrowsAsync<DomainValidationException>(() => service.SaveRuleAsync(rule with { StartDate = rule.StartDate.AddDays(1) }));
+        await Assert.ThrowsAsync<DomainValidationException>(() => service.SaveRuleAsync(rule with { Frequency = RepeatFrequency.Weekly }));
+        Assert.Equal(rule, Assert.Single((await service.GetAsync()).Rules));
+    });
+
     private static async Task<(Account Account, Category Category)> SetupAsync(SqliteExpenseRepository repo)
     {
         var account = new Account(Guid.NewGuid(), "Conto", 1000m, isPrimary: true);

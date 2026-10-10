@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" x:Class="ExpenseTracker.Presentation.Views.CategoriesPage" x:Name="Page" Title="Categorie">
+<ContentPage Shell.NavBarIsVisible="False" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" x:Class="ExpenseTracker.Presentation.Views.CategoriesPage" x:Name="Page" Title="Categorie">
   <ScrollView>
     <VerticalStackLayout Spacing="0">
       <controls:PageHeader Heading="Categorie" Subtitle="Un colore per ogni abitudine"/>
