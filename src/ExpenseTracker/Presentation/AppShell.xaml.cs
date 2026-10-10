@@ -1,6 +1,7 @@
 using ExpenseTracker.Application;
 using ExpenseTracker.Presentation.Services;
 using ExpenseTracker.Presentation.Views;
+using ExpenseTracker.Presentation.Controls;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExpenseTracker.Presentation;
@@ -8,11 +9,16 @@ namespace ExpenseTracker.Presentation;
 public partial class AppShell : Shell
 {
     private readonly AccountService accountService;
+    private readonly IServiceProvider services;
+    private AssistantPage? assistantPage;
+    private bool assistantTransition;
+    public bool IsAssistantOpen { get; private set; }
     private string menuBalance = "I tuoi conti, sempre a portata di mano";
     public string MenuBalance { get => menuBalance; private set { menuBalance = value; OnPropertyChanged(nameof(MenuBalance)); } }
 
     public AppShell(IServiceProvider services)
     {
+        this.services = services;
         accountService = services.GetRequiredService<AccountService>();
         InitializeComponent();
         DashboardContent.ContentTemplate = Resolve<DashboardPage>(services);
@@ -20,11 +26,57 @@ public partial class AppShell : Shell
         NewTransactionContent.ContentTemplate = Resolve<TransactionEditorPage>(services);
         StatisticsContent.ContentTemplate = Resolve<StatisticsPage>(services);
         PlanningContent.ContentTemplate = Resolve<PlanningPage>(services);
-        AssistantContent.ContentTemplate = Resolve<AssistantPage>(services);
         MoreContent.ContentTemplate = Resolve<MorePage>(services);
         AccountsContent.ContentTemplate = Resolve<AccountsPage>(services);
         CategoriesContent.ContentTemplate = Resolve<CategoriesPage>(services);
         ExportContent.ContentTemplate = Resolve<ExportPage>(services);
+        Navigated += (_, _) => RefreshWindowInsets();
+    }
+
+    public async Task OpenAssistantAsync()
+    {
+        if (IsAssistantOpen || assistantTransition) return;
+        assistantTransition = true;
+        IsAssistantOpen = true;
+        try
+        {
+            assistantPage ??= services.GetRequiredService<AssistantPage>();
+            Shell.SetNavBarIsVisible(assistantPage, false);
+            Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific.Page.SetModalPresentationStyle(assistantPage.On<Microsoft.Maui.Controls.PlatformConfiguration.iOS>(),
+                Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific.UIModalPresentationStyle.FullScreen);
+            await Navigation.PushModalAsync(assistantPage, false);
+        }
+        catch { IsAssistantOpen = false; throw; }
+        finally { assistantTransition = false; }
+    }
+
+    public async Task CloseAssistantAsync()
+    {
+        if (!IsAssistantOpen || assistantTransition || Navigation.ModalStack.LastOrDefault() != assistantPage) return;
+        assistantTransition = true;
+        try { await Navigation.PopModalAsync(false); }
+        finally { IsAssistantOpen = false; assistantTransition = false; RefreshWindowInsets(); }
+    }
+
+    private void RefreshWindowInsets()
+    {
+#if ANDROID
+        // MAUI can retain stale system-bar insets after a modal or Shell transition.
+        // Request them again after the restored page has been attached to the window.
+        void ApplyInsets()
+        {
+            CurrentPage?.Handler?.UpdateValue(nameof(ContentPage.SafeAreaEdges));
+            if (CurrentPage?.Handler?.PlatformView is Android.Views.View view)
+            {
+                view.RequestLayout();
+                view.RequestApplyInsets();
+            }
+            Microsoft.Maui.ApplicationModel.Platform.CurrentActivity?.Window?.DecorView?.RequestApplyInsets();
+        }
+        Dispatcher.Dispatch(ApplyInsets);
+        // Flyout dismissal can finish after Navigated; repeat once after the transition.
+        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(350), ApplyInsets);
+#endif
     }
 
     protected override void OnPropertyChanged(string? propertyName = null)
@@ -61,6 +113,7 @@ public partial class AppShell : Shell
             var page = services.GetRequiredService<TPage>();
             // Apply to the resolved page: a setting on Shell alone is not sufficient on every platform.
             Shell.SetNavBarIsVisible(page, false);
+            if (page is ContentPage contentPage) AssistantLauncher.Attach(contentPage);
             return page;
         });
 }

@@ -25,6 +25,7 @@
     <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\TransactionsViewModel.cs" Link="Presentation\TransactionsViewModel.cs" />
     <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\StatisticsViewModel.cs" Link="Presentation\StatisticsViewModel.cs" />
     <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\DashboardViewModel.cs" Link="Presentation\DashboardViewModel.cs" />
+    <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\CategoriesViewModel.cs" Link="Presentation\CategoriesViewModel.cs" />
     <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\PlanningViewModel.cs" Link="Presentation\PlanningViewModel.cs" />
     <Compile Include="..\..\src\ExpenseTracker\Presentation\Services\AmountParser.cs" Link="Presentation\AmountParser.cs" />
     <Compile Include="..\..\src\ExpenseTracker\Presentation\Services\MoneyFormatter.cs" Link="Presentation\MoneyFormatter.cs" />

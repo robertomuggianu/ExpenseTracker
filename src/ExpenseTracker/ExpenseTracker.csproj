@@ -32,8 +32,8 @@
 		<ApplicationId>com.companyname.expensetracker</ApplicationId>
 
 		<!-- Versions -->
-        <ApplicationDisplayVersion>1.5.3</ApplicationDisplayVersion>
-        <ApplicationVersion>10</ApplicationVersion>
+        <ApplicationDisplayVersion>1.6.1</ApplicationDisplayVersion>
+        <ApplicationVersion>13</ApplicationVersion>
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
 		<WindowsPackageType>None</WindowsPackageType>
@@ -61,6 +61,7 @@
 
 		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+        <MauiAsset Include="..\..\docs\licenses\tabler-icons-LICENSE.txt" LogicalName="licenses/tabler-icons-LICENSE.txt" />
 	</ItemGroup>
 
 	<ItemGroup>

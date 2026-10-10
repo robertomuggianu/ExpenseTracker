@@ -14,6 +14,13 @@ public static class CategoryAppearance
         new("bolt", "Bollette"), new("heart", "Salute"), new("gift", "Regali"),
         new("ticket", "Svago"), new("book", "Studio"), new("work", "Stipendio"),
         new("tools", "Manutenzione"), new("repeat", "Abbonamenti"), new("wallet", "Portafoglio"),
+        new("fuel", "Carburante"), new("plane", "Voli"), new("hotel", "Hotel"), new("beach", "Vacanze"), new("luggage", "Viaggi"),
+        new("shirt", "Abbigliamento"), new("shoe", "Scarpe"), new("sport", "Palestra"), new("ball", "Sport"), new("bike", "Bicicletta"),
+        new("pet", "Animali"), new("phone", "Telefono"), new("computer", "Tecnologia"), new("wifi", "Internet"),
+        new("movie", "Cinema"), new("music", "Musica"), new("game", "Videogiochi"), new("beauty", "Cura personale"),
+        new("medical", "Farmacia"), new("insurance", "Assicurazione"), new("tax", "Tasse"), new("savings", "Risparmio"),
+        new("bank", "Banca"), new("transfer", "Trasferimenti"), new("baby", "Bambini"), new("cigarette", "Tabacco"),
+        new("parking", "Parcheggio"), new("groceries", "Alimentari"), new("jewelry", "Gioielli"),
         new("tag", "Altro")
     ];
 
@@ -33,12 +40,21 @@ public static class CategoryAppearance
     public static string InferIcon(string name) => name.Trim().ToLowerInvariant() switch
     {
         "spesa" or "groceries" => "cart", "ristoranti" or "restaurants" => "food",
-        "cafe" or "caffè" => "coffee", "benzina" or "carburante" or "spese per macchina" => "car",
+        "cafe" or "caffè" => "coffee", "benzina" or "carburante" or "fuel" => "fuel", "spese per macchina" or "auto" => "car",
         "trasporto pubblico" or "transportation" or "trasporti" => "bus",
         "affitto" or "home" or "casa" => "home", "bollette" => "bolt", "health" or "salute" => "heart",
         "gift" or "gifts" or "regali" => "gift", "leisure" or "svago" or "uscite" => "ticket",
         "education" or "studio" => "book", "paycheck" or "retribuzione" or "stipendio" => "work",
         "manutenzione" or "strumenti" => "tools", "subscription" or "abbonamenti" => "repeat",
-        "trasferimento ricevuto" => "wallet", _ => "tag"
+        "trasferimento ricevuto" => "wallet", "trasferimenti" or "transfers" => "transfer",
+        "voli" or "flights" => "plane", "hotel" or "albergo" => "hotel", "vacanze" or "holidays" => "beach", "viaggi" or "travel" => "luggage",
+        "abbigliamento" or "vestiti" or "clothing" or "shopping" => "shirt", "scarpe" or "shoes" => "shoe",
+        "palestra" or "gym" or "fitness" => "sport", "sport" => "ball", "bicicletta" or "bike" => "bike",
+        "animali" or "pets" => "pet", "telefono" or "phone" => "phone", "tecnologia" or "technology" => "computer",
+        "internet" => "wifi", "cinema" or "movies" => "movie", "musica" or "music" => "music", "videogiochi" or "gaming" => "game",
+        "cura personale" or "parrucchiere" or "personal care" => "beauty", "farmacia" or "medicine" => "medical",
+        "assicurazione" or "insurance" => "insurance", "tasse" or "taxes" => "tax", "risparmio" or "savings" => "savings",
+        "banca" or "bank" => "bank", "bambini" or "children" => "baby", "tabacco" or "sigarette" => "cigarette",
+        "parcheggio" or "parking" => "parking", "alimentari" => "groceries", "gioielli" or "jewelry" => "jewelry", _ => "tag"
     };
 }

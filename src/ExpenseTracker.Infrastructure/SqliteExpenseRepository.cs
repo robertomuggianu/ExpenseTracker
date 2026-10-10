@@ -93,7 +93,8 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
     {
         await EnsureReadyAsync(cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
-        var records = accounts.Select(ToRecord).ToArray();
+        // Release the previous primary flag before assigning the new one, regardless of caller order.
+        var records = accounts.Select(ToRecord).OrderBy(record => record.IsPrimary).ToArray();
         await _connection.RunInTransactionAsync(database =>
         {
             foreach (var record in records)

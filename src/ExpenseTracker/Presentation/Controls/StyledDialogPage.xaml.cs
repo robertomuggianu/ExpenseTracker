@@ -8,6 +8,7 @@ public partial class StyledDialogPage : ContentPage
     private StyledDialogPage(string title, string message, string accept, string? cancel)
     {
         InitializeComponent();
+        AssistantLauncher.Attach(this);
         TitleLabel.Text = title;
         MessageLabel.Text = message;
         AcceptButton.Text = accept;

@@ -3,10 +3,11 @@
     x:Class="ExpenseTracker.Presentation.Controls.ChoiceSelectionPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
     Shell.NavBarIsVisible="False"
     BackgroundColor="#B0000000">
     <Grid Padding="14">
-        <Border VerticalOptions="End" Padding="20,18,20,16"
+        <Border VerticalOptions="End" Padding="20,18,20,90"
                 BackgroundColor="{AppThemeBinding Light={StaticResource LightSurface}, Dark={StaticResource DarkSurface}}"
                 Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
                 StrokeShape="RoundRectangle 26">
@@ -14,7 +15,7 @@
                 <Border WidthRequest="42" HeightRequest="4" Padding="0" HorizontalOptions="Center"
                         BackgroundColor="{StaticResource Gray500}" StrokeThickness="0" StrokeShape="RoundRectangle 2" />
                 <Label Grid.Row="1" Text="{Binding Title}" Style="{StaticResource SectionTitle}" />
-                <SearchBar Grid.Row="2" Placeholder="Cerca" TextChanged="OnSearchChanged"/>
+                <controls:SearchField Grid.Row="2" Placeholder="Cerca" TextChanged="OnSearchChanged"/>
                 <CollectionView Grid.Row="3" ItemsSource="{Binding Items}" SelectionMode="None" MaximumHeightRequest="450">
                     <CollectionView.ItemTemplate>
                         <DataTemplate>

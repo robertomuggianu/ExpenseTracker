@@ -2,8 +2,8 @@
 <ContentPage Shell.NavBarIsVisible="False" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" x:Class="ExpenseTracker.Presentation.Views.TransactionEditorPage" x:Name="Page" Title="{Binding Title}">
   <ScrollView>
     <VerticalStackLayout Spacing="0">
-      <controls:PageHeader Heading="{Binding Title}" Subtitle="Ogni movimento trova il suo posto"/>
-      <VerticalStackLayout Padding="18,18,18,32" Spacing="18">
+      <controls:PageHeader Heading="{Binding Title}"/>
+      <VerticalStackLayout Padding="18,18,18,100" Spacing="18">
 
       <controls:ChoiceField ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType}" DisplayMemberPath="Label" Title="Entrata o uscita"/>
       <Border Style="{StaticResource HeroCard}" Padding="22">

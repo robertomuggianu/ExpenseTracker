@@ -9,6 +9,17 @@ namespace ExpenseTracker.Presentation.ViewModels;
 public partial class CategoriesViewModel(CategoryService categoryService) : ViewModelBase
 {
     public ObservableCollection<Category> Categories { get; } = [];
+    public ObservableCollection<Category> VisibleCategories { get; } = [];
+    [ObservableProperty] public partial string SearchText { get; set; } = string.Empty;
+    public bool HasNoCategories => VisibleCategories.Count == 0;
+    partial void OnSearchTextChanged(string value) => ApplySearch();
+    private void ApplySearch()
+    {
+        VisibleCategories.Clear();
+        foreach (var category in Categories.Where(c => c.Name.Contains(SearchText.Trim(), StringComparison.OrdinalIgnoreCase)))
+            VisibleCategories.Add(category);
+        OnPropertyChanged(nameof(HasNoCategories));
+    }
 
     public IReadOnlyList<TransactionTypeOption> Types { get; } = TransactionTypeOption.Required;
     public IReadOnlyList<CategoryIcon> Icons => CategoryAppearance.Icons;
@@ -45,6 +56,7 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
         {
             Categories.Add(item);
         }
+        ApplySearch();
     }
 
     [RelayCommand]

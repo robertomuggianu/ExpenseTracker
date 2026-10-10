@@ -15,6 +15,7 @@ public partial class AccountsPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        if (Shell.Current is AppShell { IsAssistantOpen: true }) return;
         await _viewModel.LoadCommand.ExecuteAsync(null);
     }
 }

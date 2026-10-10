@@ -1,12 +1,12 @@
 <?xml version='1.0' encoding='utf-8'?>
 <ContentPage Shell.NavBarIsVisible="False" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" x:Class="ExpenseTracker.Presentation.Views.CategoriesPage" x:Name="Page" Title="Categorie">
-  <ScrollView>
+  <ScrollView x:Name="CategoryScroll">
     <VerticalStackLayout Spacing="0">
-      <controls:PageHeader Heading="Categorie" Subtitle="Un colore per ogni abitudine"/>
-      <VerticalStackLayout Padding="18,18,18,32" Spacing="18">
+      <controls:PageHeader Heading="Categorie"/>
+      <VerticalStackLayout Padding="18,18,18,100" Spacing="18">
       <Button Text="+  Nuova categoria" Command="{Binding NewCategoryCommand}" HorizontalOptions="End"/>
-      <Label Text="Un'icona e un colore per riconoscere ogni spesa." Style="{StaticResource MutedLabel}"/>
-      <Border Style="{StaticResource Card}" IsVisible="{Binding IsEditorVisible}">
+      <controls:SearchField Placeholder="Cerca una categoria" Text="{Binding SearchText}"/>
+      <Border x:Name="CategoryEditor" Style="{StaticResource Card}" IsVisible="{Binding IsEditorVisible}">
         <VerticalStackLayout Spacing="14">
           <Grid ColumnDefinitions="56,*" ColumnSpacing="14">
             <Border WidthRequest="56" HeightRequest="56" BackgroundColor="{Binding CategoryColor}" Padding="14" StrokeShape="RoundRectangle 20">
@@ -68,22 +68,23 @@
           </Grid>
         </VerticalStackLayout>
       </Border>
-      <VerticalStackLayout BindableLayout.ItemsSource="{Binding Categories}" Spacing="10">
+      <FlexLayout Wrap="Wrap" AlignItems="Start" BindableLayout.ItemsSource="{Binding VisibleCategories}">
         <BindableLayout.ItemTemplate>
           <DataTemplate>
-            <Border Style="{StaticResource Card}" Padding="14">
-              <Grid ColumnDefinitions="48,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
-                <Border Grid.RowSpan="2" WidthRequest="48" HeightRequest="48" BackgroundColor="{Binding Color}" Padding="12" StrokeShape="RoundRectangle 17">
-                  <Image Source="{Binding IconSource}"/>
-                </Border>
-                <Label Grid.Column="1" Text="{Binding Name}" FontSize="17" FontAttributes="Bold"/>
-                <Label Grid.Row="1" Grid.Column="1" Text="{Binding TypeLabel}" Style="{StaticResource MutedLabel}" FontSize="12"/>
-                <Button Grid.Column="2" Grid.RowSpan="2" Text="Modifica" Style="{StaticResource TextButton}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditCategoryCommand}" CommandParameter="{Binding .}"/>
-              </Grid>
-            </Border>
+            <Grid FlexLayout.Basis="25%" Padding="5" HeightRequest="90">
+              <Border BackgroundColor="{Binding Color}" Padding="20" StrokeThickness="0" StrokeShape="RoundRectangle 22"
+                      SemanticProperties.Description="{Binding Name}" SemanticProperties.Hint="Tocca per modificare la categoria">
+                <Border.Triggers>
+                  <DataTrigger TargetType="Border" Binding="{Binding IsActive}" Value="False"><Setter Property="Opacity" Value="0.4"/></DataTrigger>
+                </Border.Triggers>
+                <Image Source="{Binding IconSource}" WidthRequest="32" HeightRequest="32"/>
+                <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnEditCategory" CommandParameter="{Binding .}"/></Border.GestureRecognizers>
+              </Border>
+            </Grid>
           </DataTemplate>
         </BindableLayout.ItemTemplate>
-      </VerticalStackLayout>
+      </FlexLayout>
+      <Label Text="Nessuna categoria trovata" IsVisible="{Binding HasNoCategories}" Style="{StaticResource MutedLabel}"/>
       <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
       <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
     </VerticalStackLayout>

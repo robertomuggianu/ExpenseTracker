@@ -3,18 +3,12 @@
              xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
              x:Class="ExpenseTracker.Presentation.Views.TransactionsPage" x:Name="Page" Title="Movimenti" Shell.NavBarIsVisible="False">
   <Grid RowDefinitions="Auto,*,Auto">
-    <controls:PageHeader Heading="Movimenti" Subtitle="Tutte le tue entrate e le tue spese"/>
+    <controls:PageHeader Heading="Movimenti"/>
     <CollectionView Grid.Row="1" x:Name="TransactionsList" Margin="16,0" Scrolled="OnListScrolled"
                     ItemsSource="{Binding Groups}" IsGrouped="True" SelectionMode="None" ItemSizingStrategy="MeasureAllItems">
       <CollectionView.Header>
         <VerticalStackLayout Spacing="12" Padding="0,14,0,8">
-          <Border Style="{StaticResource InputCard}" Padding="12,0">
-            <Grid ColumnDefinitions="24,*,40" ColumnSpacing="8">
-              <Image Source="ui_search.png" WidthRequest="20" HeightRequest="20" VerticalOptions="Center"/>
-              <Entry Grid.Column="1" Placeholder="Cerca descrizione o note" Text="{Binding SearchText}" ClearButtonVisibility="Never" ReturnType="Search"/>
-              <Button Grid.Column="2" Text="×" IsVisible="{Binding HasSearch}" Style="{StaticResource TextButton}" FontSize="22" Padding="0" Command="{Binding ClearSearchCommand}" SemanticProperties.Description="Cancella ricerca"/>
-            </Grid>
-          </Border>
+          <controls:SearchField Placeholder="Cerca descrizione o note" Text="{Binding SearchText}"/>
           <Border Style="{StaticResource Card}" Padding="14">
             <VerticalStackLayout Spacing="10">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
@@ -89,7 +83,7 @@
       </VerticalStackLayout></CollectionView.Footer>
     </CollectionView>
     <Border Grid.Row="2" Style="{StaticResource Card}" Padding="16" Margin="16,8,16,16" IsVisible="{Binding HasSelectedTransaction}" MaximumHeightRequest="320" Stroke="{StaticResource Primary}" StrokeThickness="1">
-      <ScrollView><VerticalStackLayout Spacing="10">
+      <ScrollView><VerticalStackLayout Spacing="10" Padding="0,0,0,90">
         <Grid ColumnDefinitions="*,40">
           <Label Text="{Binding SelectedTransaction.DisplayDescription}" FontSize="18" FontAttributes="Bold" VerticalTextAlignment="Center"/>
           <Button Grid.Column="1" Text="×" FontSize="22" Padding="0" Style="{StaticResource TextButton}" Command="{Binding CloseDetailCommand}" SemanticProperties.Description="Chiudi dettaglio"/>

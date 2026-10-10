@@ -7,9 +7,9 @@
     Title="Dati">
     <ScrollView>
         <VerticalStackLayout Spacing="0">
-            <controls:PageHeader Heading="Esporta e importa" Subtitle="Porta con te i tuoi dati"/>
+            <controls:PageHeader Heading="Esporta e importa"/>
 
-            <VerticalStackLayout Padding="16,14,16,32" Spacing="12">
+            <VerticalStackLayout Padding="16,14,16,100" Spacing="12">
                 <Border Style="{StaticResource Card}" Stroke="{StaticResource Primary}" Padding="16">
                     <VerticalStackLayout Spacing="12">
                         <Grid ColumnDefinitions="48,*" ColumnSpacing="12">

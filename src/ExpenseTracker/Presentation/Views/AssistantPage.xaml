@@ -3,7 +3,7 @@
              xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
              x:Class="ExpenseTracker.Presentation.Views.AssistantPage" Title="Assistant">
   <Grid RowDefinitions="Auto,*,Auto">
-    <controls:PageHeader Heading="Assistant" Subtitle="Your spending, in conversation"/>
+    <controls:PageHeader Heading="Assistant" ShowsBack="True"/>
     <ScrollView Grid.Row="1" x:Name="ConversationScroll">
       <VerticalStackLayout Padding="18,14,18,18" Spacing="12">
         <Grid ColumnDefinitions="*,Auto">

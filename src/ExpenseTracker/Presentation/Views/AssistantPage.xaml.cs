@@ -11,6 +11,11 @@ public partial class AssistantPage : ContentPage
     {
         InitializeComponent(); BindingContext = viewModel = model;
     }
+    protected override bool OnBackButtonPressed()
+    {
+        if (Shell.Current is AppShell shell) _ = shell.CloseAssistantAsync();
+        return true;
+    }
     protected override async void OnAppearing()
     {
         base.OnAppearing();
