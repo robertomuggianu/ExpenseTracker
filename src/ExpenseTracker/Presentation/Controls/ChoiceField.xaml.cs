@@ -5,6 +5,7 @@ namespace ExpenseTracker.Presentation.Controls;
 
 public partial class ChoiceField : ContentView
 {
+    private bool opening;
     public static readonly BindableProperty ItemsSourceProperty = BindableProperty.Create(nameof(ItemsSource), typeof(IEnumerable), typeof(ChoiceField));
     public static readonly BindableProperty SelectedItemProperty = BindableProperty.Create(
         nameof(SelectedItem), typeof(object), typeof(ChoiceField), defaultBindingMode: BindingMode.TwoWay,
@@ -26,13 +27,18 @@ public partial class ChoiceField : ContentView
 
     private async void OnTapped(object? sender, TappedEventArgs e)
     {
+        if (opening || ChoiceSelectionPage.IsOpen) return;
         var items = ItemsSource?.Cast<object>().ToArray() ?? [];
         if (items.Length == 0) return;
-
-        var (accepted, value) = await ChoiceSelectionPage.ShowAsync(
-            Title,
-            items.Select(item => new ChoiceSelectionItem(item, GetLabel(item), ReferenceEquals(item, SelectedItem))).ToArray());
-        if (accepted) SelectedItem = value;
+        opening = true;
+        try
+        {
+            var (accepted, value) = await ChoiceSelectionPage.ShowAsync(
+                Title,
+                items.Select(item => new ChoiceSelectionItem(item, GetLabel(item), Equals(item, SelectedItem))).ToArray());
+            if (accepted) SelectedItem = value;
+        }
+        finally { opening = false; }
     }
 
     private string GetLabel(object item)

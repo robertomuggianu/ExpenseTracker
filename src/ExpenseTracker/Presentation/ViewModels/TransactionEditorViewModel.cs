@@ -33,8 +33,11 @@ public partial class TransactionEditorViewModel(
     }
     public void StoreDraft()
     {
-        if (!initialized) return;
-        preferences.Set("transaction-draft", JsonSerializer.Serialize(new EditorDraft(EditingId, SelectedType.Value!.Value,
+        if (!initialized || IsBusy) return;
+        if (EditingId is null && SelectedCategory is null && Date.Date == DateTime.Today && !ShowDetails
+            && string.IsNullOrWhiteSpace(Amount) && string.IsNullOrWhiteSpace(Description) && string.IsNullOrWhiteSpace(Notes))
+        { preferences.Remove("transaction-draft"); return; }
+        preferences.Set("transaction-draft", TransactionDraftSerializer.Serialize(new TransactionEditorDraft(EditingId, SelectedType.Value!.Value,
             SelectedAccount?.Account.Id, SelectedCategory?.Id, Date, Time, Amount, Description, Notes, ShowDetails)));
     }
     protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
@@ -43,8 +46,6 @@ public partial class TransactionEditorViewModel(
         if (initialized && !IsBusy && e.PropertyName is nameof(Amount) or nameof(Date) or nameof(Time)
             or nameof(Description) or nameof(Notes) or nameof(SelectedAccount) or nameof(SelectedCategory) or nameof(SelectedType) or nameof(ShowDetails)) StoreDraft();
     }
-    private sealed record EditorDraft(Guid? Id, TransactionType Type, Guid? Account, Guid? Category, DateTime Date,
-        TimeSpan Time, string Amount, string? Description, string? Notes, bool Details);
     private IReadOnlyList<Category> _allCategories = [];
     private Dictionary<Guid, int> _categoryUsage = [];
 
@@ -61,8 +62,8 @@ public partial class TransactionEditorViewModel(
 
     public ObservableCollection<AccountSummary> Accounts { get; } = [];
 
-    public ObservableCollection<Category> Categories { get; } = [];
-    public ObservableCollection<Category> QuickCategories { get; } = [];
+    [ObservableProperty] public partial IReadOnlyList<Category> Categories { get; set; } = [];
+    [ObservableProperty] public partial IReadOnlyList<Category> QuickCategories { get; set; } = [];
 
     [ObservableProperty]
     public partial Guid? EditingId { get; set; }
@@ -99,20 +100,25 @@ public partial class TransactionEditorViewModel(
 
     public Task LoadAsync(Guid? transactionId = null, bool duplicate = false) => RunAsync(async () =>
     {
-        EditorDraft? draft = initialized && transactionId is null
+        TransactionEditorDraft? draft = initialized && transactionId is null
             ? new(EditingId, SelectedType.Value!.Value, SelectedAccount?.Account.Id, SelectedCategory?.Id, Date, Time, Amount, Description, Notes, ShowDetails)
             : null;
         if (initialized && transactionId.HasValue && !string.IsNullOrWhiteSpace(Amount)
             && !await dialogs.ConfirmAsync("Bozza in corso", "Aprire il movimento sostituirà la bozza attuale.", "Continua", "Annulla")) return;
         if (!transactionId.HasValue)
         {
-            try { draft ??= JsonSerializer.Deserialize<EditorDraft>(preferences.Get("transaction-draft", "null")); }
+            try { draft ??= TransactionDraftSerializer.Deserialize(preferences.Get("transaction-draft", "null")); }
             catch (JsonException) { preferences.Remove("transaction-draft"); }
             transactionId = draft?.Id;
         }
 
         var original = transactionId.HasValue ? await transactionService.GetTransactionAsync(transactionId.Value) : null;
-        if (transactionId.HasValue && original is null) { preferences.Remove("transaction-draft"); throw new DomainValidationException("Il movimento non esiste più. Apri un nuovo movimento."); }
+        if (transactionId.HasValue && original is null)
+        {
+            preferences.Remove("transaction-draft");
+            draft = null; transactionId = null; EditingId = null; originalCategoryId = null;
+            StatusMessage = "Il movimento non esiste più. Puoi inserirne uno nuovo.";
+        }
         if (original?.TransferId is not null) throw new DomainValidationException("Gestisci i trasferimenti dalla sezione Pianifica. Per correggerne uno, elimina la coppia e ricreala.");
         EditingId = duplicate ? null : transactionId;
         Title = transactionId.HasValue ? "Modifica movimento" : "Nuovo movimento";
@@ -150,7 +156,7 @@ public partial class TransactionEditorViewModel(
         if (duplicate) { EditingId = null; Date = DateTime.Today; Time = DateTime.Now.TimeOfDay; Title = "Duplica movimento"; }
         if (draft is not null)
         {
-            SelectedType = Types.Single(t => t.Value == draft.Type);
+            SelectedType = Types.FirstOrDefault(t => t.Value == draft.Type) ?? Types[1];
             SelectedAccount = Accounts.FirstOrDefault(a => a.Account.Id == draft.Account);
             RefreshCategories(); SelectedCategory = Categories.FirstOrDefault(c => c.Id == draft.Category);
             Date = draft.Date; Time = draft.Time; Amount = draft.Amount; Description = draft.Description; Notes = draft.Notes; ShowDetails = draft.Details;
@@ -198,27 +204,27 @@ public partial class TransactionEditorViewModel(
             Description,
             Notes));
 
-        var savedDate = Date;
-        var wasEditing = EditingId.HasValue;
         if (RememberAccount) preferences.Set("last-account", SelectedAccount.Account.Id.ToString());
         preferences.Remove("transaction-draft");
         EditingId = null; originalCategoryId = null; ResetForm(); Title = "Nuovo movimento";
         StatusMessage = "Movimento salvato.";
         if (!addAnother)
         {
-            var range = MonthlyPeriods.FullMonth(savedDate);
-            await navigation.GoToTransactionsAsync(wasEditing ? null : new TransactionFilter(range.FromUtc, range.ToUtcExclusive), "Movimento salvato.");
+            await navigation.GoToTransactionsAsync(message: "Movimento salvato.");
         }
     }
 
     partial void OnSelectedTypeChanged(TransactionTypeOption value)
     {
-        RefreshCategories();
         SelectedCategory = null;
+        RefreshCategories();
+        CategoryError = null;
     }
 
     private void ResetForm()
     {
+        AmountError = CategoryError = AccountError = null;
+        ShowDetails = false;
         SelectedType = Types[1];
         var remembered = RememberAccount && Guid.TryParse(preferences.Get("last-account", ""), out var id) ? id : (Guid?)null;
         SelectedAccount = Accounts.FirstOrDefault(item => item.Account.IsActive && item.Account.Id == remembered)
@@ -236,16 +242,9 @@ public partial class TransactionEditorViewModel(
     private void RefreshCategories()
     {
         var selectedId = SelectedCategory?.Id;
-        Categories.Clear();
-        foreach (var item in _allCategories.Where(item => item.Type == SelectedType.Value && (item.IsActive || item.Id == originalCategoryId))
-                     .OrderByDescending(item => favorites.Contains(item.Id)).ThenByDescending(item => _categoryUsage.GetValueOrDefault(item.Id)).ThenBy(item => item.Name))
-        {
-            Categories.Add(item);
-        }
-
-        QuickCategories.Clear();
-        foreach (var item in Categories.Take(8)) QuickCategories.Add(item);
-
+        Categories = _allCategories.Where(item => item.Type == SelectedType.Value && (item.IsActive || item.Id == originalCategoryId))
+            .OrderByDescending(item => favorites.Contains(item.Id)).ThenByDescending(item => _categoryUsage.GetValueOrDefault(item.Id)).ThenBy(item => item.Name).ToArray();
+        QuickCategories = Categories.Take(8).ToArray();
         SelectedCategory = Categories.FirstOrDefault(item => item.Id == selectedId);
     }
 

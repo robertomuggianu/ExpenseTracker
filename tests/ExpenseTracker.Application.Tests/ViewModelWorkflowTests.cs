@@ -7,6 +7,126 @@ namespace ExpenseTracker.Application.Tests;
 
 public sealed class ViewModelWorkflowTests
 {
+    [Theory]
+    [InlineData(TransactionType.Expense, TransactionType.Income)]
+    [InlineData(TransactionType.Income, TransactionType.Expense)]
+    public Task Editor_ChangingTypeCanRecoverFromValidationAndSaveAnother(TransactionType before, TransactionType after) => WithDatabase(async repo =>
+    {
+        var account = Assert.Single(await repo.GetAccountsAsync());
+        var category = (await repo.GetCategoriesAsync()).First(c => c.Type == before);
+        var original = new Transaction(Guid.NewGuid(), DateTime.UtcNow, before, account.Id, category.Id, 10m);
+        await repo.SaveTransactionAsync(original);
+        var prefs = new PreferencesStore(); var nav = new Navigation(); var editor = Editor(repo, prefs, nav);
+        await editor.LoadAsync(original.Id);
+        editor.SelectedType = editor.Types.Single(t => t.Value == after);
+        Assert.Null(editor.SelectedCategory);
+        Assert.All(editor.Categories, c => Assert.Equal(after, c.Type));
+        await editor.SaveCommand.ExecuteAsync(null);
+        Assert.NotNull(editor.CategoryError); Assert.False(editor.IsBusy);
+        Assert.Equal(before, (await repo.GetTransactionAsync(original.Id))!.Type);
+        editor.SelectedCategory = editor.Categories[0];
+        // Simulate leaving and reopening the editor before saving the changed type.
+        editor.StoreDraft(); await editor.LoadAsync();
+        Assert.Equal(after, editor.SelectedType.Value); Assert.Equal(after, editor.SelectedCategory!.Type);
+        await editor.SaveCommand.ExecuteAsync(null);
+        Assert.Null(editor.ErrorMessage); Assert.Null(nav.LastFilter); Assert.Equal(1, nav.ReturnCount);
+        Assert.Equal(after, (await repo.GetTransactionAsync(original.Id))!.Type);
+        Assert.Single(await repo.GetTransactionsAsync());
+        editor.StoreDraft(); Assert.Equal("null", prefs.Get("transaction-draft", "null"));
+        await editor.LoadAsync(); editor.SelectedCategory = editor.Categories[0]; editor.Amount = "3";
+        await editor.SaveAndAddCommand.ExecuteAsync(null);
+        Assert.Null(editor.ErrorMessage); Assert.False(editor.IsBusy);
+        Assert.Equal(2, (await repo.GetTransactionsAsync()).Count);
+        Assert.Equal(after == TransactionType.Income ? 107m : 87m, Assert.Single(await new AccountService(repo).GetAccountsAsync()).CurrentBalance);
+    });
+
+    [Fact] public Task Save_ReturnsToTheExistingDailyFilter() => WithDatabase(async repo =>
+    {
+        var nav = new Navigation(); var requests = new NavigationRequests();
+        var movements = new TransactionsViewModel(new(repo), new(repo), new(repo), new Dialogs(), nav, requests);
+        await movements.LoadAsync();
+        movements.SelectedPeriod = movements.Periods.Single(p => p.Value == DateRangePreset.Custom);
+        movements.CustomFrom = DateTime.Today.AddDays(-2); movements.CustomTo = movements.CustomFrom;
+        await SettledAsync(movements);
+        var editor = Editor(repo, new PreferencesStore(), nav); await editor.LoadAsync();
+        editor.Date = movements.CustomFrom; editor.Amount = "7"; editor.SelectedCategory = editor.Categories[0];
+        await editor.SaveCommand.ExecuteAsync(null);
+        Assert.Equal(1, nav.ReturnCount); Assert.Null(nav.LastFilter);
+        requests.Filter = nav.LastFilter; await movements.LoadAsync();
+        Assert.Equal(DateRangePreset.Custom, movements.SelectedPeriod.Value);
+        Assert.Equal(DateTime.Today.AddDays(-2), movements.CustomFrom); Assert.Equal(movements.CustomFrom, movements.CustomTo);
+        Assert.Equal(7m, Assert.Single(movements.Transactions).Transaction.Amount);
+    });
+
+    [Fact] public Task Editor_DeletedDraftDoesNotPreventNewTransactions() => WithDatabase(async repo =>
+    {
+        var account = Assert.Single(await repo.GetAccountsAsync());
+        var category = (await repo.GetCategoriesAsync()).First(c => c.Type == TransactionType.Expense);
+        var original = new Transaction(Guid.NewGuid(), DateTime.UtcNow, TransactionType.Expense, account.Id, category.Id, 10m);
+        await repo.SaveTransactionAsync(original);
+        var prefs = new PreferencesStore(); var editor = Editor(repo, prefs);
+        await editor.LoadAsync(original.Id); editor.Amount = "20"; editor.StoreDraft();
+        await repo.DeleteTransactionAsync(original.Id);
+        await editor.LoadAsync();
+        Assert.Null(editor.EditingId); Assert.Null(editor.ErrorMessage); Assert.Equal("", editor.Amount);
+        editor.Amount = "4"; editor.SelectedCategory = editor.Categories[0];
+        await editor.SaveCommand.ExecuteAsync(null);
+        Assert.Null(editor.ErrorMessage); Assert.Single(await repo.GetTransactionsAsync());
+    });
+
+    [Fact] public Task Dashboard_DoesNotMixNewTotalsWithOldChartWhileComparisonLoads() => WithDatabase(async repo =>
+    {
+        var account = Assert.Single(await repo.GetAccountsAsync());
+        var category = (await repo.GetCategoriesAsync()).First(c => c.Type == TransactionType.Expense);
+        var month = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        await repo.SaveTransactionAsync(new(Guid.NewGuid(), month.AddDays(1).ToUniversalTime(), TransactionType.Expense, account.Id, category.Id, 10m));
+        await repo.SaveTransactionAsync(new(Guid.NewGuid(), month.AddMonths(-1).AddDays(1).ToUniversalTime(), TransactionType.Expense, account.Id, category.Id, 20m));
+        var delayed = new DelayedRepository(repo); var nav = new Navigation();
+        var vm = new DashboardViewModel(new(delayed), nav, new(repo)); await vm.LoadAsync();
+        delayed.DelayQueryNumber = delayed.QueryCount + 2;
+        var loading = vm.PreviousMonthCommand.ExecuteAsync(null);
+        await delayed.QueryStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        try
+        {
+            Assert.Equal(10m, vm.Expense);
+            await vm.OpenCategoryCommand.ExecuteAsync(Assert.Single(vm.CategoryBreakdown));
+            Assert.Equal(MonthlyPeriods.FullMonth(month).FromUtc, nav.LastFilter!.FromUtc);
+        }
+        finally { delayed.ContinueQuery.TrySetResult(); await loading; }
+        Assert.Equal(20m, vm.Expense); Assert.Equal(20m, Assert.Single(vm.CategoryBreakdown).Total);
+    });
+
+    [Fact] public Task Dashboard_PeriodsFilterTotalsAndCategoryNavigation() => WithDatabase(async repo =>
+    {
+        var account = Assert.Single(await repo.GetAccountsAsync());
+        var categories = await repo.GetCategoriesAsync();
+        var expense = categories.First(c => c.Type == TransactionType.Expense);
+        var income = categories.First(c => c.Type == TransactionType.Income);
+        var today = DateTime.Today;
+        await repo.SaveTransactionAsync(new(Guid.NewGuid(), today.AddHours(12).ToUniversalTime(), TransactionType.Expense, account.Id, expense.Id, 10m));
+        await repo.SaveTransactionAsync(new(Guid.NewGuid(), today.AddHours(13).ToUniversalTime(), TransactionType.Income, account.Id, income.Id, 30m));
+        await repo.SaveTransactionAsync(new(Guid.NewGuid(), today.AddYears(-1).AddHours(12).ToUniversalTime(), TransactionType.Expense, account.Id, expense.Id, 99m));
+        var nav = new Navigation(); var vm = new DashboardViewModel(new(repo), nav, new(repo)); await vm.LoadAsync();
+        foreach (var preset in new[] { DateRangePreset.CurrentWeek, DateRangePreset.CurrentYear, DateRangePreset.Custom })
+        {
+            vm.CustomFrom = today; vm.CustomTo = today;
+            vm.SelectedPeriod = vm.Periods.Single(p => p.Value == preset); await SettledAsync(vm);
+            Assert.Null(vm.ErrorMessage); Assert.Equal(10m, vm.Expense); Assert.Equal(30m, vm.Income); Assert.Equal(20m, vm.Difference);
+            await vm.OpenCategoryCommand.ExecuteAsync(Assert.Single(vm.CategoryBreakdown));
+            var expected = DateRangeFactory.Create(preset, today, today, today);
+            Assert.Equal(expected.FromUtc, nav.LastFilter!.FromUtc); Assert.Equal(expected.ToUtcExclusive, nav.LastFilter.ToUtcExclusive);
+        }
+        vm.CustomFrom = today.AddDays(1); await SettledAsync(vm);
+        Assert.NotNull(vm.ErrorMessage); Assert.Empty(vm.CategoryBreakdown); Assert.Equal(0m, vm.Difference);
+        vm.CustomFrom = today; await SettledAsync(vm);
+        Assert.Null(vm.ErrorMessage); Assert.Equal(20m, vm.Difference);
+        vm.SelectedPeriod = vm.Periods.Single(p => p.Value == DateRangePreset.CurrentWeek); await SettledAsync(vm);
+        await vm.PreviousMonthCommand.ExecuteAsync(null); Assert.Equal(0m, vm.Expense);
+        await vm.NextMonthCommand.ExecuteAsync(null); Assert.Equal(10m, vm.Expense);
+        vm.SelectedPeriod = vm.Periods.Single(p => p.Value == DateRangePreset.CurrentYear); await SettledAsync(vm);
+        await vm.PreviousMonthCommand.ExecuteAsync(null); Assert.Equal(99m, vm.Expense);
+    });
+
     [Fact] public Task Dashboard_UsesPrimaryCurrencyAndKeepsOtherBalancesSeparate() => WithDatabase(async repo =>
     {
         var eur = Assert.Single(await repo.GetAccountsAsync());
@@ -132,11 +252,13 @@ public sealed class ViewModelWorkflowTests
     private sealed class DelayedRepository(IExpenseRepository inner) : IExpenseRepository
     {
         public bool DelayNextQuery { get; set; }
+        public int QueryCount { get; private set; }
+        public int? DelayQueryNumber { get; set; }
         public TaskCompletionSource QueryStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource ContinueQuery { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public async Task<IReadOnlyList<Transaction>> GetTransactionsAsync(TransactionFilter? filter = null, CancellationToken cancellationToken = default)
         {
-            if (DelayNextQuery)
+            if (++QueryCount == DelayQueryNumber || DelayNextQuery)
             {
                 DelayNextQuery = false; QueryStarted.SetResult(); await ContinueQuery.Task;
             }
@@ -171,8 +293,9 @@ public sealed class ViewModelWorkflowTests
     private sealed class Navigation : IAppNavigationService
     {
         public TransactionFilter? LastFilter { get; private set; }
+        public int ReturnCount { get; private set; }
         public Task GoToTransactionEditorAsync(Guid? transactionId = null, bool duplicate = false) => Task.CompletedTask;
-        public Task GoToTransactionsAsync(TransactionFilter? filter = null, string? message = null) { LastFilter = filter; return Task.CompletedTask; }
+        public Task GoToTransactionsAsync(TransactionFilter? filter = null, string? message = null) { LastFilter = filter; ++ReturnCount; return Task.CompletedTask; }
     }
     private sealed class Dialogs : IUserDialogService
     {

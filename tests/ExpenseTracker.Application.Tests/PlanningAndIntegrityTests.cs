@@ -6,6 +6,16 @@ namespace ExpenseTracker.Application.Tests;
 
 public sealed class PlanningAndIntegrityTests
 {
+    [Fact] public Task Transfer_RejectsFractionalCentsWithoutWriting() => WithDatabase(async repo =>
+    {
+        var (account, _) = await SetupAsync(repo);
+        var destination = new Account(Guid.NewGuid(), "Destinazione", 0m);
+        await repo.SaveAccountsAsync([destination]);
+        await Assert.ThrowsAsync<DomainValidationException>(() =>
+            new TransferService(repo).SaveAsync(account.Id, destination.Id, 1.234m, DateTime.Today, null));
+        Assert.Empty(await repo.GetTransactionsAsync());
+    });
+
     [Fact] public Task Recurrence_StaleEditPreservesAdvancedScheduleAndPause() => WithDatabase(async repo =>
     {
         var (account, category) = await SetupAsync(repo); var service = new PlanningService(repo);
