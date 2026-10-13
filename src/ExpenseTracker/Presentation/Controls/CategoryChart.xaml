@@ -1,7 +1,7 @@
-<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui" x:Class="ExpenseTracker.Presentation.Controls.CategoryChart">
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui" x:Class="ExpenseTracker.Presentation.Controls.CategoryChart" x:Name="Root">
   <Grid HeightRequest="260">
     <Border IsVisible="{Binding HasNoChartData}" WidthRequest="210" HeightRequest="210" HorizontalOptions="Center" VerticalOptions="Center" BackgroundColor="Transparent" Stroke="{StaticResource DarkBorder}" StrokeThickness="18" StrokeShape="Ellipse"/>
-    <lvc:PieChart BackgroundColor="{StaticResource DarkSurface}" Series="{Binding ChartSeries}" LegendPosition="Hidden" IsVisible="{Binding HasChartData}" DataPointerDownCommand="{Binding OpenChartCommand}"/>
+    <lvc:PieChart BackgroundColor="{StaticResource DarkSurface}" Series="{Binding ChartSeries}" LegendPosition="Hidden" IsVisible="{Binding HasChartData}" DataPointerDownCommand="{Binding PointCommand, Source={x:Reference Root}}"/>
     <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="4" InputTransparent="True" WidthRequest="175">
       <Label Text="{Binding ChartLabel}" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" FontSize="12"/>
       <Label FontSize="28" FontAttributes="Bold" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation"><Label.Text><MultiBinding Converter="{StaticResource MoneyConverter}"><Binding Path="ChartTotal"/><Binding Path="ReportCurrency"/></MultiBinding></Label.Text></Label>

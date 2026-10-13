@@ -8,6 +8,7 @@ public partial class TransactionEditorPage : ContentPage, IQueryAttributable
     private readonly TransactionEditorViewModel _viewModel;
     private bool _queryApplied;
     private bool _resumeAfterAssistant;
+    private bool _resumeAfterChoice;
 
     public TransactionEditorPage(TransactionEditorViewModel viewModel)
     {
@@ -28,6 +29,7 @@ public partial class TransactionEditorPage : ContentPage, IQueryAttributable
 
     protected override void OnDisappearing()
     {
+        _resumeAfterChoice = ChoiceSelectionPage.IsOpen;
         _resumeAfterAssistant = Shell.Current is AppShell { IsAssistantOpen: true };
         _viewModel.StoreDraft();
         base.OnDisappearing();
@@ -36,6 +38,7 @@ public partial class TransactionEditorPage : ContentPage, IQueryAttributable
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        if (_resumeAfterChoice) { _resumeAfterChoice = false; return; }
         if (_resumeAfterAssistant) { _resumeAfterAssistant = false; return; }
         if (ChoiceSelectionPage.IsOpen || Shell.Current is AppShell { IsAssistantOpen: true }) return;
         if (!_queryApplied)

@@ -8,8 +8,8 @@ namespace ExpenseTracker.Application;
 public sealed class AssistantChatService(IExpenseRepository repository)
 {
     private static readonly CultureInfo Italian = CultureInfo.GetCultureInfo("it-IT");
-    private static readonly JsonSerializerOptions ReadableJson = new()
-    { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All) };
+    private static readonly System.Text.Encodings.Web.JavaScriptEncoder ReadableEncoder =
+        System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All);
 
     public async Task<IReadOnlyList<string>> GetCategoryNamesAsync(CancellationToken token = default)
     {
@@ -40,7 +40,7 @@ public sealed class AssistantChatService(IExpenseRepository repository)
         var categoryMap = categories.ToDictionary(c => c.Id, c => c.Name);
         string Name(Transaction t) => categoryMap.GetValueOrDefault(t.CategoryId, "Unavailable category");
         string Money(decimal value) => value.ToString("N2", Italian) + " " + currency;
-        string Quote(string name) => JsonSerializer.Serialize(name, ReadableJson);
+        string Quote(string name) => '"' + JsonEncodedText.Encode(name, ReadableEncoder).ToString() + '"';
         decimal Amount(IEnumerable<Transaction> items) => plan.Measure switch
         {
             AssistantChatMeasure.Income => items.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount),

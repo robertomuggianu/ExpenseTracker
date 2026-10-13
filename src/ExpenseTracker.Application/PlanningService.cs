@@ -28,7 +28,7 @@ public sealed class PlanningService(IExpenseRepository repository)
 {
     private const string Key = "planning-v1";
     private readonly SemaphoreSlim gate = new(1, 1);
-    public async Task<PlanningState> GetAsync() => JsonSerializer.Deserialize<PlanningState>(await repository.GetStateAsync(Key) ?? "null") ?? new([], []);
+    public async Task<PlanningState> GetAsync() => JsonSerializer.Deserialize(await repository.GetStateAsync(Key) ?? "null", LocalStateJsonContext.Default.PlanningState) ?? new([], []);
 
     public async Task SaveRuleAsync(RecurringRule rule)
     {
@@ -50,7 +50,7 @@ public sealed class PlanningService(IExpenseRepository repository)
             }
             state.Rules.RemoveAll(r => r.Id == rule.Id);
             state.Rules.Add(rule);
-            await repository.SaveStateAsync(Key, JsonSerializer.Serialize(state));
+            await repository.SaveStateAsync(Key, JsonSerializer.Serialize(state, LocalStateJsonContext.Default.PlanningState));
         }
         finally { gate.Release(); }
     }
@@ -62,14 +62,14 @@ public sealed class PlanningService(IExpenseRepository repository)
             var state = await GetAsync();
             var index = state.Rules.FindIndex(r => r.Id == id);
             if (index >= 0) state.Rules[index] = state.Rules[index] with { IsActive = active };
-            await repository.SaveStateAsync(Key, JsonSerializer.Serialize(state));
+            await repository.SaveStateAsync(Key, JsonSerializer.Serialize(state, LocalStateJsonContext.Default.PlanningState));
         }
         finally { gate.Release(); }
     }
     public async Task RemoveRuleAsync(Guid id)
     {
         await gate.WaitAsync();
-        try { var state = await GetAsync(); state.Rules.RemoveAll(r => r.Id == id); await repository.SaveStateAsync(Key, JsonSerializer.Serialize(state)); }
+        try { var state = await GetAsync(); state.Rules.RemoveAll(r => r.Id == id); await repository.SaveStateAsync(Key, JsonSerializer.Serialize(state, LocalStateJsonContext.Default.PlanningState)); }
         finally { gate.Release(); }
     }
     public async Task ConfirmAsync(Guid ruleId, DateTime expectedDate, DateTime today)
@@ -89,7 +89,7 @@ public sealed class PlanningService(IExpenseRepository repository)
             var transaction = new Transaction(id, DateTime.SpecifyKind(rule.NextDate.AddHours(12), DateTimeKind.Local).ToUniversalTime(),
                 rule.Type, rule.AccountId, rule.CategoryId, rule.Amount, rule.Currency, rule.Name, "Da ricorrenza confermata");
             state.Rules[index] = rule with { NextIndex = rule.NextIndex + 1 };
-            await repository.SaveBatchAsync([], [], [transaction], Key, JsonSerializer.Serialize(state));
+            await repository.SaveBatchAsync([], [], [transaction], Key, JsonSerializer.Serialize(state, LocalStateJsonContext.Default.PlanningState));
         }
         finally { gate.Release(); }
     }
@@ -101,7 +101,7 @@ public sealed class PlanningService(IExpenseRepository repository)
             var state = await GetAsync(); var index = state.Rules.FindIndex(r => r.Id == ruleId);
             if (index < 0 || state.Rules[index].NextDate != expectedDate.Date) throw new DomainValidationException("Scadenza già gestita.");
             state.Rules[index] = state.Rules[index] with { NextIndex = state.Rules[index].NextIndex + 1 };
-            await repository.SaveStateAsync(Key, JsonSerializer.Serialize(state));
+            await repository.SaveStateAsync(Key, JsonSerializer.Serialize(state, LocalStateJsonContext.Default.PlanningState));
         }
         finally { gate.Release(); }
     }
@@ -118,14 +118,14 @@ public sealed class PlanningService(IExpenseRepository repository)
             var state = await GetAsync();
             state.Budgets.RemoveAll(b => b.CategoryId == categoryId && b.Currency == currency && b.Month == month);
             state.Budgets.Add(new(Guid.NewGuid(), categoryId, currency, month, limit));
-            await repository.SaveStateAsync(Key, JsonSerializer.Serialize(state));
+            await repository.SaveStateAsync(Key, JsonSerializer.Serialize(state, LocalStateJsonContext.Default.PlanningState));
         }
         finally { gate.Release(); }
     }
     public async Task RemoveBudgetAsync(Guid id)
     {
         await gate.WaitAsync();
-        try { var state = await GetAsync(); state.Budgets.RemoveAll(b => b.Id == id); await repository.SaveStateAsync(Key, JsonSerializer.Serialize(state)); }
+        try { var state = await GetAsync(); state.Budgets.RemoveAll(b => b.Id == id); await repository.SaveStateAsync(Key, JsonSerializer.Serialize(state, LocalStateJsonContext.Default.PlanningState)); }
         finally { gate.Release(); }
     }
     public async Task<IReadOnlyList<BudgetProgress>> GetBudgetsAsync(DateTime month)
@@ -150,6 +150,8 @@ public sealed class TransferService(IExpenseRepository repository)
 {
     public async Task SaveAsync(Guid sourceId, Guid destinationId, decimal amount, DateTime date, string? notes)
     {
+        if (amount <= 0 || decimal.Round(amount, 2) != amount)
+            throw new DomainValidationException("Inserisci un importo positivo con al massimo due decimali.");
         if (sourceId == destinationId) throw new DomainValidationException("Scegli due conti diversi.");
         var accounts = await repository.GetAccountsAsync();
         var source = accounts.FirstOrDefault(a => a.Id == sourceId && a.IsActive);

@@ -77,7 +77,7 @@
         <Label Text="Distribuzione uscite" Style="{StaticResource SectionTitle}"/>
         <Border Style="{StaticResource Card}" Padding="10,16">
           <VerticalStackLayout Spacing="14">
-              <controls:CategoryChart/>
+              <controls:CategoryChart PointCommand="{Binding OpenChartCommand}"/>
             <Label Text="Nessuna spesa in questo periodo" IsVisible="{Binding HasNoChartData}" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center"/>
           </VerticalStackLayout>
         </Border>

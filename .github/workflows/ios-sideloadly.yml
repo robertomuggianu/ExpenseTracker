@@ -44,6 +44,12 @@ jobs:
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-version
 
+      - name: Verify application workflows without JSON reflection
+        run: |
+          dotnet test tests/ExpenseTracker.Application.Tests/ExpenseTracker.Application.Tests.csproj \
+            -p:JsonSerializerIsReflectionEnabledByDefault=false \
+            --filter 'FullyQualifiedName~ViewModelWorkflowTests|FullyQualifiedName~PlanningAndIntegrityTests|FullyQualifiedName~CategoryComparison_UsesAllCategoriesBeforeLimitingDisplay'
+
       - name: Build unsigned app for a physical iPhone
         run: |
           dotnet publish src/ExpenseTracker/ExpenseTracker.csproj \

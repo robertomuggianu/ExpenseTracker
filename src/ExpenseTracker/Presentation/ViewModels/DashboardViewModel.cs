@@ -5,7 +5,6 @@ using CommunityToolkit.Mvvm.Input;
 using ExpenseTracker.Application;
 using ExpenseTracker.Presentation.Services;
 using LiveChartsCore;
-using LiveChartsCore.Kernel;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
@@ -16,6 +15,7 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
     [ObservableProperty] public partial string SelectedCurrency { get; set; } = "EUR";
     private bool refreshPending;
     private DateRange displayedRange;
+    private int periodVersion;
     [ObservableProperty] public partial string? BalanceWarning { get; set; }
     [RelayCommand] private Task OpenCategoryAsync(CategoryBreakdownItem item)
     {
@@ -24,20 +24,14 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
             Type: IsIncomeSelected ? ExpenseTracker.Domain.TransactionType.Income : ExpenseTracker.Domain.TransactionType.Expense,
             CategoryId: item.CategoryId, Currency: ReportCurrency));
     }
-    [RelayCommand] private Task OpenChartAsync(IEnumerable<ChartPoint> points)
-    {
-        var series = points.FirstOrDefault()?.Context.Series;
-        var index = ChartSeries.ToList().FindIndex(s => ReferenceEquals(s, series));
-        return index >= 0 && index < CategoryBreakdown.Count ? OpenCategoryAsync(CategoryBreakdown[index]) : Task.CompletedTask;
-    }
     public ObservableCollection<CategoryBreakdownItem> CategoryBreakdown { get; } = [];
     private IReadOnlyList<ExpenseGroup> expenseGroups = [];
     private IReadOnlyList<ExpenseGroup> incomeGroups = [];
     [ObservableProperty] public partial bool IsIncomeSelected { get; set; }
     public bool IsExpenseSelected => !IsIncomeSelected;
     public decimal ChartTotal => IsIncomeSelected ? Income : Expense;
-    public string ChartLabel => IsIncomeSelected ? "Entrate del mese" : "Spese del mese";
-    public string EmptyChartText => IsIncomeSelected ? "Nessuna entrata in questo mese" : "Nessuna spesa in questo mese";
+    public string ChartLabel => IsIncomeSelected ? "Entrate del periodo" : "Spese del periodo";
+    public string EmptyChartText => IsIncomeSelected ? "Nessuna entrata in questo periodo" : "Nessuna spesa in questo periodo";
     [RelayCommand] private void SelectExpenses() { IsIncomeSelected = false; UpdateChart(); }
     [RelayCommand] private void SelectIncome() { IsIncomeSelected = true; UpdateChart(); }
     partial void OnIsIncomeSelectedChanged(bool value)
@@ -64,7 +58,43 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
         OnPropertyChanged(nameof(ChartTotal));
     }
     [ObservableProperty] public partial DateTime SelectedMonth { get; set; } = new(DateTime.Today.Year, DateTime.Today.Month, 1);
-    public string MonthLabel => SelectedMonth.ToString("MMMM yyyy", CultureInfo.GetCultureInfo("it-IT"));
+    public IReadOnlyList<PeriodOption> Periods { get; } =
+    [new(DateRangePreset.CurrentWeek, "Settimana"), new(DateRangePreset.CurrentMonth, "Mese"),
+     new(DateRangePreset.CurrentYear, "Anno"), new(DateRangePreset.Custom, "Periodo")];
+    [ObservableProperty] public partial PeriodOption SelectedPeriod { get; set; } = new(DateRangePreset.CurrentMonth, "Mese");
+    [ObservableProperty] public partial DateTime CustomFrom { get; set; } = DateTime.Today.AddDays(-30);
+    [ObservableProperty] public partial DateTime CustomTo { get; set; } = DateTime.Today;
+    public bool IsCustomPeriod => SelectedPeriod.Value == DateRangePreset.Custom;
+    public bool CanStepPeriod => !IsCustomPeriod;
+    private DateRange GetRange() => DateRangeFactory.Create(SelectedPeriod.Value, SelectedMonth, CustomFrom, CustomTo);
+    public string MonthLabel
+    {
+        get
+        {
+            if (IsCustomPeriod) return $"{CustomFrom:dd/MM/yyyy} – {CustomTo:dd/MM/yyyy}";
+            if (SelectedPeriod.Value == DateRangePreset.CurrentYear) return SelectedMonth.Year.ToString();
+            if (SelectedPeriod.Value == DateRangePreset.CurrentWeek)
+            {
+                var range = GetRange();
+                return $"{range.FromUtc.ToLocalTime():dd/MM/yyyy} – {range.ToUtcExclusive.ToLocalTime().AddDays(-1):dd/MM/yyyy}";
+            }
+            return SelectedMonth.ToString("MMMM yyyy", CultureInfo.GetCultureInfo("it-IT"));
+        }
+    }
+    private void RefreshPeriod()
+    {
+        OnPropertyChanged(nameof(MonthLabel));
+        ++periodVersion; refreshPending = true;
+        _ = LoadAsync();
+    }
+    partial void OnSelectedPeriodChanged(PeriodOption value)
+    {
+        OnPropertyChanged(nameof(IsCustomPeriod)); OnPropertyChanged(nameof(CanStepPeriod));
+        SelectedMonth = DateTime.Today;
+        RefreshPeriod();
+    }
+    partial void OnCustomFromChanged(DateTime value) { if (IsCustomPeriod) RefreshPeriod(); }
+    partial void OnCustomToChanged(DateTime value) { if (IsCustomPeriod) RefreshPeriod(); }
     [ObservableProperty] public partial string? BalanceCurrency { get; set; } = "EUR";
     [ObservableProperty] public partial string? ReportCurrency { get; set; } = "EUR";
     [ObservableProperty] public partial decimal TotalBalance { get; set; }
@@ -86,10 +116,30 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
     });
     private async Task LoadCoreAsync()
     {
-        var month = SelectedMonth; var currency = SelectedCurrency;
-        var range = MonthlyPeriods.FullMonth(month);
+        var month = SelectedMonth; var currency = SelectedCurrency; var version = periodVersion;
+        DateRange range;
+        try { range = GetRange(); }
+        catch (ExpenseTracker.Domain.DomainValidationException)
+        {
+            Income = Expense = Difference = 0; expenseGroups = []; incomeGroups = [];
+            ComparisonText = ""; UpdateChart(); throw;
+        }
         var summary = await reportingService.GetDashboardAsync(range, currency: currency);
-        if (month != SelectedMonth || currency != SelectedCurrency) { refreshPending = true; return; }
+        if (version != periodVersion || month != SelectedMonth || currency != SelectedCurrency) { refreshPending = true; return; }
+        if (SelectedPeriod.Value == DateRangePreset.CurrentMonth)
+        {
+            var comparison = MonthlyPeriods.Comparison(month, DateTime.Today);
+            var current = await reportingService.GetAnalyticsAsync(comparison.Current, currency: currency);
+            var previous = await reportingService.GetAnalyticsAsync(comparison.Previous, currency: currency);
+            if (version != periodVersion || month != SelectedMonth || currency != SelectedCurrency) { refreshPending = true; return; }
+            var delta = current.Totals.Expense - previous.Totals.Expense;
+            var period = comparison.Partial ? "allo stesso punto del mese scorso" : "al mese precedente";
+            ComparisonText = current.ReportCurrency is not null && current.ReportCurrency == previous.ReportCurrency
+                ? delta == 0 ? $"Spese uguali rispetto {period}."
+                  : $"Spese: {MoneyFormatter.Format(Math.Abs(delta), current.ReportCurrency)} in {(delta > 0 ? "più" : "meno")} rispetto {period}."
+                : "Confronto non disponibile tra valute diverse.";
+        }
+        else ComparisonText = "";
         displayedRange = range;
         BalanceWarning = summary.BalanceWarning;
         BalanceCurrency = summary.BalanceCurrency;
@@ -98,23 +148,24 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
         Income = summary.Totals.Income;
         Expense = summary.Totals.Expense;
         Difference = summary.Totals.Difference;
-        var comparison = MonthlyPeriods.Comparison(month, DateTime.Today);
-        var current = await reportingService.GetAnalyticsAsync(comparison.Current, currency: currency);
-        var previous = await reportingService.GetAnalyticsAsync(comparison.Previous, currency: currency);
-        if (month != SelectedMonth || currency != SelectedCurrency) { refreshPending = true; return; }
-        var delta = current.Totals.Expense - previous.Totals.Expense;
-        var period = comparison.Partial ? "allo stesso punto del mese scorso" : "al mese precedente";
-        ComparisonText = current.ReportCurrency is not null && current.ReportCurrency == previous.ReportCurrency
-            ? delta == 0 ? $"Spese uguali rispetto {period}."
-              : $"Spese: {MoneyFormatter.Format(Math.Abs(delta), current.ReportCurrency)} in {(delta > 0 ? "più" : "meno")} rispetto {period}."
-            : "Confronto non disponibile tra valute diverse.";
         expenseGroups = summary.ExpensesByCategory;
         incomeGroups = summary.IncomeByCategory;
         UpdateChart();
     }
-    [RelayCommand] private Task PreviousMonthAsync() { SelectedMonth = SelectedMonth.AddMonths(-1); refreshPending = true; return LoadAsync(); }
-    [RelayCommand] private Task NextMonthAsync() { SelectedMonth = SelectedMonth.AddMonths(1); refreshPending = true; return LoadAsync(); }
-    [RelayCommand] private Task CurrentMonthAsync() { SelectedMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1); refreshPending = true; return LoadAsync(); }
+    private Task StepPeriodAsync(int direction)
+    {
+        if (IsCustomPeriod) return Task.CompletedTask;
+        SelectedMonth = SelectedPeriod.Value switch
+        {
+            DateRangePreset.CurrentWeek => SelectedMonth.AddDays(7 * direction),
+            DateRangePreset.CurrentYear => SelectedMonth.AddYears(direction),
+            _ => SelectedMonth.AddMonths(direction)
+        };
+        refreshPending = true; return LoadAsync();
+    }
+    [RelayCommand] private Task PreviousMonthAsync() => StepPeriodAsync(-1);
+    [RelayCommand] private Task NextMonthAsync() => StepPeriodAsync(1);
+    [RelayCommand] private Task CurrentMonthAsync() { SelectedMonth = DateTime.Today; refreshPending = true; return LoadAsync(); }
     [RelayCommand] private Task NewTransactionAsync() => navigation.GoToTransactionEditorAsync();
     partial void OnSelectedMonthChanged(DateTime value) => OnPropertyChanged(nameof(MonthLabel));
     partial void OnHasChartDataChanged(bool value) => OnPropertyChanged(nameof(HasNoChartData));
