@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
     x:Name="Page"
+    controls:AssistantLauncher.IsVisible="{Binding IsFloatingActionsVisible}"
     Title="Conti">
     <Grid>
         <ScrollView>
@@ -47,7 +48,13 @@
                                 <HorizontalStackLayout><CheckBox IsChecked="{Binding IsPrimary}" /><Label Text="Principale" VerticalTextAlignment="Center" /></HorizontalStackLayout>
                                 <HorizontalStackLayout Grid.Column="1"><CheckBox IsChecked="{Binding IsActive}" /><Label Text="Attivo" VerticalTextAlignment="Center" /></HorizontalStackLayout>
                             </Grid>
-                            <Button Text="Salva conto" Command="{Binding SaveCommand}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                <Grid.Triggers>
+                                    <DataTrigger TargetType="Grid" Binding="{Binding IsBusy}" Value="True"><Setter Property="IsEnabled" Value="False" /></DataTrigger>
+                                </Grid.Triggers>
+                                <Button Text="Annulla" Style="{StaticResource SecondaryButton}" Command="{Binding CancelEditCommand}" />
+                                <Button Grid.Column="1" Text="Salva conto" Command="{Binding SaveCommand}" />
+                            </Grid>
                         </VerticalStackLayout>
                     </Border>
 
@@ -94,7 +101,8 @@
             </VerticalStackLayout>
         </ScrollView>
         <Button Style="{StaticResource FloatingActionButton}" Command="{Binding NewAccountCommand}"
-                HorizontalOptions="Center" VerticalOptions="End" Margin="0,0,0,24"
+                IsVisible="{Binding IsFloatingActionsVisible}"
+                HorizontalOptions="End" VerticalOptions="End" Margin="0,0,18,24"
                 SemanticProperties.Description="Aggiungi un nuovo conto" />
     </Grid>
 </ContentPage>

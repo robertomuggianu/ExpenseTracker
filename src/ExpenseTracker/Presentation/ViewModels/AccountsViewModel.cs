@@ -19,7 +19,10 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
     public partial decimal TotalBalance { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFloatingActionsVisible))]
     public partial bool IsEditorVisible { get; set; }
+
+    public bool IsFloatingActionsVisible => !IsEditorVisible;
 
     [ObservableProperty]
     public partial Guid? EditingId { get; set; }
@@ -58,6 +61,7 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
     [RelayCommand]
     private void NewAccount()
     {
+        ErrorMessage = null;
         EditingId = null;
         Name = string.Empty;
         OpeningBalance = "0,00";
@@ -68,8 +72,22 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
     }
 
     [RelayCommand]
+    private void CancelEdit()
+    {
+        IsEditorVisible = false;
+        EditingId = null;
+        Name = string.Empty;
+        OpeningBalance = "0,00";
+        Currency = "EUR";
+        IsPrimary = false;
+        IsActive = true;
+        ErrorMessage = null;
+    }
+
+    [RelayCommand]
     private void Edit(AccountSummary summary)
     {
+        ErrorMessage = null;
         EditingId = summary.Account.Id;
         Name = summary.Account.Name;
         OpeningBalance = summary.Account.OpeningBalance.ToString("0.00", CultureInfo.GetCultureInfo("it-IT"));

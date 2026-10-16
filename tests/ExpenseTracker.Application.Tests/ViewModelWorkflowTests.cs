@@ -7,6 +7,83 @@ namespace ExpenseTracker.Application.Tests;
 
 public sealed class ViewModelWorkflowTests
 {
+    [Fact] public Task Home_SaveAndAddKeepsOriginAndFinalSaveReturnsHome() => WithDatabase(async repo =>
+    {
+        var nav = new Navigation();
+        var home = new DashboardViewModel(new(repo), nav, new(repo));
+        await home.NewTransactionCommand.ExecuteAsync(null);
+        Assert.True(nav.ReturnToHome);
+        var editor = Editor(repo, new PreferencesStore(), nav);
+        editor.ReturnToHome = nav.ReturnToHome;
+        await editor.LoadAsync();
+        editor.Amount = "5"; editor.SelectedCategory = editor.Categories[0];
+        await editor.SaveAndAddCommand.ExecuteAsync(null);
+        Assert.Equal(0, nav.HomeReturnCount); Assert.Equal(0, nav.ReturnCount);
+        await editor.LoadAsync(); // Reopening the editor preserves its origin along with the draft.
+        editor.Amount = "8"; editor.SelectedCategory = editor.Categories[0];
+        await editor.SaveCommand.ExecuteAsync(null);
+        Assert.Null(editor.ErrorMessage);
+        Assert.Equal(1, nav.HomeReturnCount); Assert.Equal(0, nav.ReturnCount);
+        Assert.Equal(2, (await repo.GetTransactionsAsync()).Count);
+    });
+
+    [Fact] public Task Accounts_CancelCreationOrEditDiscardsFieldsWithoutSaving() => WithDatabase(async repo =>
+    {
+        var vm = new AccountsViewModel(new(repo), new Dialogs());
+        await vm.LoadAsync(); var original = Assert.Single(vm.Accounts).Account;
+        vm.NewAccountCommand.Execute(null);
+        Assert.True(vm.IsEditorVisible); Assert.False(vm.IsFloatingActionsVisible);
+        vm.Name = "Da annullare"; vm.OpeningBalance = "non valido";
+        await vm.SaveCommand.ExecuteAsync(null);
+        Assert.NotNull(vm.ErrorMessage); Assert.True(vm.IsEditorVisible);
+        vm.CancelEditCommand.Execute(null);
+        Assert.Null(vm.ErrorMessage); Assert.False(vm.IsEditorVisible); Assert.True(vm.IsFloatingActionsVisible);
+        Assert.Single(await repo.GetAccountsAsync());
+        vm.EditCommand.Execute(Assert.Single(vm.Accounts)); vm.Name = "Modificato";
+        vm.CancelEditCommand.Execute(null);
+        Assert.Null(vm.EditingId);
+        Assert.Equal(original.Name, (await repo.GetAccountAsync(original.Id))!.Name);
+        vm.NewAccountCommand.Execute(null);
+        Assert.Equal("", vm.Name); Assert.Equal("0,00", vm.OpeningBalance);
+        vm.Name = "Nuovo conto";
+        await vm.SaveCommand.ExecuteAsync(null);
+        Assert.Null(vm.ErrorMessage); Assert.False(vm.IsEditorVisible); Assert.True(vm.IsFloatingActionsVisible);
+        Assert.Equal(2, (await repo.GetAccountsAsync()).Count);
+    });
+
+    [Theory]
+    [InlineData(7, 7)]
+    [InlineData(31, 5)]
+    [InlineData(62, 9)]
+    [InlineData(365, 12)]
+    public Task Statistics_SparseTrendKeepsBoundaryValuesAndEmptyIntervals(int days, int bucketCount) => WithDatabase(async repo =>
+    {
+        var account = Assert.Single(await repo.GetAccountsAsync());
+        var categories = await repo.GetCategoriesAsync();
+        var from = new DateTime(2026, 1, 1);
+        var last = from.AddDays(days - 1);
+        await repo.SaveTransactionAsync(new(Guid.NewGuid(), from.AddHours(12).ToUniversalTime(), TransactionType.Income,
+            account.Id, categories.First(c => c.Type == TransactionType.Income).Id, 1500m));
+        await repo.SaveTransactionAsync(new(Guid.NewGuid(), last.AddHours(12).ToUniversalTime(), TransactionType.Expense,
+            account.Id, categories.First(c => c.Type == TransactionType.Expense).Id, 27m));
+        var vm = new StatisticsViewModel(new(repo), new(repo), new Navigation());
+        await vm.LoadAsync();
+        vm.CustomFrom = from; vm.CustomTo = last;
+        vm.SelectedPeriod = vm.Periods.Single(p => p.Value == DateRangePreset.Custom);
+        await SettledAsync(vm);
+        Assert.Null(vm.ErrorMessage); Assert.True(vm.HasTrendData);
+        var series = vm.TrendSeries.Cast<LiveChartsCore.SkiaSharpView.ColumnSeries<decimal>>().ToArray();
+        var income = series[0].Values!.ToArray(); var expense = series[1].Values!.ToArray();
+        Assert.Equal(bucketCount, income.Length); Assert.Equal(bucketCount, expense.Length);
+        Assert.Equal(1500m, income[0]); Assert.Equal(1500m, income.Sum());
+        Assert.Equal(27m, expense[^1]); Assert.Equal(27m, expense.Sum());
+        Assert.Equal(bucketCount - 1, expense.Count(value => value == 0));
+        Assert.Equal(bucketCount, Assert.Single(vm.XAxes).Labels!.Count);
+        Assert.Equal("1,5 k", Assert.Single(vm.YAxes).Labeler(1500));
+        vm.SelectedCurrency = "USD"; await SettledAsync(vm);
+        Assert.False(vm.HasTrendData); Assert.True(vm.HasNoTrendData);
+    });
+
     [Theory]
     [InlineData(TransactionType.Expense, TransactionType.Income)]
     [InlineData(TransactionType.Income, TransactionType.Expense)]
@@ -294,7 +371,11 @@ public sealed class ViewModelWorkflowTests
     {
         public TransactionFilter? LastFilter { get; private set; }
         public int ReturnCount { get; private set; }
-        public Task GoToTransactionEditorAsync(Guid? transactionId = null, bool duplicate = false) => Task.CompletedTask;
+        public int HomeReturnCount { get; private set; }
+        public bool ReturnToHome { get; private set; }
+        public Task GoToTransactionEditorAsync(Guid? transactionId = null, bool duplicate = false, bool returnToHome = false)
+        { ReturnToHome = returnToHome; return Task.CompletedTask; }
+        public Task GoToDashboardAsync() { ++HomeReturnCount; return Task.CompletedTask; }
         public Task GoToTransactionsAsync(TransactionFilter? filter = null, string? message = null) { LastFilter = filter; ++ReturnCount; return Task.CompletedTask; }
     }
     private sealed class Dialogs : IUserDialogService

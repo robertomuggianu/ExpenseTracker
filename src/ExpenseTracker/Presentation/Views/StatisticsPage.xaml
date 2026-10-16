@@ -72,7 +72,11 @@
         </Grid>
         <Label Text="Andamento temporale" Style="{StaticResource SectionTitle}"/>
         <Border Style="{StaticResource Card}" Padding="10,16">
-          <lvc:CartesianChart BackgroundColor="{StaticResource DarkSurface}" Series="{Binding TrendSeries}" XAxes="{Binding XAxes}" YAxes="{Binding YAxes}" HeightRequest="310" LegendPosition="Bottom"/>
+          <VerticalStackLayout Spacing="12">
+            <Label Text="{Binding TrendCaption}" Style="{StaticResource MutedLabel}" FontSize="12" Margin="4,0"/>
+            <lvc:CartesianChart BackgroundColor="{StaticResource DarkSurface}" Series="{Binding TrendSeries}" XAxes="{Binding XAxes}" YAxes="{Binding YAxes}" HeightRequest="250" LegendPosition="Bottom" LegendTextSize="13" LegendTextPaint="#B2C4B8" IsVisible="{Binding HasTrendData}"/>
+            <Label Text="Nessun movimento in questo periodo" IsVisible="{Binding HasNoTrendData}" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" Margin="0,20"/>
+          </VerticalStackLayout>
         </Border>
         <Label Text="Distribuzione uscite" Style="{StaticResource SectionTitle}"/>
         <Border Style="{StaticResource Card}" Padding="10,16">

@@ -16,6 +16,7 @@ public partial class TransactionEditorViewModel(
     IAppNavigationService navigation, IUserDialogService dialogs, IAppPreferences preferences) : ViewModelBase
 {
     private bool initialized;
+    public bool ReturnToHome { get; set; }
     private Guid? originalCategoryId;
     private readonly HashSet<Guid> favorites = (preferences.Get("favorite-categories", "").Split(',').Where(s => Guid.TryParse(s, out _)).Select(Guid.Parse)).ToHashSet();
     [ObservableProperty] public partial string? StatusMessage { get; set; }
@@ -210,7 +211,8 @@ public partial class TransactionEditorViewModel(
         StatusMessage = "Movimento salvato.";
         if (!addAnother)
         {
-            await navigation.GoToTransactionsAsync(message: "Movimento salvato.");
+            if (ReturnToHome) await navigation.GoToDashboardAsync();
+            else await navigation.GoToTransactionsAsync(message: "Movimento salvato.");
         }
     }
 

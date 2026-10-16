@@ -19,6 +19,7 @@ public partial class TransactionEditorPage : ContentPage, IQueryAttributable
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         _queryApplied = true;
+        _viewModel.ReturnToHome = query.TryGetValue("returnToHome", out var origin) && origin?.ToString() == "true";
         var transactionId = query.TryGetValue("transactionId", out var value)
             && Guid.TryParse(value?.ToString(), out var parsed)
             ? parsed

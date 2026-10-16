@@ -8,8 +8,13 @@
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" MinimumHeightRequest="48">
             <Label Text="{Binding SelectedLabel, Source={x:Reference Root}}"
                    VerticalTextAlignment="Center" LineBreakMode="TailTruncation" />
-            <Label Grid.Column="1" Text="⌄" TextColor="{StaticResource PrimaryGlow}"
-                   FontSize="20" VerticalTextAlignment="Center" />
+            <Border Grid.Column="1" WidthRequest="28" HeightRequest="28" Padding="0"
+                    VerticalOptions="Center" BackgroundColor="{StaticResource PrimaryDark}"
+                    StrokeThickness="0" StrokeShape="RoundRectangle 9" InputTransparent="True">
+                <Path Data="M 2,3 L 7,8 L 12,3" Stroke="{StaticResource PrimaryGlow}"
+                      StrokeThickness="1.8" StrokeLineCap="Round" StrokeLineJoin="Round"
+                      HorizontalOptions="Center" VerticalOptions="Center" WidthRequest="14" HeightRequest="11" />
+            </Border>
             <Grid.GestureRecognizers>
                 <TapGestureRecognizer Tapped="OnTapped" />
             </Grid.GestureRecognizers>

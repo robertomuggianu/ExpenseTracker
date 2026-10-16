@@ -3,6 +3,18 @@ namespace ExpenseTracker.Presentation.Controls;
 /// <summary>Shared floating actions layered over the full page viewport.</summary>
 public static class AssistantLauncher
 {
+    public static readonly BindableProperty IsVisibleProperty = BindableProperty.CreateAttached(
+        "IsVisible", typeof(bool), typeof(AssistantLauncher), true,
+        propertyChanged: (bindable, _, value) =>
+        {
+            if (bindable is ContentPage { Content: Grid layout })
+                foreach (var action in layout.Children.OfType<ImageButton>().Where(button => button.StyleId == "AssistantLauncher"))
+                    action.IsVisible = (bool)value;
+        });
+
+    public static bool GetIsVisible(BindableObject target) => (bool)target.GetValue(IsVisibleProperty);
+    public static void SetIsVisible(BindableObject target, bool value) => target.SetValue(IsVisibleProperty, value);
+
     public static void Attach(ContentPage page)
     {
         // A selector displayed inside the chat is already in the assistant context.
@@ -13,6 +25,7 @@ public static class AssistantLauncher
         layout.Add(content);
         var button = new ImageButton
         {
+            StyleId = "AssistantLauncher", IsVisible = GetIsVisible(page),
             Source = "ui_assistant.png", WidthRequest = 54, HeightRequest = 54,
             Padding = 13, CornerRadius = 27, BackgroundColor = Color.FromArgb("#42C6A5"),
             HorizontalOptions = LayoutOptions.Start, VerticalOptions = LayoutOptions.End,

@@ -50,14 +50,18 @@ public sealed class ImportFilePickerService : IImportFilePickerService
 
 public sealed class AppNavigationService(NavigationRequests requests) : IAppNavigationService
 {
-    public Task GoToTransactionEditorAsync(Guid? transactionId = null, bool duplicate = false)
+    public Task GoToTransactionEditorAsync(Guid? transactionId = null, bool duplicate = false, bool returnToHome = false)
     {
         var route = transactionId.HasValue
             ? $"//NewTransactionRoot/NewTransaction?transactionId={Uri.EscapeDataString(transactionId.Value.ToString("D"))}"
             : "//NewTransactionRoot/NewTransaction";
+        route += transactionId.HasValue ? "&" : "?";
+        route += $"returnToHome={returnToHome.ToString().ToLowerInvariant()}";
         if (duplicate) route += "&duplicate=true";
         return Shell.Current.GoToAsync(route);
     }
+
+    public Task GoToDashboardAsync() => Shell.Current.GoToAsync("//DashboardRoot/Dashboard");
 
     public Task GoToTransactionsAsync(TransactionFilter? filter = null, string? message = null)
     {
