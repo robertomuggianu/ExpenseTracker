@@ -97,7 +97,17 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
     [ObservableProperty]
     public partial IEnumerable<Axis> XAxes { get; set; } = [new Axis()];
 
-    public IEnumerable<Axis> YAxes { get; } = [new Axis { LabelsPaint = new SolidColorPaint(SKColor.Parse("#B2C4B8")), SeparatorsPaint = new SolidColorPaint(SKColor.Parse("#3C5147")), MinLimit = 0 }];
+    [ObservableProperty]
+    public partial IEnumerable<Axis> YAxes { get; set; } = [];
+
+    [ObservableProperty]
+    public partial string TrendCaption { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasNoTrendData))]
+    public partial bool HasTrendData { get; set; }
+
+    public bool HasNoTrendData => !HasTrendData;
 
     [ObservableProperty]
     public partial IEnumerable<ISeries> ExpenseSeries { get; set; } = [];
@@ -145,6 +155,7 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
         if (IsCustomPeriod && CustomFrom.Date > CustomTo.Date)
         {
             TrendSeries = []; ExpenseSeries = []; CategoryBreakdown.Clear(); HasChartData = false;
+            HasTrendData = false; TrendCaption = string.Empty;
             Income = Expense = Difference = 0;
             throw new ExpenseTracker.Domain.DomainValidationException("La data iniziale deve precedere quella finale.");
         }
@@ -161,16 +172,37 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
         var from = range.FromUtc.ToLocalTime().Date;
         var to = range.ToUtcExclusive.ToLocalTime().Date;
         var monthly = (to - from).TotalDays > 62;
-        var values = summary.Trend.GroupBy(t => monthly ? new DateTime(t.Date.Year, t.Date.Month, 1) : t.Date)
+        var weekly = !monthly && (to - from).TotalDays > 14;
+        DateTime BucketDate(DateTime date) => monthly ? new DateTime(date.Year, date.Month, 1)
+            : weekly ? from.AddDays(((date.Date - from).Days / 7) * 7) : date.Date;
+        var values = summary.Trend.GroupBy(t => BucketDate(t.Date))
             .ToDictionary(g => g.Key, g => new TrendPoint(g.Key, g.Sum(t => t.Income), g.Sum(t => t.Expense)));
         var buckets = new List<TrendPoint>();
-        for (var date = monthly ? new DateTime(from.Year, from.Month, 1) : from; date < to; date = monthly ? date.AddMonths(1) : date.AddDays(1))
+        for (var date = BucketDate(from); date < to; date = monthly ? date.AddMonths(1) : date.AddDays(weekly ? 7 : 1))
             buckets.Add(values.GetValueOrDefault(date) ?? new TrendPoint(date, 0, 0));
+        var culture = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
+        var shortPeriod = (to - from).TotalDays <= 7;
+        var labels = buckets.Select(t => monthly ? t.Date.ToString(from.Year == to.AddDays(-1).Year ? "MMM" : "MMM yy", culture)
+            : weekly ? $"{t.Date:dd}–{(t.Date.AddDays(6) < to ? t.Date.AddDays(6) : to.AddDays(-1)):dd}"
+            : t.Date.ToString(shortPeriod ? "ddd" : "dd/MM", culture)).ToArray();
+        TrendCaption = $"Totali {(monthly ? "mensili" : weekly ? "settimanali" : "giornalieri")} · {from.ToString("dd MMM yyyy", culture)} – {to.AddDays(-1).ToString("dd MMM yyyy", culture)} · {ReportCurrency}";
+        HasTrendData = buckets.Any(t => t.Income != 0 || t.Expense != 0);
         TrendSeries = [
-            new ColumnSeries<decimal> { Name = "Entrate", Values = buckets.Select(t => t.Income).ToArray(), Fill = new SolidColorPaint(SKColor.Parse("#80D9BE")) },
-            new ColumnSeries<decimal> { Name = "Spese", Values = buckets.Select(t => t.Expense).ToArray(), Fill = new SolidColorPaint(SKColor.Parse("#F4C66A")) }];
-        XAxes = [new Axis { LabelsPaint = new SolidColorPaint(SKColor.Parse("#B2C4B8")), TextSize = 11,
-            Labels = buckets.Select(t => t.Date.ToString(monthly ? "MMM yy" : "dd/MM", System.Globalization.CultureInfo.GetCultureInfo("it-IT"))).ToArray() }];
+            new ColumnSeries<decimal> { Name = "Entrate", Values = buckets.Select(t => t.Income).ToArray(),
+                MaxBarWidth = 32, Padding = 3, Rx = 4, Ry = 4,
+                YToolTipLabelFormatter = point => MoneyFormatter.Format(point.Model, ReportCurrency),
+                Fill = new SolidColorPaint(SKColor.Parse("#80D9BE")) },
+            new ColumnSeries<decimal> { Name = "Spese", Values = buckets.Select(t => t.Expense).ToArray(),
+                MaxBarWidth = 32, Padding = 3, Rx = 4, Ry = 4,
+                YToolTipLabelFormatter = point => MoneyFormatter.Format(point.Model, ReportCurrency),
+                Fill = new SolidColorPaint(SKColor.Parse("#F4C66A")) }];
+        XAxes = [new Axis { LabelsPaint = new SolidColorPaint(SKColor.Parse("#B2C4B8")), TextSize = 12,
+            Labels = labels, MinStep = 1, ForceStepToMin = buckets.Count <= 7,
+            MinLimit = -0.5, MaxLimit = buckets.Count - 0.5, LabelsRotation = 0,
+            SeparatorsPaint = null }];
+        YAxes = [new Axis { LabelsPaint = new SolidColorPaint(SKColor.Parse("#B2C4B8")), TextSize = 11,
+            SeparatorsPaint = new SolidColorPaint(SKColor.Parse("#3C5147")), MinLimit = 0,
+            Labeler = value => value.ToString(value >= 1000000 ? "0,,.##' M'" : value >= 1000 ? "0,.##' k'" : "0.##", culture) }];
         ExpenseSeries = summary.ExpensesByCategory
             .Select(item => (ISeries)new PieSeries<decimal> { Name = item.Name, Values = [item.Total], InnerRadius = 75, MaxRadialColumnWidth = 42, Fill = new SolidColorPaint(SKColor.Parse(item.Color)), Stroke = new SolidColorPaint(SKColor.Parse("#26342F"), 3) })
             .ToArray();

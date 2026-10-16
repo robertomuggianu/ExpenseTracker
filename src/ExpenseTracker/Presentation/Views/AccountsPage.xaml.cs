@@ -18,4 +18,11 @@ public partial class AccountsPage : ContentPage
         if (Shell.Current is AppShell { IsAssistantOpen: true }) return;
         await _viewModel.LoadCommand.ExecuteAsync(null);
     }
+
+    protected override bool OnBackButtonPressed()
+    {
+        if (!_viewModel.IsEditorVisible) return base.OnBackButtonPressed();
+        if (!_viewModel.IsBusy) _viewModel.CancelEditCommand.Execute(null);
+        return true;
+    }
 }
