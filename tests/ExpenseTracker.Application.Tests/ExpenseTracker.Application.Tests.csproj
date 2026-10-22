@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Maui.Controls.Core" Version="10.0.20" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView" Version="2.0.5" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
@@ -18,6 +19,9 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Compile Include="..\..\src\ExpenseTracker\Presentation\Controls\TransactionTypeField.cs" Link="Presentation\TransactionTypeField.cs" />
+    <Compile Include="..\..\src\ExpenseTracker\Presentation\Services\ChoiceLabelFormatter.cs" Link="Presentation\ChoiceLabelFormatter.cs" />
+    <None Include="..\..\src\ExpenseTracker\Resources\Images\category_*.svg" Link="Assets\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="..\..\src\ExpenseTracker\Presentation\Services\PresentationContracts.cs" Link="Presentation\PresentationContracts.cs" />
     <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\AssistantViewModel.cs" Link="Presentation\AssistantViewModel.cs" />
     <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\ViewModelBase.cs" Link="Presentation\ViewModelBase.cs" />

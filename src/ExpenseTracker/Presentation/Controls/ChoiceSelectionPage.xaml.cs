@@ -47,9 +47,9 @@ public partial class ChoiceSelectionPage : ContentPage
         return true;
     }
 
-    private void OnItemTapped(object? sender, TappedEventArgs e)
+    private void OnItemClicked(object? sender, EventArgs e)
     {
-        if (e.Parameter is ChoiceSelectionItem item) _ = CloseAsync(true, item.Value);
+        if (sender is Button { BindingContext: ChoiceSelectionItem item }) _ = CloseAsync(true, item.Value);
     }
 
     private void OnSearchChanged(object? sender, TextChangedEventArgs e)
@@ -68,8 +68,10 @@ public partial class ChoiceSelectionPage : ContentPage
         _completion.TrySetResult((accepted, value));
     }
 
-    private sealed record ChoiceSelectionModel(string Title, IReadOnlyList<ChoiceSelectionItem> Source)
+    public sealed record ChoiceSelectionModel(string Title, IReadOnlyList<ChoiceSelectionItem> Source)
     {
         public ObservableCollection<ChoiceSelectionItem> Items { get; } = new(Source);
+        // CollectionView needs a finite height inside the bottom-aligned sheet.
+        public double ListHeight => Math.Clamp(Source.Count * 64, 64, 384);
     }
 }

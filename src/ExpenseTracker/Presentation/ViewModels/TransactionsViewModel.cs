@@ -68,7 +68,7 @@ public partial class TransactionsViewModel(TransactionService transactionService
     [RelayCommand] private void ShowDetail(TransactionListItem item) => SelectedTransaction = item;
     [RelayCommand] private Task EditAsync(TransactionListItem item) => navigation.GoToTransactionEditorAsync(item.Transaction.Id);
     [RelayCommand] private Task DuplicateAsync(TransactionListItem item) => navigation.GoToTransactionEditorAsync(item.Transaction.Id, true);
-    [RelayCommand] private Task NewTransactionAsync() => navigation.GoToTransactionEditorAsync();
+    [RelayCommand] private Task NewTransactionAsync() => navigation.GoToTransactionEditorAsync(initialType: SelectedType.Value);
     partial void OnSelectedTransactionChanged(TransactionListItem? value) => HasSelectedTransaction = value is not null;
     partial void OnSelectedPeriodChanged(PeriodOption value) { OnPropertyChanged(nameof(IsCustomPeriod)); OnPropertyChanged(nameof(IsReferencePeriod)); RequestRefresh(); }
     partial void OnSelectedAccountChanged(AccountFilterOption? value) => RequestRefresh();

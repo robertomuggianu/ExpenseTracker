@@ -16,6 +16,8 @@ public partial class TransactionEditorViewModel(
     IAppNavigationService navigation, IUserDialogService dialogs, IAppPreferences preferences) : ViewModelBase
 {
     private bool initialized;
+    private Guid? defaultAccountId;
+    private TimeSpan defaultTime;
     public bool ReturnToHome { get; set; }
     private Guid? originalCategoryId;
     private readonly HashSet<Guid> favorites = (preferences.Get("favorite-categories", "").Split(',').Where(s => Guid.TryParse(s, out _)).Select(Guid.Parse)).ToHashSet();
@@ -35,12 +37,15 @@ public partial class TransactionEditorViewModel(
     public void StoreDraft()
     {
         if (!initialized || IsBusy) return;
-        if (EditingId is null && SelectedCategory is null && Date.Date == DateTime.Today && !ShowDetails
-            && string.IsNullOrWhiteSpace(Amount) && string.IsNullOrWhiteSpace(Description) && string.IsNullOrWhiteSpace(Notes))
+        if (!HasDraft)
         { preferences.Remove("transaction-draft"); return; }
         preferences.Set("transaction-draft", TransactionDraftSerializer.Serialize(new TransactionEditorDraft(EditingId, SelectedType.Value!.Value,
             SelectedAccount?.Account.Id, SelectedCategory?.Id, Date, Time, Amount, Description, Notes, ShowDetails)));
     }
+    private bool HasDraft => EditingId is not null || SelectedType.Value != TransactionType.Expense
+        || SelectedCategory is not null || SelectedAccount?.Account.Id != defaultAccountId
+        || Date.Date != DateTime.Today || Time != defaultTime || ShowDetails
+        || !string.IsNullOrWhiteSpace(Amount) || !string.IsNullOrWhiteSpace(Description) || !string.IsNullOrWhiteSpace(Notes);
     protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
@@ -99,76 +104,84 @@ public partial class TransactionEditorViewModel(
     [ObservableProperty]
     public partial string Title { get; set; } = "Nuovo movimento";
 
-    public Task LoadAsync(Guid? transactionId = null, bool duplicate = false) => RunAsync(async () =>
+    public async Task LoadAsync(Guid? transactionId = null, bool duplicate = false, TransactionType? initialType = null)
     {
-        TransactionEditorDraft? draft = initialized && transactionId is null
-            ? new(EditingId, SelectedType.Value!.Value, SelectedAccount?.Account.Id, SelectedCategory?.Id, Date, Time, Amount, Description, Notes, ShowDetails)
-            : null;
-        if (initialized && transactionId.HasValue && !string.IsNullOrWhiteSpace(Amount)
-            && !await dialogs.ConfirmAsync("Bozza in corso", "Aprire il movimento sostituirà la bozza attuale.", "Continua", "Annulla")) return;
-        if (!transactionId.HasValue)
+        await RunAsync(async () =>
         {
-            try { draft ??= TransactionDraftSerializer.Deserialize(preferences.Get("transaction-draft", "null")); }
-            catch (JsonException) { preferences.Remove("transaction-draft"); }
-            transactionId = draft?.Id;
-        }
+            TransactionEditorDraft? draft = initialized && HasDraft && transactionId is null
+                ? new(EditingId, SelectedType.Value!.Value, SelectedAccount?.Account.Id, SelectedCategory?.Id, Date, Time, Amount, Description, Notes, ShowDetails)
+                : null;
+            if (initialized && transactionId.HasValue && !string.IsNullOrWhiteSpace(Amount)
+                && !await dialogs.ConfirmAsync("Bozza in corso", "Aprire il movimento sostituirà la bozza attuale.", "Continua", "Annulla")) return;
+            if (!transactionId.HasValue)
+            {
+                try { draft ??= TransactionDraftSerializer.Deserialize(preferences.Get("transaction-draft", "null")); }
+                catch (JsonException) { preferences.Remove("transaction-draft"); }
+                transactionId = draft?.Id;
+            }
 
-        var original = transactionId.HasValue ? await transactionService.GetTransactionAsync(transactionId.Value) : null;
-        if (transactionId.HasValue && original is null)
-        {
-            preferences.Remove("transaction-draft");
-            draft = null; transactionId = null; EditingId = null; originalCategoryId = null;
-            StatusMessage = "Il movimento non esiste più. Puoi inserirne uno nuovo.";
-        }
-        if (original?.TransferId is not null) throw new DomainValidationException("Gestisci i trasferimenti dalla sezione Pianifica. Per correggerne uno, elimina la coppia e ricreala.");
-        EditingId = duplicate ? null : transactionId;
-        Title = transactionId.HasValue ? "Modifica movimento" : "Nuovo movimento";
-        originalCategoryId = duplicate ? null : original?.CategoryId;
-        Accounts.Clear();
-        foreach (var item in (await accountService.GetAccountsAsync()).Where(item => item.Account.IsActive || (!duplicate && item.Account.Id == original?.AccountId)))
-        {
-            Accounts.Add(item);
-        }
+            var original = transactionId.HasValue ? await transactionService.GetTransactionAsync(transactionId.Value) : null;
+            if (transactionId.HasValue && original is null)
+            {
+                preferences.Remove("transaction-draft");
+                draft = null; transactionId = null; EditingId = null; originalCategoryId = null;
+                StatusMessage = "Il movimento non esiste più. Puoi inserirne uno nuovo.";
+            }
+            if (original?.TransferId is not null) throw new DomainValidationException("Gestisci i trasferimenti dalla sezione Pianifica. Per correggerne uno, elimina la coppia e ricreala.");
+            EditingId = duplicate ? null : transactionId;
+            Title = transactionId.HasValue ? "Modifica movimento" : "Nuovo movimento";
+            originalCategoryId = duplicate ? null : original?.CategoryId;
+            Accounts.Clear();
+            foreach (var item in (await accountService.GetAccountsAsync()).Where(item => item.Account.IsActive || (!duplicate && item.Account.Id == original?.AccountId)))
+            {
+                Accounts.Add(item);
+            }
 
-        _allCategories = (await categoryService.GetCategoriesAsync()).Where(c => c.IsActive || c.Id == originalCategoryId).ToArray();
-        _categoryUsage = new Dictionary<Guid, int>(await transactionService.GetCategoryUsageAsync());
-        ShowDetails = transactionId.HasValue;
+            _allCategories = (await categoryService.GetCategoriesAsync()).Where(c => c.IsActive || c.Id == originalCategoryId).ToArray();
+            _categoryUsage = new Dictionary<Guid, int>(await transactionService.GetCategoryUsageAsync());
+            ShowDetails = transactionId.HasValue;
 
-        if (transactionId.HasValue)
-        {
-            var item = await transactionService.GetTransactionAsync(transactionId.Value)
-                ?? throw new DomainValidationException("Il movimento selezionato non esiste.");
-            var localDate = item.OccurredAtUtc.ToLocalTime();
-            SelectedType = Types.Single(option => option.Value == item.Type);
-            SelectedAccount = Accounts.SingleOrDefault(account => account.Account.Id == item.AccountId);
-            RefreshCategories();
-            SelectedCategory = Categories.SingleOrDefault(category => category.Id == item.CategoryId);
-            Date = localDate.Date;
-            Time = localDate.TimeOfDay;
-            Amount = item.Amount.ToString("0.00", CultureInfo.GetCultureInfo("it-IT"));
-            Currency = SelectedAccount?.Account.Currency ?? item.Currency;
-            Description = item.Description;
-            Notes = item.Notes;
-        }
-        else
-        {
-            ResetForm();
-        }
-        if (duplicate) { EditingId = null; Date = DateTime.Today; Time = DateTime.Now.TimeOfDay; Title = "Duplica movimento"; }
-        if (draft is not null)
-        {
-            SelectedType = Types.FirstOrDefault(t => t.Value == draft.Type) ?? Types[1];
-            SelectedAccount = Accounts.FirstOrDefault(a => a.Account.Id == draft.Account);
-            RefreshCategories(); SelectedCategory = Categories.FirstOrDefault(c => c.Id == draft.Category);
-            Date = draft.Date; Time = draft.Time; Amount = draft.Amount; Description = draft.Description; Notes = draft.Notes; ShowDetails = draft.Details;
-            StatusMessage = "Bozza ripristinata.";
-        }
-        initialized = true;
-    });
+            if (transactionId.HasValue)
+            {
+                var item = await transactionService.GetTransactionAsync(transactionId.Value)
+                    ?? throw new DomainValidationException("Il movimento selezionato non esiste.");
+                var localDate = item.OccurredAtUtc.ToLocalTime();
+                SelectedType = Types.Single(option => option.Value == item.Type);
+                SelectedAccount = Accounts.SingleOrDefault(account => account.Account.Id == item.AccountId);
+                RefreshCategories();
+                SelectedCategory = Categories.SingleOrDefault(category => category.Id == item.CategoryId);
+                Date = localDate.Date;
+                Time = localDate.TimeOfDay;
+                Amount = item.Amount.ToString("0.00", CultureInfo.GetCultureInfo("it-IT"));
+                Currency = SelectedAccount?.Account.Currency ?? item.Currency;
+                Description = item.Description;
+                Notes = item.Notes;
+            }
+            else
+            {
+                ResetForm(initialType);
+            }
+            if (duplicate) { EditingId = null; Date = DateTime.Today; Time = DateTime.Now.TimeOfDay; Title = "Duplica movimento"; }
+            if (draft is not null)
+            {
+                SelectedType = Types.FirstOrDefault(t => t.Value == draft.Type) ?? Types[1];
+                SelectedAccount = Accounts.FirstOrDefault(a => a.Account.Id == draft.Account);
+                RefreshCategories(); SelectedCategory = Categories.FirstOrDefault(c => c.Id == draft.Category);
+                Date = draft.Date; Time = draft.Time; Amount = draft.Amount; Description = draft.Description; Notes = draft.Notes; ShowDetails = draft.Details;
+                StatusMessage = "Bozza ripristinata.";
+            }
+            initialized = true;
+        });
+        StoreDraft();
+    }
 
     [RelayCommand]
     private Task SaveAsync() => RunAsync(() => SaveCoreAsync(false));
-    [RelayCommand] private Task SaveAndAddAsync() => RunAsync(() => SaveCoreAsync(true));
+    [RelayCommand] private async Task SaveAndAddAsync()
+    {
+        await RunAsync(() => SaveCoreAsync(true));
+        StoreDraft();
+    }
     [RelayCommand] private Task DiscardDraftAsync() => RunAsync(async () =>
     {
         if (await dialogs.ConfirmAsync("Scarta bozza", "Vuoi svuotare i campi? I movimenti salvati restano invariati.", "Scarta", "Annulla"))
@@ -207,7 +220,8 @@ public partial class TransactionEditorViewModel(
 
         if (RememberAccount) preferences.Set("last-account", SelectedAccount.Account.Id.ToString());
         preferences.Remove("transaction-draft");
-        EditingId = null; originalCategoryId = null; ResetForm(); Title = "Nuovo movimento";
+        var nextType = addAnother ? SelectedType.Value : null;
+        EditingId = null; originalCategoryId = null; ResetForm(nextType); Title = "Nuovo movimento";
         StatusMessage = "Movimento salvato.";
         if (!addAnother)
         {
@@ -223,11 +237,11 @@ public partial class TransactionEditorViewModel(
         CategoryError = null;
     }
 
-    private void ResetForm()
+    private void ResetForm(TransactionType? initialType = null)
     {
         AmountError = CategoryError = AccountError = null;
         ShowDetails = false;
-        SelectedType = Types[1];
+        SelectedType = Types.FirstOrDefault(t => t.Value == initialType) ?? Types[1];
         var remembered = RememberAccount && Guid.TryParse(preferences.Get("last-account", ""), out var id) ? id : (Guid?)null;
         SelectedAccount = Accounts.FirstOrDefault(item => item.Account.IsActive && item.Account.Id == remembered)
             ?? Accounts.FirstOrDefault(item => item.Account.IsPrimary) ?? Accounts.FirstOrDefault(item => item.Account.IsActive);
@@ -235,6 +249,8 @@ public partial class TransactionEditorViewModel(
         SelectedCategory = null;
         Date = DateTime.Today;
         Time = DateTime.Now.TimeOfDay;
+        defaultTime = Time;
+        defaultAccountId = SelectedAccount?.Account.Id;
         Amount = string.Empty;
         Currency = SelectedAccount?.Account.Currency ?? "EUR";
         Description = null;

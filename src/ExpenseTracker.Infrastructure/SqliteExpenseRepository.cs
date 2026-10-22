@@ -8,7 +8,7 @@ namespace ExpenseTracker.Infrastructure;
 
 public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposable
 {
-    private const int CurrentSchemaVersion = 5;
+    private const int CurrentSchemaVersion = 6;
     private readonly SQLiteAsyncConnection _connection;
     private readonly SemaphoreSlim _initializationGate = new(1, 1);
     private bool _initialized;
@@ -65,6 +65,15 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
                 db.CreateTable<AppStateRecord>();
                 db.Execute("CREATE INDEX IF NOT EXISTS IX_Transactions_TransferId ON Transactions (TransferId);");
                 db.Execute("PRAGMA user_version = 5;");
+            });
+            if (version < 6) await _connection.RunInTransactionAsync(db =>
+            {
+                foreach (var category in db.Table<CategoryRecord>().Where(c => c.Icon == "tag").ToList())
+                {
+                    category.Icon = CategoryAppearance.InferIcon(category.Name);
+                    db.Update(category);
+                }
+                db.Execute("PRAGMA user_version = 6;");
             });
             await SeedCategoriesAsync();
             _initialized = true;

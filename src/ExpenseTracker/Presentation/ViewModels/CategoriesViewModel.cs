@@ -8,6 +8,12 @@ namespace ExpenseTracker.Presentation.ViewModels;
 
 public partial class CategoriesViewModel(CategoryService categoryService) : ViewModelBase
 {
+    private bool iconChosen;
+    partial void OnCategoryNameChanged(string value)
+    {
+        if (EditingCategoryId is null && !iconChosen)
+            SelectedIcon = Icons.Single(icon => icon.Key == CategoryAppearance.InferIcon(value));
+    }
     public ObservableCollection<Category> Categories { get; } = [];
     public ObservableCollection<Category> VisibleCategories { get; } = [];
     [ObservableProperty] public partial string SearchText { get; set; } = string.Empty;
@@ -63,10 +69,11 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
     private void NewCategory()
     {
         EditingCategoryId = null;
+        iconChosen = false;
         CategoryName = string.Empty;
         SelectedCategoryType = Types[1];
         CategoryColor = CategoryAppearance.SuggestColor(Categories.Select(item => item.Color));
-        SelectedIcon = Icons[^1];
+        SelectedIcon = Icons.Single(icon => icon.Key == CategoryAppearance.InferIcon(CategoryName));
         CategoryIsActive = true;
         IsEditorVisible = true;
     }
@@ -101,7 +108,7 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
     private void SelectColor(string color) => CategoryColor = color;
 
     [RelayCommand]
-    private void SelectIcon(CategoryIcon icon) => SelectedIcon = icon;
+    private void SelectIcon(CategoryIcon icon) { iconChosen = true; SelectedIcon = icon; }
 
     [RelayCommand]
     private void CancelEdit() => IsEditorVisible = false;

@@ -1,5 +1,5 @@
 using System.Collections;
-using System.Reflection;
+using ExpenseTracker.Presentation.Services;
 
 namespace ExpenseTracker.Presentation.Controls;
 
@@ -41,9 +41,5 @@ public partial class ChoiceField : ContentView
         finally { opening = false; }
     }
 
-    private string GetLabel(object item)
-    {
-        if (string.IsNullOrWhiteSpace(DisplayMemberPath)) return item.ToString() ?? Title;
-        return item.GetType().GetProperty(DisplayMemberPath, BindingFlags.Instance | BindingFlags.Public)?.GetValue(item)?.ToString() ?? Title;
-    }
+    private string GetLabel(object item) => ChoiceLabelFormatter.Format(item, DisplayMemberPath, Title);
 }
