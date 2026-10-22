@@ -41,7 +41,7 @@ Pacchetti principali:
 
 ## Database
 
-Il file `expense-tracker.db3` viene creato in `FileSystem.AppDataDirectory`. Lo schema versione 5 contiene:
+Il file `expense-tracker.db3` viene creato in `FileSystem.AppDataDirectory`. Lo schema versione 6 contiene:
 
 - `Accounts`;
 - `Categories`, con tipo, colore e icona;
@@ -57,6 +57,8 @@ La migrazione alla versione 3 ripara i database nei quali i movimenti fanno anco
 Gli importi visualizzati usano la valuta dei conti e dei movimenti, indipendentemente dalla regione del dispositivo. I riepiloghi con più valute mostrano `Valute miste`: non è presente un servizio di conversione valutaria.
 
 La migrazione 4 aggiunge l'icona, suggerita dal nome della categoria, e diversifica i vecchi colori predefiniti. Mantiene i colori personalizzati esterni alla precedente palette. Icone e colori scelti successivamente vengono conservati anche dopo il riavvio. Anche questa migrazione è transazionale.
+
+La migrazione 6 sostituisce una sola volta le icone standard `tag` con un'icona suggerita dal nome, anche per le categorie importate o disattivate. Mantiene identificativi, colori e movimenti; le altre icone personalizzate restano invariate. Per nomi generici usa il portafoglio. Le nuove categorie suggeriscono l'icona durante la digitazione, fino a un'eventuale scelta manuale.
 
 ## Wallet
 
@@ -77,6 +79,10 @@ dotnet restore ExpenseTracker.slnx
 dotnet build src/ExpenseTracker/ExpenseTracker.csproj -f net10.0-android
 dotnet test tests/ExpenseTracker.Application.Tests/ExpenseTracker.Application.Tests.csproj
 ```
+
+Il workflow `Regression tests` esegue la suite a ogni push e pull request. Gli stessi controlli precedono la creazione dell'IPA. I test includono il tipo del nuovo movimento dalla Home e dai filtri, entrate consecutive, bozze, modifica e duplicazione, saldo e migrazioni delle icone. I flussi mobili vengono verificati anche con la serializzazione JSON tramite reflection disabilitata.
+
+Per la verifica sul dispositivo: aprire **Entrate** nella Home, premere **+**, controllare che **Entrata** sia selezionata e provare entrambi i pulsanti del tipo. Salvare un'entrata e verificarne il saldo; provare anche **Salva e aggiungi un'altra**, ritorno dall'assistente e riapertura di una bozza. La selezione diretta del tipo è condivisa con categorie e ricorrenze.
 
 Con un emulatore o dispositivo Android collegato:
 

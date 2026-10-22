@@ -166,7 +166,8 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
     [RelayCommand] private Task PreviousMonthAsync() => StepPeriodAsync(-1);
     [RelayCommand] private Task NextMonthAsync() => StepPeriodAsync(1);
     [RelayCommand] private Task CurrentMonthAsync() { SelectedMonth = DateTime.Today; refreshPending = true; return LoadAsync(); }
-    [RelayCommand] private Task NewTransactionAsync() => navigation.GoToTransactionEditorAsync(returnToHome: true);
+    [RelayCommand] private Task NewTransactionAsync() => navigation.GoToTransactionEditorAsync(returnToHome: true,
+        initialType: IsIncomeSelected ? ExpenseTracker.Domain.TransactionType.Income : ExpenseTracker.Domain.TransactionType.Expense);
     partial void OnSelectedMonthChanged(DateTime value) => OnPropertyChanged(nameof(MonthLabel));
     partial void OnHasChartDataChanged(bool value) => OnPropertyChanged(nameof(HasNoChartData));
 }

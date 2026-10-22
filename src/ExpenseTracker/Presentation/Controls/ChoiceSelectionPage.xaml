@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
+    x:DataType="controls:ChoiceSelectionPage+ChoiceSelectionModel"
     Shell.NavBarIsVisible="False"
     BackgroundColor="#B0000000">
     <Grid Padding="14">
@@ -16,20 +17,21 @@
                         BackgroundColor="{StaticResource Gray500}" StrokeThickness="0" StrokeShape="RoundRectangle 2" />
                 <Label Grid.Row="1" Text="{Binding Title}" Style="{StaticResource SectionTitle}" />
                 <controls:SearchField Grid.Row="2" Placeholder="Cerca" TextChanged="OnSearchChanged"/>
-                <CollectionView Grid.Row="3" ItemsSource="{Binding Items}" SelectionMode="None" MaximumHeightRequest="450">
+                <CollectionView Grid.Row="3" ItemsSource="{Binding Items}" SelectionMode="None" HeightRequest="{Binding ListHeight}">
                     <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Border Padding="12,11" Margin="0,0,0,6" StrokeThickness="0"
+                        <DataTemplate x:DataType="controls:ChoiceSelectionItem">
+                            <Border Padding="0" Margin="0,0,0,6" HeightRequest="58" StrokeThickness="0"
                                     BackgroundColor="{AppThemeBinding Light={StaticResource LightSurfaceAlt}, Dark={StaticResource DarkSurfaceAlt}}"
                                     StrokeShape="RoundRectangle 14">
-                                <Grid ColumnDefinitions="Auto,*,32" ColumnSpacing="10">
+                                <Grid>
+                                  <Button BackgroundColor="Transparent" BorderWidth="0" CornerRadius="14" Clicked="OnItemClicked"
+                                          SemanticProperties.Description="{Binding Label}" />
+                                  <Grid Padding="12,11" ColumnDefinitions="Auto,*,32" ColumnSpacing="10" InputTransparent="True">
                                     <Border IsVisible="{Binding HasIcon}" WidthRequest="36" HeightRequest="36" Padding="8" BackgroundColor="{Binding IconColor}"><Image Source="{Binding IconSource}" /></Border>
                                     <Label Grid.Column="2" Text="{Binding Indicator}" TextColor="{StaticResource Primary}" FontSize="20"
                                            VerticalTextAlignment="Center" HorizontalTextAlignment="Center" />
                                     <Label Grid.Column="1" Text="{Binding Label}" FontSize="16" VerticalTextAlignment="Center" />
-                                    <Grid.GestureRecognizers>
-                                        <TapGestureRecognizer Tapped="OnItemTapped" CommandParameter="{Binding .}" />
-                                    </Grid.GestureRecognizers>
+                                  </Grid>
                                 </Grid>
                             </Border>
                         </DataTemplate>

@@ -44,11 +44,14 @@ jobs:
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-version
 
+      - name: Run full regression suite
+        run: dotnet test tests/ExpenseTracker.Application.Tests/ExpenseTracker.Application.Tests.csproj -c Release
+
       - name: Verify application workflows without JSON reflection
         run: |
           dotnet test tests/ExpenseTracker.Application.Tests/ExpenseTracker.Application.Tests.csproj \
             -p:JsonSerializerIsReflectionEnabledByDefault=false \
-            --filter 'FullyQualifiedName~ViewModelWorkflowTests|FullyQualifiedName~PlanningAndIntegrityTests|FullyQualifiedName~CategoryComparison_UsesAllCategoriesBeforeLimitingDisplay'
+            --filter 'FullyQualifiedName~ViewModelWorkflowTests|FullyQualifiedName~PlanningAndIntegrityTests|FullyQualifiedName~CategoryAppearanceTests|FullyQualifiedName~SqliteRepositoryTests|FullyQualifiedName~ChoiceLabelFormatterTests|FullyQualifiedName~TransactionTypeFieldTests|FullyQualifiedName~CategoryComparison_UsesAllCategoriesBeforeLimitingDisplay'
 
       - name: Build unsigned app for a physical iPhone
         run: |

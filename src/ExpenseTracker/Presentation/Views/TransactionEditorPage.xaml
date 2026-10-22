@@ -5,7 +5,7 @@
       <controls:PageHeader Heading="{Binding Title}"/>
       <VerticalStackLayout Padding="18,18,18,100" Spacing="18">
 
-      <controls:ChoiceField ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType}" DisplayMemberPath="Label" Title="Entrata o uscita"/>
+      <controls:TransactionTypeField SelectedItem="{Binding SelectedType}"/>
       <Border Style="{StaticResource HeroCard}" Padding="22">
         <VerticalStackLayout Spacing="8">
           <Label Text="Importo" Style="{StaticResource MutedLabel}"/>

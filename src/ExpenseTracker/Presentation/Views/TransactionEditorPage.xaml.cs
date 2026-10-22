@@ -1,5 +1,6 @@
 using ExpenseTracker.Presentation.ViewModels;
 using ExpenseTracker.Presentation.Controls;
+using ExpenseTracker.Domain;
 
 namespace ExpenseTracker.Presentation.Views;
 
@@ -25,7 +26,10 @@ public partial class TransactionEditorPage : ContentPage, IQueryAttributable
             ? parsed
             : (Guid?)null;
         var duplicate = query.TryGetValue("duplicate", out var flag) && flag?.ToString() == "true";
-        _ = _viewModel.LoadAsync(transactionId, duplicate);
+        var initialType = query.TryGetValue("initialType", out var type)
+            && Enum.TryParse<TransactionType>(type?.ToString(), out var parsedType) && Enum.IsDefined(parsedType)
+            ? parsedType : (TransactionType?)null;
+        _ = _viewModel.LoadAsync(transactionId, duplicate, initialType);
     }
 
     protected override void OnDisappearing()

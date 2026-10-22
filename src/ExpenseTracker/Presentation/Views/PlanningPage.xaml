@@ -45,7 +45,7 @@
       <Border Style="{StaticResource Card}" IsVisible="{Binding IsRuleEditorVisible}"><VerticalStackLayout Spacing="10">
         <Border Style="{StaticResource InputCard}"><Entry Placeholder="Nome, es. Netflix o stipendio" Text="{Binding RuleName}"/></Border>
         <Border Style="{StaticResource InputCard}"><Entry Placeholder="Importo, es. 12,50" Keyboard="Numeric" Text="{Binding RuleAmount}"/></Border>
-        <controls:ChoiceField Title="Tipo" ItemsSource="{Binding Types}" SelectedItem="{Binding RuleType}" DisplayMemberPath="Label"/>
+        <controls:TransactionTypeField SelectedItem="{Binding RuleType}"/>
         <controls:ChoiceField Title="Conto" ItemsSource="{Binding Accounts}" SelectedItem="{Binding RuleAccount}" DisplayMemberPath="DisplayName"/>
         <controls:ChoiceField Title="Categoria" ItemsSource="{Binding Categories}" SelectedItem="{Binding RuleCategory}" DisplayMemberPath="Name"/>
         <VerticalStackLayout IsEnabled="{Binding CanChangeSchedule}" Spacing="8"><Label Text="Prima scadenza" Style="{StaticResource MutedLabel}"/><Border Style="{StaticResource InputCard}"><DatePicker Date="{Binding StartDate}" Format="dd/MM/yyyy"/></Border><controls:ChoiceField Title="Frequenza" ItemsSource="{Binding Frequencies}" SelectedItem="{Binding Frequency}" DisplayMemberPath="Label"/></VerticalStackLayout>

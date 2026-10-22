@@ -10,7 +10,8 @@ public interface IUserDialogService
 
 public interface IAppNavigationService
 {
-    Task GoToTransactionEditorAsync(Guid? transactionId = null, bool duplicate = false, bool returnToHome = false);
+    Task GoToTransactionEditorAsync(Guid? transactionId = null, bool duplicate = false, bool returnToHome = false,
+        ExpenseTracker.Domain.TransactionType? initialType = null);
 
     Task GoToDashboardAsync();
 

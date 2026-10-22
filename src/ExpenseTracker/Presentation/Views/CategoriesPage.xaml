@@ -20,7 +20,7 @@
           <Border Style="{StaticResource InputCard}">
             <Entry Placeholder="Nome categoria" Text="{Binding CategoryName}"/>
           </Border>
-          <controls:ChoiceField ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedCategoryType}" DisplayMemberPath="Label" Title="Tipo"/>
+          <controls:TransactionTypeField SelectedItem="{Binding SelectedCategoryType}"/>
           <Label Text="Scegli un'icona" FontAttributes="Bold"/>
           <FlexLayout Wrap="Wrap" BindableLayout.ItemsSource="{Binding Icons}">
             <BindableLayout.ItemTemplate>

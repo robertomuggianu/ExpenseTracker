@@ -7,6 +7,115 @@ namespace ExpenseTracker.Application.Tests;
 
 public sealed class ViewModelWorkflowTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public Task Home_NewMovementUsesVisibleTypeAndUpdatesBalance(bool income) => WithDatabase(async repo =>
+    {
+        var nav = new Navigation();
+        var home = new DashboardViewModel(new(repo), nav, new(repo));
+        if (income) home.SelectIncomeCommand.Execute(null);
+        else home.SelectExpensesCommand.Execute(null);
+        await home.NewTransactionCommand.ExecuteAsync(null);
+        var type = income ? TransactionType.Income : TransactionType.Expense;
+        Assert.Equal(type, nav.InitialType);
+        Assert.True(nav.ReturnToHome);
+        var editor = Editor(repo, new PreferencesStore(), nav);
+        await editor.LoadAsync(); // The Shell editor may already have appeared once.
+        await editor.LoadAsync(initialType: nav.InitialType);
+        Assert.Equal(type, editor.SelectedType.Value);
+        Assert.NotEmpty(editor.Categories);
+        Assert.All(editor.Categories.Concat(editor.QuickCategories), c => Assert.Equal(type, c.Type));
+        editor.SelectedCategory = editor.Categories[0]; editor.Amount = "1234,56";
+        await editor.SaveCommand.ExecuteAsync(null);
+        Assert.Null(editor.ErrorMessage);
+        var saved = Assert.Single(await repo.GetTransactionsAsync());
+        Assert.Equal(type, saved.Type); Assert.Equal(1234.56m, saved.Amount);
+        Assert.Equal(income ? 1334.56m : -1134.56m, Assert.Single(await new AccountService(repo).GetAccountsAsync()).CurrentBalance);
+        await home.LoadAsync();
+        Assert.Equal(income ? 1234.56m : 0m, home.Income);
+        Assert.Equal(income ? 0m : 1234.56m, home.Expense);
+    });
+
+    [Theory]
+    [InlineData(TransactionType.Income)]
+    [InlineData(TransactionType.Expense)]
+    public Task Transactions_NewMovementUsesTypeFilter(TransactionType type) => WithDatabase(async repo =>
+    {
+        var nav = new Navigation();
+        var vm = new TransactionsViewModel(new(repo), new(repo), new(repo), new Dialogs(), nav, new NavigationRequests());
+        await vm.LoadAsync();
+        vm.SelectedType = vm.Types.Single(t => t.Value == type); await SettledAsync(vm);
+        await vm.NewTransactionCommand.ExecuteAsync(null);
+        Assert.Equal(type, nav.InitialType);
+    });
+
+    [Fact] public Task Income_TypeOnlyDraftSurvivesRestartAndNavigationHints() => WithDatabase(async repo =>
+    {
+        var prefs = new PreferencesStore(); var editor = Editor(repo, prefs);
+        await editor.LoadAsync();
+        editor.SelectedType = editor.Types.Single(t => t.Value == TransactionType.Income);
+        var restored = Editor(repo, prefs);
+        await restored.LoadAsync(initialType: TransactionType.Expense);
+        Assert.Equal(TransactionType.Income, restored.SelectedType.Value);
+        Assert.All(restored.Categories, c => Assert.Equal(TransactionType.Income, c.Type));
+        await restored.DiscardDraftCommand.ExecuteAsync(null);
+        await restored.LoadAsync(initialType: TransactionType.Income);
+        Assert.Equal(TransactionType.Income, restored.SelectedType.Value);
+    });
+
+    [Fact] public Task Income_SaveAndAddKeepsTypeAcrossReloadWithoutDuplicateSaves() => WithDatabase(async repo =>
+    {
+        var prefs = new PreferencesStore(); var editor = Editor(repo, prefs);
+        await editor.LoadAsync(initialType: TransactionType.Income);
+        editor.Amount = "20"; editor.SelectedCategory = editor.Categories[0];
+        await Task.WhenAll(editor.SaveAndAddCommand.ExecuteAsync(null), editor.SaveCommand.ExecuteAsync(null));
+        Assert.Null(editor.ErrorMessage); Assert.Equal(TransactionType.Income, editor.SelectedType.Value);
+        Assert.Null(editor.SelectedCategory); Assert.Equal("", editor.Amount);
+        editor = Editor(repo, prefs); await editor.LoadAsync();
+        Assert.Equal(TransactionType.Income, editor.SelectedType.Value);
+        editor.Amount = "7,50"; editor.SelectedCategory = editor.Categories[0];
+        await editor.SaveCommand.ExecuteAsync(null);
+        var saved = await repo.GetTransactionsAsync();
+        Assert.Equal(2, saved.Count); Assert.All(saved, t => Assert.Equal(TransactionType.Income, t.Type));
+        Assert.Equal(127.50m, Assert.Single(await new AccountService(repo).GetAccountsAsync()).CurrentBalance);
+    });
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public Task Income_ExistingMovementTypeWinsOverNavigationHint(bool duplicate) => WithDatabase(async repo =>
+    {
+        var account = Assert.Single(await repo.GetAccountsAsync());
+        var category = (await repo.GetCategoriesAsync()).First(c => c.Type == TransactionType.Income);
+        var original = new Transaction(Guid.NewGuid(), DateTime.UtcNow, TransactionType.Income, account.Id, category.Id, 25m);
+        await repo.SaveTransactionAsync(original);
+        var editor = Editor(repo, new PreferencesStore());
+        await editor.LoadAsync(original.Id, duplicate, TransactionType.Expense);
+        Assert.Equal(TransactionType.Income, editor.SelectedType.Value);
+        Assert.Equal(category.Id, editor.SelectedCategory?.Id);
+        editor.Amount = "30"; await editor.SaveCommand.ExecuteAsync(null);
+        Assert.Null(editor.ErrorMessage);
+        var saved = await repo.GetTransactionsAsync();
+        Assert.Equal(duplicate ? 2 : 1, saved.Count);
+        Assert.All(saved, t => Assert.Equal(TransactionType.Income, t.Type));
+        Assert.Equal(duplicate ? 25m : 30m, (await repo.GetTransactionAsync(original.Id))!.Amount);
+    });
+
+    [Fact] public Task Categories_SuggestIconWhileTypingAndPreserveUserChoice() => WithDatabase(async repo =>
+    {
+        var vm = new CategoriesViewModel(new(repo)); await vm.LoadAsync(); vm.NewCategoryCommand.Execute(null);
+        vm.CategoryName = "Rimborso viaggio"; Assert.Equal("transfer", vm.SelectedIcon.Key);
+        vm.CategoryName = "Farmacia e salute"; Assert.Equal("medical", vm.SelectedIcon.Key);
+        vm.SelectIconCommand.Execute(vm.Icons.Single(i => i.Key == "heart"));
+        vm.CategoryName = "Farmacia personale"; Assert.Equal("heart", vm.SelectedIcon.Key);
+        await vm.SaveCategoryCommand.ExecuteAsync(null); Assert.Null(vm.ErrorMessage);
+        var saved = (await repo.GetCategoriesAsync()).Single(c => c.Name == "Farmacia personale");
+        Assert.Equal("heart", saved.Icon);
+        vm.EditCategoryCommand.Execute(saved); vm.CategoryName = "Farmacia di casa";
+        Assert.Equal("heart", vm.SelectedIcon.Key);
+    });
+
     [Fact] public Task Home_SaveAndAddKeepsOriginAndFinalSaveReturnsHome() => WithDatabase(async repo =>
     {
         var nav = new Navigation();
@@ -373,8 +482,10 @@ public sealed class ViewModelWorkflowTests
         public int ReturnCount { get; private set; }
         public int HomeReturnCount { get; private set; }
         public bool ReturnToHome { get; private set; }
-        public Task GoToTransactionEditorAsync(Guid? transactionId = null, bool duplicate = false, bool returnToHome = false)
-        { ReturnToHome = returnToHome; return Task.CompletedTask; }
+        public TransactionType? InitialType { get; private set; }
+        public Task GoToTransactionEditorAsync(Guid? transactionId = null, bool duplicate = false, bool returnToHome = false,
+            TransactionType? initialType = null)
+        { ReturnToHome = returnToHome; InitialType = initialType; return Task.CompletedTask; }
         public Task GoToDashboardAsync() { ++HomeReturnCount; return Task.CompletedTask; }
         public Task GoToTransactionsAsync(TransactionFilter? filter = null, string? message = null) { LastFilter = filter; ++ReturnCount; return Task.CompletedTask; }
     }

@@ -1,0 +1,26 @@
+name: Regression tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - name: Run full regression suite
+        run: dotnet test tests/ExpenseTracker.Application.Tests/ExpenseTracker.Application.Tests.csproj -c Release
+      - name: Verify mobile workflows without JSON reflection
+        run: >-
+          dotnet test tests/ExpenseTracker.Application.Tests/ExpenseTracker.Application.Tests.csproj -c Release
+          -p:JsonSerializerIsReflectionEnabledByDefault=false
+          --filter 'FullyQualifiedName~ViewModelWorkflowTests|FullyQualifiedName~PlanningAndIntegrityTests|FullyQualifiedName~CategoryAppearanceTests|FullyQualifiedName~SqliteRepositoryTests|FullyQualifiedName~ChoiceLabelFormatterTests|FullyQualifiedName~TransactionTypeFieldTests'
