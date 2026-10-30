@@ -2,9 +2,30 @@
 <ContentPage Shell.NavBarIsVisible="False" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" x:Class="ExpenseTracker.Presentation.Views.CategoriesPage" x:Name="Page" Title="Categorie">
   <ScrollView x:Name="CategoryScroll">
     <VerticalStackLayout Spacing="0">
-      <controls:PageHeader Heading="Categorie"/>
+      <Border Style="{StaticResource HeaderCard}">
+        <VerticalStackLayout Spacing="20">
+          <Grid ColumnDefinitions="46,*,46">
+            <Button Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}" SemanticProperties.Description="Apri menu"/>
+            <Label Grid.Column="1" Text="Categorie" FontSize="23" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+            <Image Grid.Column="2" Source="brand_mark.png" WidthRequest="46" HeightRequest="46"/>
+          </Grid>
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+            <VerticalStackLayout Spacing="2">
+              <Button Text="SPESE" Style="{StaticResource ReportTab}" Command="{Binding SelectExpensesCommand}">
+                <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsExpenseSelected}" Value="True"><Setter Property="TextColor" Value="{StaticResource DarkText}"/></DataTrigger></Button.Triggers>
+              </Button>
+              <BoxView HeightRequest="3" Color="{StaticResource PrimaryGlow}" Margin="22,0" IsVisible="{Binding IsExpenseSelected}"/>
+            </VerticalStackLayout>
+            <VerticalStackLayout Grid.Column="1" Spacing="2">
+              <Button Text="ENTRATE" Style="{StaticResource ReportTab}" Command="{Binding SelectIncomeCommand}">
+                <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsIncomeSelected}" Value="True"><Setter Property="TextColor" Value="{StaticResource DarkText}"/></DataTrigger></Button.Triggers>
+              </Button>
+              <BoxView HeightRequest="3" Color="{StaticResource PrimaryGlow}" Margin="22,0" IsVisible="{Binding IsIncomeSelected}"/>
+            </VerticalStackLayout>
+          </Grid>
+        </VerticalStackLayout>
+      </Border>
       <VerticalStackLayout Padding="18,18,18,100" Spacing="18">
-      <Button Text="+  Nuova categoria" Command="{Binding NewCategoryCommand}" HorizontalOptions="End"/>
       <controls:SearchField Placeholder="Cerca una categoria" Text="{Binding SearchText}"/>
       <Border x:Name="CategoryEditor" Style="{StaticResource Card}" IsVisible="{Binding IsEditorVisible}">
         <VerticalStackLayout Spacing="14">
@@ -68,18 +89,19 @@
           </Grid>
         </VerticalStackLayout>
       </Border>
-      <FlexLayout Wrap="Wrap" AlignItems="Start" BindableLayout.ItemsSource="{Binding VisibleCategories}">
+      <FlexLayout Wrap="Wrap" AlignItems="Start" BindableLayout.ItemsSource="{Binding CategoryTiles}" MaximumWidthRequest="640" HorizontalOptions="Fill">
         <BindableLayout.ItemTemplate>
           <DataTemplate>
-            <Grid FlexLayout.Basis="25%" Padding="5" HeightRequest="90">
-              <Border BackgroundColor="{Binding Color}" Padding="20" StrokeThickness="0" StrokeShape="RoundRectangle 22"
-                      SemanticProperties.Description="{Binding Name}" SemanticProperties.Hint="Tocca per modificare la categoria">
-                <Border.Triggers>
-                  <DataTrigger TargetType="Border" Binding="{Binding IsActive}" Value="False"><Setter Property="Opacity" Value="0.4"/></DataTrigger>
-                </Border.Triggers>
-                <Image Source="{Binding IconSource}" WidthRequest="32" HeightRequest="32"/>
-                <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnEditCategory" CommandParameter="{Binding .}"/></Border.GestureRecognizers>
+            <Grid FlexLayout.Basis="25%" ColumnDefinitions="*" RowDefinitions="Auto,Auto" Padding="3,8" RowSpacing="7" MinimumHeightRequest="118" Opacity="{Binding Opacity}" SizeChanged="OnCategoryTileSizeChanged"
+                                 SemanticProperties.Description="{Binding AccessibilityDescription}" SemanticProperties.Hint="{Binding AccessibilityHint}" ToolTipProperties.Text="{Binding Name}">
+              <Grid.GestureRecognizers><TapGestureRecognizer Tapped="OnCategoryTileTapped" CommandParameter="{Binding .}"/></Grid.GestureRecognizers>
+              <Border BackgroundColor="{Binding Color}" WidthRequest="64" HeightRequest="64" HorizontalOptions="Center" Padding="12" StrokeThickness="0" StrokeShape="Ellipse">
+                <Grid InputTransparent="True">
+                  <Image Source="{Binding IconSource}" IsVisible="{Binding IsCategory}"/>
+                  <Label Text="+" IsVisible="{Binding IsCreate}" TextColor="{StaticResource DarkBackground}" FontSize="42" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+                </Grid>
               </Border>
+              <Label Grid.Row="1" Text="{Binding Name}" FontSize="13" FontAttributes="Bold" HorizontalOptions="Fill" HorizontalTextAlignment="Center" LineBreakMode="WordWrap" MaxLines="4"/>
             </Grid>
           </DataTemplate>
         </BindableLayout.ItemTemplate>

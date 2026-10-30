@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
+             x:Class="ExpenseTracker.Presentation.Controls.DashboardSummary" x:Name="Root">
+  <Border Style="{StaticResource Card}" Padding="14,18">
+    <VerticalStackLayout Spacing="14">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <controls:ChoiceField ItemsSource="{Binding Periods}" SelectedItem="{Binding SelectedPeriod}" DisplayMemberPath="Label" Title="Vista"/>
+        <Label Grid.Column="1" Text="Riepilogo per categoria" Style="{StaticResource MutedLabel}" FontSize="12" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+        <Button Grid.Column="2" Text="Oggi" Command="{Binding CurrentMonthCommand}" IsVisible="{Binding CanStepPeriod}" Style="{StaticResource TextButton}"/>
+      </Grid>
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="12" IsVisible="{Binding IsCustomPeriod}">
+        <VerticalStackLayout><Label Text="Dal"/><DatePicker Date="{Binding CustomFrom}"/></VerticalStackLayout>
+        <VerticalStackLayout Grid.Column="1"><Label Text="Al"/><DatePicker Date="{Binding CustomTo}"/></VerticalStackLayout>
+      </Grid>
+      <Grid ColumnDefinitions="44,*,44" IsVisible="{Binding CanStepPeriod}">
+        <Button Text="‹" Command="{Binding PreviousMonthCommand}" Style="{StaticResource TextButton}" FontSize="30" Padding="0" SemanticProperties.Description="Periodo precedente"/>
+        <Label Grid.Column="1" Text="{Binding MonthLabel}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="17" FontAttributes="Bold" TextTransform="None"/>
+        <Button Grid.Column="2" Text="›" Command="{Binding NextMonthCommand}" Style="{StaticResource TextButton}" FontSize="30" Padding="0" SemanticProperties.Description="Periodo successivo"/>
+      </Grid>
+      <controls:CategoryChart IsVisible="{Binding IsExpanded, Source={x:Reference Root}}"/>
+      <VerticalStackLayout IsVisible="{Binding IsCompact, Source={x:Reference Root}}" Spacing="10" Padding="0,4">
+        <controls:CategoryDistributionBar ItemsSource="{Binding CategoryBreakdown}" SegmentCommand="{Binding OpenCategoryCommand}"/>
+        <Label FontSize="28" FontAttributes="Bold" HorizontalTextAlignment="Center">
+          <Label.Text><MultiBinding Converter="{StaticResource MoneyConverter}"><Binding Path="ChartTotal"/><Binding Path="ReportCurrency"/></MultiBinding></Label.Text>
+        </Label>
+        <Label Text="{Binding ChartLabel}" Style="{StaticResource MutedLabel}" FontSize="12" HorizontalTextAlignment="Center"/>
+      </VerticalStackLayout>
+      <Label Text="{Binding EmptyChartText}" IsVisible="{Binding HasNoChartData}" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center"/>
+    </VerticalStackLayout>
+  </Border>
+</ContentView>

@@ -16,14 +16,27 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
     }
     public ObservableCollection<Category> Categories { get; } = [];
     public ObservableCollection<Category> VisibleCategories { get; } = [];
+    public IReadOnlyList<CategoryTile> CategoryTiles { get; private set; } = [];
+    [ObservableProperty] public partial bool IsIncomeSelected { get; set; }
+    public bool IsExpenseSelected => !IsIncomeSelected;
+    [RelayCommand] private void SelectExpenses() => IsIncomeSelected = false;
+    [RelayCommand] private void SelectIncome() => IsIncomeSelected = true;
+    partial void OnIsIncomeSelectedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsExpenseSelected));
+        ApplySearch();
+    }
     [ObservableProperty] public partial string SearchText { get; set; } = string.Empty;
     public bool HasNoCategories => VisibleCategories.Count == 0;
     partial void OnSearchTextChanged(string value) => ApplySearch();
     private void ApplySearch()
     {
         VisibleCategories.Clear();
-        foreach (var category in Categories.Where(c => c.Name.Contains(SearchText.Trim(), StringComparison.OrdinalIgnoreCase)))
+        var type = IsIncomeSelected ? TransactionType.Income : TransactionType.Expense;
+        foreach (var category in Categories.Where(c => c.Type == type && c.Name.Contains(SearchText.Trim(), StringComparison.OrdinalIgnoreCase)))
             VisibleCategories.Add(category);
+        CategoryTiles = VisibleCategories.Select(c => new CategoryTile(c)).Append(new CategoryTile(null)).ToArray();
+        OnPropertyChanged(nameof(CategoryTiles));
         OnPropertyChanged(nameof(HasNoCategories));
     }
 
@@ -71,7 +84,7 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
         EditingCategoryId = null;
         iconChosen = false;
         CategoryName = string.Empty;
-        SelectedCategoryType = Types[1];
+        SelectedCategoryType = Types.Single(option => option.Value == (IsIncomeSelected ? TransactionType.Income : TransactionType.Expense));
         CategoryColor = CategoryAppearance.SuggestColor(Categories.Select(item => item.Color));
         SelectedIcon = Icons.Single(icon => icon.Key == CategoryAppearance.InferIcon(CategoryName));
         CategoryIsActive = true;
@@ -101,6 +114,7 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
             CategoryIsActive,
             SelectedIcon.Key));
         IsEditorVisible = false;
+        IsIncomeSelected = SelectedCategoryType.Value == TransactionType.Income;
         await LoadCoreAsync();
     });
 
@@ -112,4 +126,16 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
 
     [RelayCommand]
     private void CancelEdit() => IsEditorVisible = false;
+}
+
+public sealed record CategoryTile(Category? Category)
+{
+    public bool IsCreate => Category is null;
+    public bool IsCategory => Category is not null;
+    public string Name => Category?.Name ?? "Crea";
+    public string Color => Category?.Color ?? "#FFC83D";
+    public string? IconSource => Category?.IconSource;
+    public double Opacity => Category is { IsActive: false } ? 0.4 : 1;
+    public string AccessibilityDescription => Category is { IsActive: false } ? $"{Name}, disattivata" : Name;
+    public string AccessibilityHint => IsCreate ? "Crea una nuova categoria" : "Tocca per modificare la categoria";
 }

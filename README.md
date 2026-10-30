@@ -5,16 +5,18 @@ ExpenseTracker è un'applicazione personale offline-first realizzata con .NET MA
 ## Funzioni MVP
 
 - gestione di più conti con un solo conto principale e saldo calcolato;
-- categorie di entrata/uscita in griglia senza nomi, con 45 icone Tabler e una palette di 32 colori, disattivabili senza eliminare lo storico;
+- categorie di entrata/uscita in schede separate, con icone circolari e nomi visibili in griglia, 45 icone Tabler e una palette di 32 colori, disattivabili senza eliminare lo storico;
 - inserimento, modifica, filtro, dettaglio ed eliminazione dei movimenti;
-- Home con valuta automatica del conto principale, navigazione tra mesi e confronto delle spese con il mese precedente;
+- Home con saldo nascondibile, valuta automatica del conto principale, navigazione tra mesi e confronto delle spese con il mese precedente;
 - statistiche per settimana, mese, anno o periodo personalizzato, grafici a ciambella e andamento giornaliero/mensile con LiveCharts2;
-- inserimento rapido con le categorie più usate, conto principale preselezionato e dettagli facoltativi;
+- inserimento rapido con le categorie più usate, conto principale preselezionato, data subito visibile e dettagli facoltativi;
 - cronologia raggruppata per giorno, ricerca uniforme e filtri automatici, navigazione dal menu laterale;
 - assistente AI accessibile dal pulsante in basso a sinistra, con ritorno alla pagina precedente senza perdere i campi compilati;
 - esportazione CSV completa, filtrata o del mese selezionato e importazione CSV/XLSX.
 
 L'interfaccia usa un tema scuro verde petrolio con superfici arrotondate, accenti menta e il pulsante di aggiunta ambrato. Il colore di ogni categoria è condiviso tra selezione, movimenti e grafici. Per il mese corrente il confronto usa i giorni trascorsi in entrambi i mesi; per un mese passato usa i due mesi completi.
+
+Nella Home, scorrendo verso la lista, la ciambella lascia posto a un riepilogo fisso con barra orizzontale proporzionale alle categorie. Risalendo torna la ciambella. Il pulsante con l'occhio accanto al saldo nasconde o mostra soltanto il saldo totale e ricorda la scelta sul dispositivo. Nelle Categorie, il riquadro **Crea** aggiunge una categoria del tipo della scheda selezionata. La data del movimento è sempre disponibile sotto l'importo; ora, descrizione e note si aprono nei dettagli, prima dei pulsanti di salvataggio.
 
 ## Architettura
 

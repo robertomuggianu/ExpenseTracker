@@ -16,6 +16,12 @@
         </VerticalStackLayout>
       </Border>
       <Label Text="{Binding AmountError}" TextColor="{StaticResource Expense}"/>
+      <Border Style="{StaticResource InputCard}">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+          <Label Text="Data" FontAttributes="Bold" VerticalTextAlignment="Center"/>
+          <DatePicker Grid.Column="1" Date="{Binding Date}" Format="dd MMMM yyyy" HorizontalOptions="Fill" SemanticProperties.Description="Data del movimento"/>
+        </Grid>
+      </Border>
       <Grid ColumnDefinitions="*,Auto">
         <Label Text="Categoria" Style="{StaticResource SectionTitle}"/>
         <Label Grid.Column="1" Text="{Binding SelectedCategory.Name, TargetNullValue='Scegli qui sotto'}" TextColor="{StaticResource PrimaryGlow}" VerticalTextAlignment="Center"/>
@@ -51,22 +57,15 @@
       <controls:ChoiceField ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount}" DisplayMemberPath="DisplayName" Title="Scegli un conto"/>
       <Label Text="{Binding AccountError}" TextColor="{StaticResource Expense}"/>
       <HorizontalStackLayout><Switch IsToggled="{Binding RememberAccount}"/><Label Text="Ricorda l'ultimo conto" VerticalTextAlignment="Center"/></HorizontalStackLayout>
-      <Label Text="{Binding StatusMessage}" TextColor="{StaticResource PrimaryGlow}"/>
-      <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
-      <Button Text="Salva movimento" Command="{Binding SaveCommand}" FontSize="16"/>
-      <Button Text="Salva e aggiungi un'altra" Command="{Binding SaveAndAddCommand}" Style="{StaticResource SecondaryButton}"/>
-      <Button Text="Scarta bozza" Command="{Binding DiscardDraftCommand}" Style="{StaticResource TextButton}"/>
-      <Button Text="Data, descrizione e altri dettagli ⌄" Style="{StaticResource TextButton}" Command="{Binding ToggleDetailsCommand}"/>
+      <Button Text="Descrizione, ora e altri dettagli ⌄" Style="{StaticResource TextButton}" Command="{Binding ToggleDetailsCommand}"/>
       <Border Style="{StaticResource Card}" IsVisible="{Binding ShowDetails}">
         <VerticalStackLayout Spacing="12">
-          <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-            <Border Style="{StaticResource InputCard}">
-              <DatePicker Date="{Binding Date}"/>
-            </Border>
-            <Border Grid.Column="1" Style="{StaticResource InputCard}">
-              <TimePicker Time="{Binding Time}"/>
-            </Border>
-          </Grid>
+          <Border Style="{StaticResource InputCard}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+              <Label Text="Ora" VerticalTextAlignment="Center"/>
+              <TimePicker Grid.Column="1" Time="{Binding Time}" Format="HH:mm" SemanticProperties.Description="Ora del movimento"/>
+            </Grid>
+          </Border>
           <Border Style="{StaticResource InputCard}">
             <Entry Placeholder="Descrizione (facoltativa)" Text="{Binding Description}"/>
           </Border>
@@ -81,6 +80,11 @@
           </Grid>
         </VerticalStackLayout>
       </Border>
+      <Label Text="{Binding StatusMessage}" TextColor="{StaticResource PrimaryGlow}"/>
+      <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
+      <Button Text="Salva movimento" Command="{Binding SaveCommand}" FontSize="16"/>
+      <Button Text="Salva e aggiungi un'altra" Command="{Binding SaveAndAddCommand}" Style="{StaticResource SecondaryButton}"/>
+      <Button Text="Scarta bozza" Command="{Binding DiscardDraftCommand}" Style="{StaticResource TextButton}"/>
       <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
     </VerticalStackLayout>
     </VerticalStackLayout>
