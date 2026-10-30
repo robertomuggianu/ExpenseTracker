@@ -25,12 +25,22 @@ public partial class CategoriesPage : ContentPage
         await _viewModel.LoadCommand.ExecuteAsync(null);
     }
 
-    private async void OnEditCategory(object? sender, TappedEventArgs e)
+    private async void OnCategoryTileTapped(object? sender, TappedEventArgs e)
     {
-        if (e.Parameter is not ExpenseTracker.Domain.Category category) return;
-        _viewModel.EditCategoryCommand.Execute(category);
+        if (e.Parameter is not CategoryTile tile) return;
+        if (tile.Category is { } category) _viewModel.EditCategoryCommand.Execute(category);
+        else _viewModel.NewCategoryCommand.Execute(null);
         await CategoryScroll.ScrollToAsync(CategoryEditor, ScrollToPosition.Start, true);
     }
 
     private async void ScrollToEditor() => await CategoryScroll.ScrollToAsync(CategoryEditor, ScrollToPosition.Start, true);
+
+    private void OnCategoryTileSizeChanged(object? sender, EventArgs e)
+    {
+        // FlexLayout measures percentage-width items before assigning their width.
+        // Remeasure the label at its actual width so longer names can wrap.
+        if (sender is Grid tile && tile.Width > tile.Padding.HorizontalThickness
+            && tile.Children.OfType<Label>().FirstOrDefault() is { } name)
+            name.WidthRequest = tile.Width - tile.Padding.HorizontalThickness;
+    }
 }

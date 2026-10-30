@@ -7,13 +7,82 @@ namespace ExpenseTracker.Application.Tests;
 
 public sealed class ViewModelWorkflowTests
 {
+    [Fact] public Task Home_HiddenBalanceSurvivesReloadAndRestartWithoutChangingTotals() => WithDatabase(async repo =>
+    {
+        var preferences = new PreferencesStore();
+        var home = new DashboardViewModel(new(repo), new Navigation(), new(repo), preferences);
+        await home.LoadAsync();
+        Assert.False(home.IsBalanceHidden);
+        Assert.Contains("100", home.BalanceText);
+        home.ToggleBalanceVisibilityCommand.Execute(null);
+        await home.LoadAsync();
+        Assert.Equal("••••••", home.BalanceText);
+        Assert.Equal("Saldo nascosto", home.BalanceAccessibilityText);
+        Assert.Equal("Mostra saldo totale", home.BalanceVisibilityDescription);
+        Assert.Equal(100m, home.TotalBalance);
+        var reopened = new DashboardViewModel(new(repo), new Navigation(), new(repo), preferences);
+        await reopened.LoadAsync();
+        Assert.True(reopened.IsBalanceHidden);
+        reopened.ToggleBalanceVisibilityCommand.Execute(null);
+        Assert.Contains("100", reopened.BalanceText);
+        Assert.False(new DashboardViewModel(new(repo), new Navigation(), new(repo), preferences).IsBalanceHidden);
+    });
+
+    [Fact] public Task Categories_TabsFilterSearchAndCreateInTheVisibleType() => WithDatabase(async repo =>
+    {
+        var service = new CategoryService(repo);
+        var expense = await service.SaveCategoryAsync(new(null, "Viaggio personale", TransactionType.Expense, "#123456", true, "luggage"));
+        var income = await service.SaveCategoryAsync(new(null, "Rimborso viaggio", TransactionType.Income, "#123456", true, "transfer"));
+        var vm = new CategoriesViewModel(service);
+        await vm.LoadAsync(); vm.SearchText = "viaggio";
+        Assert.Equal(expense.Id, Assert.Single(vm.VisibleCategories).Id);
+        Assert.True(vm.CategoryTiles[^1].IsCreate);
+        vm.SelectIncomeCommand.Execute(null);
+        Assert.Equal(income.Id, Assert.Single(vm.VisibleCategories).Id);
+        vm.NewCategoryCommand.Execute(null);
+        Assert.Equal(TransactionType.Income, vm.SelectedCategoryType.Value);
+        vm.CategoryName = "Rimborso viaggio treno";
+        await vm.SaveCategoryCommand.ExecuteAsync(null);
+        Assert.Null(vm.ErrorMessage);
+        Assert.Equal(2, vm.VisibleCategories.Count);
+        Assert.All(vm.VisibleCategories, c => Assert.Equal(TransactionType.Income, c.Type));
+        vm.EditCategoryCommand.Execute(income);
+        vm.SelectedCategoryType = vm.Types.Single(t => t.Value == TransactionType.Expense);
+        await vm.SaveCategoryCommand.ExecuteAsync(null);
+        Assert.True(vm.IsExpenseSelected);
+        Assert.Contains(vm.VisibleCategories, c => c.Id == income.Id);
+        vm.SearchText = "inesistente";
+        Assert.True(vm.HasNoCategories);
+        Assert.True(Assert.Single(vm.CategoryTiles).IsCreate);
+    });
+
+    [Fact] public Task Editor_BackdatedMovementRestoresAndSavesWithDetailsClosed() => WithDatabase(async repo =>
+    {
+        var preferences = new PreferencesStore();
+        var editor = Editor(repo, preferences);
+        await editor.LoadAsync();
+        var date = DateTime.Today.AddDays(-5);
+        editor.Date = date;
+        editor.Time = new TimeSpan(14, 25, 0);
+        editor.SelectedCategory = editor.Categories[0]; editor.Amount = "12,50";
+        Assert.False(editor.ShowDetails);
+        var restored = Editor(repo, preferences);
+        await restored.LoadAsync();
+        Assert.False(restored.ShowDetails);
+        Assert.Equal(date, restored.Date);
+        await restored.SaveCommand.ExecuteAsync(null);
+        Assert.Null(restored.ErrorMessage);
+        var saved = Assert.Single(await repo.GetTransactionsAsync());
+        Assert.Equal(date.AddHours(14).AddMinutes(25).ToUniversalTime(), saved.OccurredAtUtc);
+    });
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public Task Home_NewMovementUsesVisibleTypeAndUpdatesBalance(bool income) => WithDatabase(async repo =>
     {
         var nav = new Navigation();
-        var home = new DashboardViewModel(new(repo), nav, new(repo));
+        var home = new DashboardViewModel(new(repo), nav, new(repo), new PreferencesStore());
         if (income) home.SelectIncomeCommand.Execute(null);
         else home.SelectExpensesCommand.Execute(null);
         await home.NewTransactionCommand.ExecuteAsync(null);
@@ -119,7 +188,7 @@ public sealed class ViewModelWorkflowTests
     [Fact] public Task Home_SaveAndAddKeepsOriginAndFinalSaveReturnsHome() => WithDatabase(async repo =>
     {
         var nav = new Navigation();
-        var home = new DashboardViewModel(new(repo), nav, new(repo));
+        var home = new DashboardViewModel(new(repo), nav, new(repo), new PreferencesStore());
         await home.NewTransactionCommand.ExecuteAsync(null);
         Assert.True(nav.ReturnToHome);
         var editor = Editor(repo, new PreferencesStore(), nav);
@@ -268,7 +337,7 @@ public sealed class ViewModelWorkflowTests
         await repo.SaveTransactionAsync(new(Guid.NewGuid(), month.AddDays(1).ToUniversalTime(), TransactionType.Expense, account.Id, category.Id, 10m));
         await repo.SaveTransactionAsync(new(Guid.NewGuid(), month.AddMonths(-1).AddDays(1).ToUniversalTime(), TransactionType.Expense, account.Id, category.Id, 20m));
         var delayed = new DelayedRepository(repo); var nav = new Navigation();
-        var vm = new DashboardViewModel(new(delayed), nav, new(repo)); await vm.LoadAsync();
+        var vm = new DashboardViewModel(new(delayed), nav, new(repo), new PreferencesStore()); await vm.LoadAsync();
         delayed.DelayQueryNumber = delayed.QueryCount + 2;
         var loading = vm.PreviousMonthCommand.ExecuteAsync(null);
         await delayed.QueryStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -292,7 +361,7 @@ public sealed class ViewModelWorkflowTests
         await repo.SaveTransactionAsync(new(Guid.NewGuid(), today.AddHours(12).ToUniversalTime(), TransactionType.Expense, account.Id, expense.Id, 10m));
         await repo.SaveTransactionAsync(new(Guid.NewGuid(), today.AddHours(13).ToUniversalTime(), TransactionType.Income, account.Id, income.Id, 30m));
         await repo.SaveTransactionAsync(new(Guid.NewGuid(), today.AddYears(-1).AddHours(12).ToUniversalTime(), TransactionType.Expense, account.Id, expense.Id, 99m));
-        var nav = new Navigation(); var vm = new DashboardViewModel(new(repo), nav, new(repo)); await vm.LoadAsync();
+        var nav = new Navigation(); var vm = new DashboardViewModel(new(repo), nav, new(repo), new PreferencesStore()); await vm.LoadAsync();
         foreach (var preset in new[] { DateRangePreset.CurrentWeek, DateRangePreset.CurrentYear, DateRangePreset.Custom })
         {
             vm.CustomFrom = today; vm.CustomTo = today;
@@ -322,7 +391,7 @@ public sealed class ViewModelWorkflowTests
         var expense = (await repo.GetCategoriesAsync()).First(c => c.Type == TransactionType.Expense);
         await repo.SaveTransactionAsync(new(Guid.NewGuid(), DateTime.UtcNow, TransactionType.Expense, eur.Id, expense.Id, 10m));
         await repo.SaveTransactionAsync(new(Guid.NewGuid(), DateTime.UtcNow, TransactionType.Expense, usd.Id, expense.Id, 20m, "USD"));
-        var vm = new DashboardViewModel(new(repo), new Navigation(), new(repo));
+        var vm = new DashboardViewModel(new(repo), new Navigation(), new(repo), new PreferencesStore());
         await vm.LoadAsync();
         Assert.Equal("USD", vm.SelectedCurrency); Assert.Equal("USD", vm.BalanceCurrency);
         Assert.Equal(180m, vm.TotalBalance); Assert.Equal(20m, vm.Expense);
@@ -337,7 +406,7 @@ public sealed class ViewModelWorkflowTests
         eur.SetPrimary(false); eur.SetActive(false);
         var usd = new Account(Guid.NewGuid(), "Dollari", 200m, "USD");
         await repo.SaveAccountsAsync([eur, usd]);
-        var vm = new DashboardViewModel(new(repo), new Navigation(), new(repo)); await vm.LoadAsync();
+        var vm = new DashboardViewModel(new(repo), new Navigation(), new(repo), new PreferencesStore()); await vm.LoadAsync();
         Assert.Equal("USD", vm.ReportCurrency); Assert.Equal(200m, vm.TotalBalance);
         usd.SetActive(false); await repo.SaveAccountsAsync([usd]); await vm.LoadAsync();
         Assert.Equal("EUR", vm.SelectedCurrency); Assert.Equal(0m, vm.TotalBalance);
@@ -355,7 +424,7 @@ public sealed class ViewModelWorkflowTests
         vm.CategoryName = "Vacanza Giappone"; await vm.SaveCategoryCommand.ExecuteAsync(null);
         Assert.Equal("Vacanza Giappone", Assert.Single(vm.VisibleCategories).Name);
         vm.SearchText = "assente"; Assert.Empty(vm.VisibleCategories); Assert.True(vm.HasNoCategories);
-        vm.SearchText = ""; Assert.Equal(vm.Categories.Count, vm.VisibleCategories.Count);
+        vm.SearchText = ""; Assert.Equal(vm.Categories.Count(c => c.Type == TransactionType.Expense), vm.VisibleCategories.Count);
         var reopened = await repo.GetCategoryAsync(saved.Id);
         Assert.Equal("luggage", reopened!.Icon); Assert.Equal("#123456", reopened.Color);
     });

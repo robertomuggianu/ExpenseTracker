@@ -9,6 +9,7 @@ namespace ExpenseTracker.Presentation;
 public partial class AppShell : Shell
 {
     private readonly AccountService accountService;
+    private readonly IAppPreferences preferences;
     private readonly IServiceProvider services;
     private AssistantPage? assistantPage;
     private bool assistantTransition;
@@ -20,6 +21,7 @@ public partial class AppShell : Shell
     {
         this.services = services;
         accountService = services.GetRequiredService<AccountService>();
+        preferences = services.GetRequiredService<IAppPreferences>();
         InitializeComponent();
         DashboardContent.ContentTemplate = Resolve<DashboardPage>(services);
         TransactionsContent.ContentTemplate = Resolve<TransactionsPage>(services);
@@ -82,14 +84,19 @@ public partial class AppShell : Shell
     protected override void OnPropertyChanged(string? propertyName = null)
     {
         base.OnPropertyChanged(propertyName);
-        if (propertyName == nameof(FlyoutIsPresented) && FlyoutIsPresented && accountService is not null)
+        if (propertyName == nameof(FlyoutIsPresented) && FlyoutIsPresented && accountService is not null && preferences is not null)
+        {
+            // Clear the last displayed balance synchronously before the menu is drawn.
+            MenuBalance = preferences.Get("hide-home-balance", false) ? "Saldo nascosto" : "Aggiornamento saldo…";
             _ = RefreshBalanceAsync();
+        }
     }
 
     private async Task RefreshBalanceAsync()
     {
         try
         {
+            if (preferences.Get("hide-home-balance", false)) { MenuBalance = "Saldo nascosto"; return; }
             var accounts = (await accountService.GetAccountsAsync()).Where(item => item.Account.IsActive).ToArray();
             MenuBalance = accounts.Any(a => a.HasCurrencyMismatch) ? "Verifica le valute dei conti" : "Saldo: " + MoneyFormatter.Format(accounts.Sum(item => item.CurrentBalance), CurrencySelection.SingleOrDefault(accounts.Select(item => item.Account.Currency)));
         }

@@ -10,8 +10,17 @@ using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
 namespace ExpenseTracker.Presentation.ViewModels;
 public partial class DashboardViewModel(ReportingService reportingService, IAppNavigationService navigation,
-    AccountService accountService) : ViewModelBase
+    AccountService accountService, IAppPreferences preferences) : ViewModelBase
 {
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(BalanceText), nameof(BalanceVisibilityIcon), nameof(BalanceVisibilityDescription), nameof(BalanceAccessibilityText))]
+    public partial bool IsBalanceHidden { get; set; } = preferences.Get("hide-home-balance", false);
+    public string BalanceText => IsBalanceHidden ? "••••••" : MoneyFormatter.Format(TotalBalance, BalanceCurrency);
+    public string BalanceAccessibilityText => IsBalanceHidden ? "Saldo nascosto" : $"Saldo dei conti: {BalanceText}";
+    public string BalanceVisibilityIcon => IsBalanceHidden ? "ui_eye_off.png" : "ui_eye.png";
+    public string BalanceVisibilityDescription => IsBalanceHidden ? "Mostra saldo totale" : "Nascondi saldo totale";
+    partial void OnIsBalanceHiddenChanged(bool value) => preferences.Set("hide-home-balance", value);
+    [RelayCommand] private void ToggleBalanceVisibility() => IsBalanceHidden = !IsBalanceHidden;
     [ObservableProperty] public partial string SelectedCurrency { get; set; } = "EUR";
     private bool refreshPending;
     private DateRange displayedRange;
@@ -95,9 +104,13 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
     }
     partial void OnCustomFromChanged(DateTime value) { if (IsCustomPeriod) RefreshPeriod(); }
     partial void OnCustomToChanged(DateTime value) { if (IsCustomPeriod) RefreshPeriod(); }
-    [ObservableProperty] public partial string? BalanceCurrency { get; set; } = "EUR";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(BalanceText), nameof(BalanceAccessibilityText))]
+    public partial string? BalanceCurrency { get; set; } = "EUR";
     [ObservableProperty] public partial string? ReportCurrency { get; set; } = "EUR";
-    [ObservableProperty] public partial decimal TotalBalance { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(BalanceText), nameof(BalanceAccessibilityText))]
+    public partial decimal TotalBalance { get; set; }
     [ObservableProperty] public partial decimal Income { get; set; }
     [ObservableProperty] public partial decimal Expense { get; set; }
     [ObservableProperty] public partial decimal Difference { get; set; }
