@@ -28,9 +28,21 @@ La prova interrompe l'esecuzione al primo errore e termina con codice non zero. 
 
 L'app viene compilata per `iossimulator-arm64`, distinto da `ios-arm64` utilizzato per il telefono fisico. SDK .NET, workload iOS e Xcode sono mantenuti coerenti con il workflow IPA. Il dispositivo è creato fra i modelli e i runtime realmente installati sul Mac del runner.
 
+Il pacchetto compilato viene conservato per le esecuzioni successive soltanto quando coincidono sorgenti e configurazione di compilazione. Anche il pacchetto recuperato viene verificato per piattaforma e architettura. Correggere uno scenario di test può così evitare una nuova compilazione; ogni prova usa comunque un nuovo dispositivo simulato.
+
 Appium e il driver XCUITest comandano i controlli nativi dell'app. Gli identificatori di automazione individuano i campi senza dipendere dalla loro posizione sullo schermo. Ogni esecuzione conserva le evidenze utili a distinguere un errore dell'app da un problema di compilazione o avvio del simulatore.
 
 Queste prove coprono il sistema operativo e l'interfaccia nativa iOS, ma non certificano l'assenza di qualsiasi bug. Prestazioni, tastiera, gesti, permessi e comportamento sul telefono fisico restano verifiche complementari. L'integrazione Ollama è esclusa da questo collaudo.
+
+## Verifica della configurazione — 4 novembre 2026
+
+- Suite applicativa locale: 223 test superati, nessuno ignorato.
+- Compilazione Android Release degli identificatori iniziali: nessun errore o avviso. I successivi identificatori costanti dei template vengono verificati dalla compilazione iOS.
+- Regressione GitHub, compresi i flussi senza reflection JSON: superata.
+- Workflow controllato con actionlint 1.7.12; script Python compilato e controllo di rifiuto dei pacchetti `iPhoneOS` esercitato prima di qualsiasi chiamata ad Appium.
+- Lockfile npm verificato, con versioni esatte e integrità dei pacchetti; `npm ci --dry-run --ignore-scripts --offline` superato. L'installazione completa sul Mac GitHub è riuscita.
+
+L'esecuzione iOS effettiva sulla revisione `6b9a550` è [disponibile su GitHub Actions](https://github.com/robertomuggianu/ExpenseTracker/actions/runs/41897135446); il suo esito resta distinto dai controlli preliminari sopra.
 
 ## Riferimenti
 

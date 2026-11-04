@@ -99,7 +99,15 @@ jobs:
           ./node_modules/.bin/appium --version
           ./node_modules/.bin/appium driver list --installed
 
+      - name: Restore the simulator app for the exact sources and build configuration
+        id: simulator-app-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: src/ExpenseTracker/bin/Release/net10.0-ios/iossimulator-arm64/ExpenseTracker.app
+          key: ios-simulator-arm64-release-v1-${{ hashFiles('src/**', 'Directory.*', 'NuGet.Config', 'nuget.config', '.github/workflows/ios-simulator-tests.yml') }}
+
       - name: Build the Release app for Apple Silicon Simulator
+        if: steps.simulator-app-cache.outputs.cache-hit != 'true'
         timeout-minutes: 25
         run: |
           set -euo pipefail
@@ -112,11 +120,22 @@ jobs:
             -p:ArchiveOnBuild=false \
             -p:BuildIpa=false \
             -bl:"$ARTIFACTS/build.binlog" 2>&1 | tee "$ARTIFACTS/build.log"
+
+      - name: Validate the compiled or restored simulator app
+        run: |
+          set -euo pipefail
           test -d "$SIMULATOR_APP"
           executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$SIMULATOR_APP/Info.plist")
           platform=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleSupportedPlatforms:0' "$SIMULATOR_APP/Info.plist")
           test "$platform" = iPhoneSimulator
           xcrun lipo "$SIMULATOR_APP/$executable" -verify_arch arm64
+
+      - name: Preserve the verified app before running UI checks
+        if: steps.simulator-app-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: src/ExpenseTracker/bin/Release/net10.0-ios/iossimulator-arm64/ExpenseTracker.app
+          key: ${{ steps.simulator-app-cache.outputs.cache-primary-key }}
 
       - name: Create a fresh iPhone on the installed SDK runtime
         timeout-minutes: 8
@@ -181,7 +200,7 @@ jobs:
           PY
 
       - name: Exercise navigation, account and transaction persistence
-        timeout-minutes: 15
+        timeout-minutes: 20
         run: |
           set -euo pipefail
           python3 tests/ios_simulator_smoke.py \

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Real iOS Simulator smoke against Appium/XCUITest; Python standard library only.
 
-The selected simulator/app data is reset intentionally. Run only on a CI simulator:
+Requires a freshly created CI simulator. The simulator itself is never erased:
   python3 tests/ios_simulator_smoke.py --udid UUID --app /path/ExpenseTracker.app \
       --artifacts artifacts/ios-smoke --server http://127.0.0.1:4723
 
@@ -82,14 +82,17 @@ class Driver:
     def start(self, udid, app):
         value = self.request("POST", "/session", {"capabilities": {"alwaysMatch": {
             "platformName": "iOS", "appium:automationName": "XCUITest", "appium:udid": udid,
-            "appium:app": str(app), "appium:noReset": False, "appium:fullReset": True,
+            # CI has already created and booted an empty simulator. A full reset would
+            # erase it and restart the expensive first boot, also killing log/video capture.
+            "appium:app": str(app), "appium:noReset": False, "appium:fullReset": False,
             "appium:language": "it", "appium:locale": "it_IT",
             "appium:enforceAppInstall": True, "appium:newCommandTimeout": 90,
             "appium:wdaLaunchTimeout": 90000, "appium:wdaConnectionTimeout": 30000,
+            "appium:simulatorStartupTimeout": 300000,
             "appium:wdaStartupRetries": 1, "appium:waitForIdleTimeout": 1,
             "appium:connectHardwareKeyboard": False, "appium:forceSimulatorSoftwareKeyboardPresence": True,
             "appium:autoAcceptAlerts": False, "appium:showXcodeLog": True,
-        }, "firstMatch": [{}]}}, timeout=180)
+        }, "firstMatch": [{}]}}, timeout=480)
         self.session = value["sessionId"]
         self.request("POST", "/timeouts", {"implicit": 0, "script": 30000, "pageLoad": 30000})
         return value.get("capabilities", {})
@@ -394,8 +397,9 @@ def main():
     started = time.monotonic()
     report = {"status": "failed", "startedAt": datetime.now(timezone.utc).isoformat(),
               "udid": args.udid, "app": str(args.app.resolve()), "steps": [], "freshInstall": True}
-    # Leave one minute for bounded screenshot/source collection and session cleanup.
-    driver = Driver(args.server, args.artifacts, started + 510)
+    # Allow up to eight minutes for simulator/WDA startup and a fifteen-minute
+    # total scenario, leaving diagnostic headroom in the twenty-minute CI step.
+    driver = Driver(args.server, args.artifacts, started + 900)
     try:
         app = args.app.resolve(strict=True)
         with (app / "Info.plist").open("rb") as info:
@@ -414,6 +418,7 @@ def main():
             raise ValueError("--udid must identify an available iOS Simulator; refusing to reset an unverified device")
         report["simulator"] = simulator
         report["capabilities"] = driver.start(args.udid, app)
+        report["startupSeconds"] = round(time.monotonic() - started, 2)
         Smoke(driver, report, bundle).run()
         report["status"] = "passed"
     except Exception as error:
