@@ -48,6 +48,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '24.22.1'
+          cache: npm
+          cache-dependency-path: tests/ios-appium/package-lock.json
 
       - uses: actions/setup-python@v6
         with:
@@ -81,25 +83,11 @@ jobs:
           dotnet workload install maui-ios --version 10.0.401 2>&1 | tee "$ARTIFACTS/workload.log"
           dotnet workload list >> "$ARTIFACTS/toolchain.txt"
 
-      - name: Resolve the initial dependency lockfile
+      - name: Preserve the locked dependency versions
         working-directory: tests/ios-appium
         run: |
           set -euo pipefail
-          # First-run bootstrap only: local registry DNS is unavailable on the Windows workstation.
-          # Commit the uploaded lockfile after this run, then remove this bootstrap branch.
-          if [ ! -f package-lock.json ]; then
-            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          fi
           cp package-lock.json "$GITHUB_WORKSPACE/$ARTIFACTS/package-lock.json"
-
-      - name: Upload resolved lockfile before the iOS build
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: iOS-Appium-Lock-${{ github.run_number }}
-          path: tests/ios-appium/package-lock.json
-          if-no-files-found: warn
-          retention-days: 7
 
       - name: Install locked Appium and XCUITest dependencies
         working-directory: tests/ios-appium
