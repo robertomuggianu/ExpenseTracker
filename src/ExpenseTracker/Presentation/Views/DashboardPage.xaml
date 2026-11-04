@@ -5,8 +5,8 @@
       <VerticalStackLayout Spacing="10">
         <Label Text="{Binding BalanceCurrency, StringFormat='Saldo conti in {0}'}" TextColor="{StaticResource DarkTextMuted}" FontSize="13" HorizontalTextAlignment="Center" Margin="0,4,0,-4"/>
         <Grid ColumnDefinitions="46,*,44" ColumnSpacing="6">
-          <Button Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}" SemanticProperties.Description="Apri menu"/>
-          <Label Grid.Column="1" Text="{Binding BalanceText}" Style="{StaticResource HeroValue}" FontSize="34" HorizontalTextAlignment="Center"
+          <Button AutomationId="Navigation.Menu" Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}" SemanticProperties.Description="Apri menu"/>
+          <Label AutomationId="Home.Balance" Grid.Column="1" Text="{Binding BalanceText}" Style="{StaticResource HeroValue}" FontSize="34" HorizontalTextAlignment="Center"
                  VerticalTextAlignment="Center" SemanticProperties.Description="{Binding BalanceAccessibilityText}"/>
           <Button Grid.Column="2" ImageSource="{Binding BalanceVisibilityIcon}" Command="{Binding ToggleBalanceVisibilityCommand}"
                   Style="{StaticResource TextButton}" WidthRequest="44" HeightRequest="44" Padding="10" TextColor="{StaticResource White}"

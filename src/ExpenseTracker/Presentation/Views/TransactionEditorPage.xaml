@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<ContentPage Shell.NavBarIsVisible="False" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" x:Class="ExpenseTracker.Presentation.Views.TransactionEditorPage" x:Name="Page" Title="{Binding Title}">
+<ContentPage HideSoftInputOnTapped="True" Shell.NavBarIsVisible="False" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" x:Class="ExpenseTracker.Presentation.Views.TransactionEditorPage" x:Name="Page" Title="{Binding Title}">
   <ScrollView>
     <VerticalStackLayout Spacing="0">
       <controls:PageHeader Heading="{Binding Title}"/>
@@ -10,7 +10,7 @@
         <VerticalStackLayout Spacing="8">
           <Label Text="Importo" Style="{StaticResource MutedLabel}"/>
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-            <Entry Placeholder="0,00" Text="{Binding Amount}" Keyboard="Numeric" FontSize="38" FontAttributes="Bold" ClearButtonVisibility="WhileEditing"/>
+            <Entry AutomationId="Transaction.Amount" Placeholder="0,00" Text="{Binding Amount}" Keyboard="Numeric" FontSize="38" FontAttributes="Bold" ClearButtonVisibility="WhileEditing"/>
             <Label Grid.Column="1" Text="{Binding Currency}" TextColor="{StaticResource PrimaryGlow}" VerticalTextAlignment="Center" FontAttributes="Bold"/>
           </Grid>
         </VerticalStackLayout>
@@ -34,7 +34,7 @@
             <DataTemplate>
               <Grid WidthRequest="76" FlexLayout.Grow="1" FlexLayout.Shrink="0" Padding="3">
                 <Border Padding="4,7" HeightRequest="88" BackgroundColor="{StaticResource DarkSurface}" StrokeShape="RoundRectangle 16" StrokeThickness="2"
-                        SemanticProperties.Description="{Binding Name}" SemanticProperties.Hint="Seleziona questa categoria">
+                        AutomationId="Transaction.Category" SemanticProperties.Description="{Binding Name}" SemanticProperties.Hint="Seleziona questa categoria">
                   <Border.Stroke>
                     <MultiBinding Converter="{StaticResource SelectionOutline}">
                       <Binding Path="."/>
@@ -63,7 +63,7 @@
               <Grid FlexLayout.Basis="25%" Padding="3">
                 <Border Padding="5,8" MinimumHeightRequest="94"
                         BackgroundColor="{StaticResource DarkSurface}" StrokeShape="RoundRectangle 18" StrokeThickness="2"
-                        SemanticProperties.Description="{Binding Name}" SemanticProperties.Hint="Seleziona questa categoria">
+                        AutomationId="Transaction.Category" SemanticProperties.Description="{Binding Name}" SemanticProperties.Hint="Seleziona questa categoria">
                   <Border.Stroke>
                     <MultiBinding Converter="{StaticResource SelectionOutline}">
                       <Binding Path="."/>
@@ -94,7 +94,7 @@
         <Label Text="Ricorda l'ultimo conto" VerticalTextAlignment="Center"/>
         <Switch Grid.Column="1" IsToggled="{Binding RememberAccount}" SemanticProperties.Description="Ricorda l'ultimo conto"/>
       </Grid>
-      <Button Text="Descrizione, ora e altri dettagli ⌄" Style="{StaticResource TextButton}" Command="{Binding ToggleDetailsCommand}"/>
+      <Button AutomationId="Transaction.Details" Text="Descrizione, ora e altri dettagli ⌄" Style="{StaticResource TextButton}" Command="{Binding ToggleDetailsCommand}"/>
       <Border Style="{StaticResource Card}" IsVisible="{Binding ShowDetails}">
         <VerticalStackLayout Spacing="12">
           <Border Style="{StaticResource InputCard}">
@@ -104,10 +104,10 @@
             </Grid>
           </Border>
           <Border Style="{StaticResource InputCard}">
-            <Entry Placeholder="Descrizione (facoltativa)" Text="{Binding Description}"/>
+            <Entry AutomationId="Transaction.Description" Placeholder="Descrizione (facoltativa)" Text="{Binding Description}"/>
           </Border>
           <Border Style="{StaticResource InputCard}">
-            <Editor Placeholder="Note (facoltative)" Text="{Binding Notes}" AutoSize="TextChanges"/>
+            <Editor AutomationId="Transaction.Notes" Placeholder="Note (facoltative)" Text="{Binding Notes}" AutoSize="TextChanges"/>
           </Border>
           <Grid ColumnDefinitions="*,Auto">
             <Label Text="Valuta" VerticalTextAlignment="Center"/>
@@ -119,7 +119,7 @@
       </Border>
       <Label Style="{StaticResource FeedbackLabel}" Text="{Binding StatusMessage}" TextColor="{StaticResource PrimaryGlow}"/>
       <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
-      <Button Text="Salva movimento" Command="{Binding SaveCommand}" FontSize="16"/>
+      <Button AutomationId="Transaction.Save" Text="Salva movimento" Command="{Binding SaveCommand}" FontSize="16"/>
       <Button Text="Salva e aggiungi un'altra" Command="{Binding SaveAndAddCommand}" Style="{StaticResource SecondaryButton}"/>
       <Button Text="Scarta bozza" Command="{Binding DiscardDraftCommand}" Style="{StaticResource TextButton}"/>
       <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>

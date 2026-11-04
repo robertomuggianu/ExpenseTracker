@@ -1,0 +1,260 @@
+name: iPhone simulator UI tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, codex/ios-simulator-tests]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - '.github/workflows/ios-simulator-tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - '.github/workflows/ios-simulator-tests.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-simulator-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  iphone-ui:
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      APP_BUNDLE_ID: com.companyname.expensetracker
+      SIMULATOR_APP: src/ExpenseTracker/bin/Release/net10.0-ios/iossimulator-arm64/ExpenseTracker.app
+      ARTIFACTS: artifacts/ios-simulator
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.401'
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24.22.1'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.10'
+
+      - name: Pin and record the Apple toolchain
+        run: |
+          set -euo pipefail
+          mkdir -p "$ARTIFACTS"
+          test -d "$DEVELOPER_DIR"
+          test "$(uname -m)" = arm64
+          cat > global.json <<'JSON'
+          {"sdk":{"version":"10.0.401","rollForward":"disable"}}
+          JSON
+          {
+            sw_vers
+            uname -m
+            xcodebuild -version
+            xcrun --sdk iphonesimulator --show-sdk-version
+            dotnet --info
+            node --version
+            npm --version
+            python3 --version
+          } | tee "$ARTIFACTS/toolchain.txt"
+          xcrun simctl list --json > "$ARTIFACTS/simulators-before.json"
+
+      - name: Install the matching MAUI workload
+        # Workload set 10.0.401 supports Xcode 26.6; 10.0.401.1 requires Xcode 27.
+        run: |
+          set -euo pipefail
+          dotnet workload install maui-ios --version 10.0.401 2>&1 | tee "$ARTIFACTS/workload.log"
+          dotnet workload list >> "$ARTIFACTS/toolchain.txt"
+
+      - name: Resolve the initial dependency lockfile
+        working-directory: tests/ios-appium
+        run: |
+          set -euo pipefail
+          # First-run bootstrap only: local registry DNS is unavailable on the Windows workstation.
+          # Commit the uploaded lockfile after this run, then remove this bootstrap branch.
+          if [ ! -f package-lock.json ]; then
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          fi
+          cp package-lock.json "$GITHUB_WORKSPACE/$ARTIFACTS/package-lock.json"
+
+      - name: Upload resolved lockfile before the iOS build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOS-Appium-Lock-${{ github.run_number }}
+          path: tests/ios-appium/package-lock.json
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Install locked Appium and XCUITest dependencies
+        working-directory: tests/ios-appium
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          # Project dependencies are discovered automatically when APPIUM_HOME is unset.
+          unset APPIUM_HOME
+          ./node_modules/.bin/appium --version
+          ./node_modules/.bin/appium driver list --installed
+
+      - name: Build the Release app for Apple Silicon Simulator
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          dotnet build src/ExpenseTracker/ExpenseTracker.csproj \
+            -f net10.0-ios -c Release \
+            -p:BuildForSideloadly=true \
+            -p:RuntimeIdentifier=iossimulator-arm64 \
+            -p:EnableCodeSigning=false \
+            -p:CodesignRequireProvisioningProfile=false \
+            -p:ArchiveOnBuild=false \
+            -p:BuildIpa=false \
+            -bl:"$ARTIFACTS/build.binlog" 2>&1 | tee "$ARTIFACTS/build.log"
+          test -d "$SIMULATOR_APP"
+          executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$SIMULATOR_APP/Info.plist")
+          platform=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleSupportedPlatforms:0' "$SIMULATOR_APP/Info.plist")
+          test "$platform" = iPhoneSimulator
+          xcrun lipo "$SIMULATOR_APP/$executable" -verify_arch arm64
+
+      - name: Create a fresh iPhone on the installed SDK runtime
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+
+          def run(*args):
+              return subprocess.check_output(args, text=True).strip()
+
+          sdk = run("xcrun", "--sdk", "iphonesimulator", "--show-sdk-version")
+          inventory = json.loads(run("xcrun", "simctl", "list", "--json"))
+          # Xcode 26.6 ships iOS 26.5; derive the runtime from its SDK, not its Xcode version.
+          runtimes = [r for r in inventory["runtimes"] if r.get("isAvailable")
+                      and ".iOS-" in r["identifier"]
+                      and r["version"].split(".")[:2] == sdk.split(".")[:2]]
+          if not runtimes:
+              raise SystemExit(f"No available iOS {sdk} simulator runtime. Inspect simulators-before.json and update the pinned toolchain together.")
+          runtime = max(runtimes, key=lambda r: tuple(map(int, r["version"].split("."))))
+          device = next((d for d in inventory["devicetypes"] if d["name"] == "iPhone 17 Pro"), None)
+          if device is None:
+              raise SystemExit("The pinned iPhone 17 Pro device type is missing from this Xcode image.")
+          udid = run("xcrun", "simctl", "create", "ExpenseTracker CI", device["identifier"], runtime["identifier"])
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as output:
+              output.write(f"SIMULATOR_UDID={udid}\nSIMULATOR_VERSION={runtime['version']}\n")
+          Path(os.environ["ARTIFACTS"], "device.json").write_text(json.dumps({"udid": udid, "device": device["name"], "runtime": runtime, "sdk": sdk}, indent=2))
+          run("xcrun", "simctl", "boot", udid)
+          subprocess.run(["xcrun", "simctl", "bootstatus", udid, "-b"], check=True, timeout=300)
+          PY
+
+      - name: Start Appium and capture simulator output
+        run: |
+          set -euo pipefail
+          xcrun simctl ui "$SIMULATOR_UDID" appearance dark
+          xcrun simctl status_bar "$SIMULATOR_UDID" override --time '9:41' --batteryState charged --batteryLevel 100
+          xcrun simctl spawn "$SIMULATOR_UDID" log stream --style compact \
+            --predicate 'process == "ExpenseTracker"' > "$ARTIFACTS/simulator.log" 2>&1 &
+          echo "$!" > "$ARTIFACTS/log.pid"
+          xcrun simctl io "$SIMULATOR_UDID" recordVideo --codec=h264 "$ARTIFACTS/simulator.mp4" > "$ARTIFACTS/video.log" 2>&1 &
+          echo "$!" > "$ARTIFACTS/video.pid"
+          (
+            cd tests/ios-appium
+            unset APPIUM_HOME
+            exec ./node_modules/.bin/appium --address 127.0.0.1 --port 4723 \
+              --log-timestamp --log-no-colors --log "$GITHUB_WORKSPACE/$ARTIFACTS/appium.log"
+          ) > "$ARTIFACTS/appium-console.log" 2>&1 &
+          echo "$!" > "$ARTIFACTS/appium.pid"
+          python3 - <<'PY'
+          import json, time, urllib.error, urllib.request
+          for attempt in range(60):
+              try:
+                  with urllib.request.urlopen("http://127.0.0.1:4723/status", timeout=2) as response:
+                      if json.load(response)["value"]["ready"]:
+                          break
+              except (OSError, ValueError, KeyError):
+                  pass
+              time.sleep(1)
+          else:
+              raise SystemExit("Appium did not become ready; see appium-console.log.")
+          PY
+
+      - name: Exercise navigation, account and transaction persistence
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          python3 tests/ios_simulator_smoke.py \
+            --server http://127.0.0.1:4723 \
+            --udid "$SIMULATOR_UDID" \
+            --app "$GITHUB_WORKSPACE/$SIMULATOR_APP" \
+            --artifacts "$ARTIFACTS/ui" 2>&1 | tee "$ARTIFACTS/smoke.log"
+
+      - name: Collect final diagnostics and stop this job's simulator
+        if: always()
+        run: |
+          mkdir -p "$ARTIFACTS"
+          if [ -n "${SIMULATOR_UDID:-}" ]; then
+            xcrun simctl io "$SIMULATOR_UDID" screenshot "$ARTIFACTS/final.png" || true
+            xcrun simctl spawn "$SIMULATOR_UDID" log show --last 15m --style compact \
+              --predicate 'process == "ExpenseTracker" OR process == "WebDriverAgentRunner"' \
+              > "$ARTIFACTS/recent-system.log" 2>&1 || true
+          fi
+          if [ -f "$ARTIFACTS/video.pid" ]; then
+            kill -INT "$(cat "$ARTIFACTS/video.pid")" 2>/dev/null || true
+            sleep 2
+          fi
+          for service in appium log; do
+            if [ -f "$ARTIFACTS/$service.pid" ]; then
+              kill "$(cat "$ARTIFACTS/$service.pid")" 2>/dev/null || true
+            fi
+          done
+          if [ -n "${SIMULATOR_UDID:-}" ]; then
+            xcrun simctl shutdown "$SIMULATOR_UDID" || true
+            xcrun simctl delete "$SIMULATOR_UDID" || true
+          fi
+
+      - name: Summarize the iPhone checks
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          report = Path(os.environ["ARTIFACTS"], "ui", "result.json")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              summary.write("## iPhone Simulator\n\n")
+              if report.exists():
+                  result = json.loads(report.read_text(encoding="utf-8"))
+                  steps = result.get("steps", [])
+                  passed = sum(step["status"] == "passed" for step in steps)
+                  summary.write(f"**{result['status']}** — {passed}/{len(steps)} started checks passed.\n\n")
+                  for step in steps:
+                      summary.write(f"- {step['status']}: {step['name']}\n")
+                  if result.get("error"):
+                      summary.write(f"\nFailure: {result['error']}\n")
+              else:
+                  summary.write("UI checks did not start. Inspect the setup/build steps and logs.\n")
+              summary.write("\nDownload the iPhone-Simulator artifact below for screenshots, video and diagnostics.\n")
+          PY
+
+      - name: Upload screenshots, recording, test results and build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iPhone-Simulator-${{ github.run_number }}
+          path: artifacts/ios-simulator/
+          if-no-files-found: warn
+          retention-days: 14

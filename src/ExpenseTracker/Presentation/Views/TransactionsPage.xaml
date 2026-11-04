@@ -13,7 +13,7 @@
           <Border Style="{StaticResource Card}" Padding="14">
             <VerticalStackLayout Spacing="10">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <Label Text="{Binding VisibleCountLabel}" FontAttributes="Bold" VerticalTextAlignment="Center"/>
+                <Label AutomationId="Transactions.Count" Text="{Binding VisibleCountLabel}" FontAttributes="Bold" VerticalTextAlignment="Center"/>
                 <Button Grid.Column="1" Text="{Binding FiltersToggleLabel}" Style="{StaticResource TextButton}" Command="{Binding ToggleFiltersCommand}"/>
               </Grid>
               <Label Text="{Binding FilterSummary}" Style="{StaticResource MutedLabel}" FontSize="12"/>
@@ -53,7 +53,7 @@
         <Label Text="{Binding Title}" Style="{StaticResource MutedLabel}" FontSize="12" FontAttributes="Bold" Margin="4,14,0,10"/>
       </DataTemplate></CollectionView.GroupHeaderTemplate>
       <CollectionView.ItemTemplate><DataTemplate>
-        <Border Style="{StaticResource Card}" Padding="14" Margin="0,0,0,10">
+        <Border AutomationId="Transactions.Item" SemanticProperties.Description="{Binding DisplayDescription}" Style="{StaticResource Card}" Padding="14" Margin="0,0,0,10">
           <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding Source={x:Reference Page}, Path=BindingContext.ShowDetailCommand}" CommandParameter="{Binding .}"/></Border.GestureRecognizers>
           <Grid ColumnDefinitions="42,*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="4" MinimumHeightRequest="64">
             <Border Grid.RowSpan="3" WidthRequest="42" HeightRequest="42" Padding="0" BackgroundColor="{Binding CategoryColor}" StrokeShape="RoundRectangle 14" VerticalOptions="Center">
@@ -87,24 +87,24 @@
       <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
         <Grid ColumnDefinitions="*,44">
           <Label Text="{Binding SelectedTransaction.DisplayDescription}" FontSize="18" FontAttributes="Bold" VerticalTextAlignment="Center" MaxLines="2" LineBreakMode="TailTruncation"/>
-          <Button Grid.Column="1" Text="×" FontSize="22" Padding="0" Style="{StaticResource TextButton}" Command="{Binding CloseDetailCommand}" SemanticProperties.Description="Chiudi dettaglio"/>
+          <Button AutomationId="Transactions.Detail.Close" Grid.Column="1" Text="×" FontSize="22" Padding="0" Style="{StaticResource TextButton}" Command="{Binding CloseDetailCommand}" SemanticProperties.Description="Chiudi dettaglio"/>
         </Grid>
         <ScrollView Grid.Row="1"><VerticalStackLayout Spacing="8">
         <Label Text="{Binding SelectedTransaction.TypeLabel}" TextColor="{StaticResource PrimaryGlow}"/>
-        <Label FontAttributes="Bold" FontSize="20"><Label.Text><MultiBinding Converter="{StaticResource MoneyConverter}"><Binding Path="SelectedTransaction.SignedAmount"/><Binding Path="SelectedTransaction.Transaction.Currency"/></MultiBinding></Label.Text></Label>
+        <Label AutomationId="Transactions.Detail.Amount" FontAttributes="Bold" FontSize="20"><Label.Text><MultiBinding Converter="{StaticResource MoneyConverter}"><Binding Path="SelectedTransaction.SignedAmount"/><Binding Path="SelectedTransaction.Transaction.Currency"/></MultiBinding></Label.Text></Label>
         <Label Text="{Binding SelectedTransaction.AccountName, StringFormat='Conto · {0}'}" Style="{StaticResource MutedLabel}"/>
         <Label Text="{Binding SelectedTransaction.CategoryName, StringFormat='Categoria · {0}'}" Style="{StaticResource MutedLabel}"/>
         <Label Text="{Binding SelectedTransaction.LocalDate, StringFormat='{0:dd/MM/yyyy HH:mm}'}" Style="{StaticResource MutedLabel}"/>
-        <Label Text="{Binding SelectedTransaction.Transaction.Notes, TargetNullValue='Nessuna nota'}"/>
+        <Label AutomationId="Transactions.Detail.Notes" Text="{Binding SelectedTransaction.Transaction.Notes, TargetNullValue='Nessuna nota'}"/>
         </VerticalStackLayout></ScrollView>
         <Grid Grid.Row="2" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4">
-          <Button Text="Modifica" Style="{StaticResource SecondaryButton}" IsVisible="{Binding SelectedTransaction.CanEdit}" Command="{Binding EditCommand}" CommandParameter="{Binding SelectedTransaction}"/>
+          <Button AutomationId="Transactions.Detail.Edit" Text="Modifica" Style="{StaticResource SecondaryButton}" IsVisible="{Binding SelectedTransaction.CanEdit}" Command="{Binding EditCommand}" CommandParameter="{Binding SelectedTransaction}"/>
           <Button Grid.Column="1" Text="Duplica" Style="{StaticResource SecondaryButton}" IsVisible="{Binding SelectedTransaction.CanEdit}" Command="{Binding DuplicateCommand}" CommandParameter="{Binding SelectedTransaction}"/>
-          <Button Grid.Row="1" Grid.ColumnSpan="2" Text="Elimina movimento" Style="{StaticResource DangerButton}" Command="{Binding DeleteCommand}" CommandParameter="{Binding SelectedTransaction}"/>
+          <Button AutomationId="Transactions.Detail.Delete" Grid.Row="1" Grid.ColumnSpan="2" Text="Elimina movimento" Style="{StaticResource DangerButton}" Command="{Binding DeleteCommand}" CommandParameter="{Binding SelectedTransaction}"/>
         </Grid>
       </Grid>
     </Border>
     <ActivityIndicator Grid.Row="1" IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" VerticalOptions="Center"/>
-    <Button Grid.Row="1" Style="{StaticResource FloatingActionButton}" Command="{Binding NewTransactionCommand}" IsVisible="{Binding IsFloatingActionsVisible}" HorizontalOptions="End" VerticalOptions="End" Margin="0,0,22,20" SemanticProperties.Description="Aggiungi un movimento"/>
+    <Button AutomationId="Transactions.New" Grid.Row="1" Style="{StaticResource FloatingActionButton}" Command="{Binding NewTransactionCommand}" IsVisible="{Binding IsFloatingActionsVisible}" HorizontalOptions="End" VerticalOptions="End" Margin="0,0,22,20" SemanticProperties.Description="Aggiungi un movimento"/>
   </Grid>
 </ContentPage>

@@ -2,6 +2,8 @@
 
 Revisione dell'interfaccia e verifiche del 4 novembre 2026: [resoconto del collaudo](docs/collaudo-2026-11-04.md), con test ripetibili, pacchetto Android e limiti della verifica iPhone.
 
+Ambiente iPhone su Mac remoto: [configurazione e test automatici nel simulatore iOS](docs/ios-simulator-tests.md).
+
 ExpenseTracker è un'applicazione personale offline-first realizzata con .NET MAUI 10, C#, XAML e MVVM. Conti, categorie e movimenti restano nel database SQLite del dispositivo. L'assistente opzionale usa un servizio locale sul PC con Ollama, senza sincronizzazione cloud.
 
 ## Funzioni MVP

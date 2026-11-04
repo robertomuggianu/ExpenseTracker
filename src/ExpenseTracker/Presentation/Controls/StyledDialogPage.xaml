@@ -19,8 +19,8 @@
                 <Label x:Name="TitleLabel" Style="{StaticResource SectionTitle}" />
                 <Label x:Name="MessageLabel" Style="{StaticResource MutedLabel}" FontSize="15" LineHeight="1.25" />
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                    <Button x:Name="CancelButton" Text="Annulla" Style="{StaticResource SecondaryButton}" Clicked="OnCancelClicked" />
-                    <Button x:Name="AcceptButton" Grid.Column="1" Text="OK" Clicked="OnAcceptClicked" />
+                    <Button AutomationId="Dialog.Cancel" x:Name="CancelButton" Text="Annulla" Style="{StaticResource SecondaryButton}" Clicked="OnCancelClicked" />
+                    <Button AutomationId="Dialog.Accept" x:Name="AcceptButton" Grid.Column="1" Text="OK" Clicked="OnAcceptClicked" />
                 </Grid>
             </VerticalStackLayout>
         </Border>
