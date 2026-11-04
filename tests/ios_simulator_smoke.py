@@ -15,11 +15,14 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from decimal import Decimal
 import json
+import os
 from pathlib import Path
 import plistlib
 import re
+import signal
 import subprocess
 import sys
+import tempfile
 import time
 import traceback
 from urllib.error import HTTPError, URLError
@@ -27,6 +30,56 @@ from urllib.request import Request, urlopen
 
 
 ELEMENT = "element-6066-11e4-a52e-4f735466cecf"
+
+
+def prebuild_wda(udid, artifacts, report):
+    """Compile the pinned WDA outside Appium's server-readiness timeout."""
+    modules = Path(__file__).resolve().parent / "ios-appium" / "node_modules"
+    candidates = [modules / "appium-xcuitest-driver" / "node_modules" / "appium-webdriveragent",
+                  modules / "appium-webdriveragent"]
+    package = next((p for p in candidates if (p / "WebDriverAgent.xcodeproj").is_dir()), None)
+    if package is None:
+        raise FileNotFoundError("Pinned WebDriverAgent project missing; run npm ci in tests/ios-appium")
+    # Keep large intermediate files outside uploaded artifacts; retain the complete build log.
+    derived = Path(os.environ.get("RUNNER_TEMP", tempfile.gettempdir())) / ("expensetracker-wda-" + udid)
+    derived.mkdir(parents=True, exist_ok=True)
+    command = ["xcodebuild", "build-for-testing", "-project", str(package / "WebDriverAgent.xcodeproj"),
+               "-scheme", "WebDriverAgentRunner", "-configuration", "Debug", "-sdk", "iphonesimulator",
+               "-destination", f"platform=iOS Simulator,id={udid}", "-derivedDataPath", str(derived),
+               "CODE_SIGNING_ALLOWED=NO", "RUN_CLANG_STATIC_ANALYZER=NO",
+               "COMPILER_INDEX_STORE_ENABLE=NO", "GCC_TREAT_WARNINGS_AS_ERRORS=0"]
+    record = {"command": command, "status": "running", "log": "wda-build.log", "derivedDataPath": str(derived)}
+    report["wdaBuild"] = record
+    started = time.monotonic()
+    print("[iOS smoke] Prebuilding WebDriverAgent (see wda-build.log)", flush=True)
+    with (artifacts / "wda-build.log").open("w", encoding="utf-8") as output:
+        output.write(json.dumps(command) + "\n")
+        output.flush()
+        process = subprocess.Popen(command, cwd=package, stdout=output, stderr=subprocess.STDOUT,
+                                   start_new_session=True)
+        try:
+            record["exitCode"] = process.wait(timeout=600)
+        except subprocess.TimeoutExpired:
+            record["status"] = "timeout"
+            os.killpg(process.pid, signal.SIGTERM)
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait(timeout=5)
+            raise TimeoutError("WebDriverAgent prebuild exceeded 600 seconds; see wda-build.log")
+        finally:
+            record["seconds"] = round(time.monotonic() - started, 2)
+    if record["exitCode"]:
+        record["status"] = "failed"
+        raise RuntimeError(f"WebDriverAgent prebuild failed with exit {record['exitCode']}; see wda-build.log")
+    products = derived / "Build" / "Products"
+    if not list(products.glob("*.xctestrun")) or not (products / "Debug-iphonesimulator" / "WebDriverAgentRunner-Runner.app").is_dir():
+        record["status"] = "failed"
+        raise RuntimeError("WDA prebuild did not produce its simulator runner and xctestrun file")
+    record["status"] = "passed"
+    print(f"[iOS smoke] WebDriverAgent prebuild passed in {record['seconds']}s", flush=True)
+    return derived
 
 
 class ProtocolError(RuntimeError):
@@ -79,19 +132,22 @@ class Driver:
                      request=payload, status="error", error=str(error))
             raise
 
-    def start(self, udid, app):
+    def start(self, udid, app, wda_derived_data):
         value = self.request("POST", "/session", {"capabilities": {"alwaysMatch": {
             "platformName": "iOS", "appium:automationName": "XCUITest", "appium:udid": udid,
             # CI has already created and booted an empty simulator. A full reset would
             # erase it and restart the expensive first boot, also killing log/video capture.
             "appium:app": str(app), "appium:noReset": False, "appium:fullReset": False,
             "appium:language": "it", "appium:locale": "it_IT",
+            "appium:skipSyncUiDialogTranslation": True,
+            "appium:isHeadless": True,
+            "appium:usePrebuiltWDA": True, "appium:derivedDataPath": str(wda_derived_data),
             "appium:enforceAppInstall": True, "appium:newCommandTimeout": 90,
-            "appium:wdaLaunchTimeout": 90000, "appium:wdaConnectionTimeout": 30000,
+            "appium:wdaLaunchTimeout": 180000, "appium:wdaConnectionTimeout": 30000,
             "appium:simulatorStartupTimeout": 300000,
             "appium:wdaStartupRetries": 1, "appium:waitForIdleTimeout": 1,
             "appium:connectHardwareKeyboard": False, "appium:forceSimulatorSoftwareKeyboardPresence": True,
-            "appium:autoAcceptAlerts": False, "appium:showXcodeLog": True,
+            "appium:autoAcceptAlerts": False, "appium:showXcodeLog": False,
         }, "firstMatch": [{}]}}, timeout=480)
         self.session = value["sessionId"]
         self.request("POST", "/timeouts", {"implicit": 0, "script": 30000, "pageLoad": 30000})
@@ -397,9 +453,9 @@ def main():
     started = time.monotonic()
     report = {"status": "failed", "startedAt": datetime.now(timezone.utc).isoformat(),
               "udid": args.udid, "app": str(args.app.resolve()), "steps": [], "freshInstall": True}
-    # Allow up to eight minutes for simulator/WDA startup and a fifteen-minute
-    # total scenario, leaving diagnostic headroom in the twenty-minute CI step.
-    driver = Driver(args.server, args.artifacts, started + 900)
+    # Bound prebuild + session + UI to eighteen minutes. Four diagnostic requests
+    # may use another minute, leaving report/CI headroom in the twenty-minute step.
+    driver = Driver(args.server, args.artifacts, started + 1080)
     try:
         app = args.app.resolve(strict=True)
         with (app / "Info.plist").open("rb") as info:
@@ -417,7 +473,8 @@ def main():
         if simulator is None:
             raise ValueError("--udid must identify an available iOS Simulator; refusing to reset an unverified device")
         report["simulator"] = simulator
-        report["capabilities"] = driver.start(args.udid, app)
+        wda_derived_data = prebuild_wda(args.udid, args.artifacts, report)
+        report["capabilities"] = driver.start(args.udid, app, wda_derived_data)
         report["startupSeconds"] = round(time.monotonic() - started, 2)
         Smoke(driver, report, bundle).run()
         report["status"] = "passed"
