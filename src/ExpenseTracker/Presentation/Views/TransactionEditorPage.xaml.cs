@@ -17,6 +17,12 @@ public partial class TransactionEditorPage : ContentPage, IQueryAttributable
         BindingContext = _viewModel = viewModel;
     }
 
+    private void OnQuickCategoryRowSizeChanged(object? sender, EventArgs e)
+    {
+        if (sender is VisualElement { Width: > 0 } row && BindingContext is TransactionEditorViewModel viewModel)
+            viewModel.QuickCategoryCapacity = Math.Max(1, (int)(row.Width / 76));
+    }
+
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         _queryApplied = true;

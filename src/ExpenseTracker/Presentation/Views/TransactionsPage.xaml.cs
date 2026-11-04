@@ -20,6 +20,13 @@ public partial class TransactionsPage : ContentPage
             firstVisibleId = _viewModel.Transactions[e.FirstVisibleItemIndex].Transaction.Id;
     }
 
+    protected override void OnSizeAllocated(double width, double height)
+    {
+        base.OnSizeAllocated(width, height);
+        if (TransactionDetail is not null && height > 0)
+            TransactionDetail.HeightRequest = Math.Min(400, Math.Max(220, height - 160));
+    }
+
     protected override async void OnAppearing()
     {
         base.OnAppearing();

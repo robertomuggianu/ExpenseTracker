@@ -23,4 +23,4 @@ jobs:
         run: >-
           dotnet test tests/ExpenseTracker.Application.Tests/ExpenseTracker.Application.Tests.csproj -c Release
           -p:JsonSerializerIsReflectionEnabledByDefault=false
-          --filter 'FullyQualifiedName~ViewModelWorkflowTests|FullyQualifiedName~PlanningAndIntegrityTests|FullyQualifiedName~CategoryAppearanceTests|FullyQualifiedName~SqliteRepositoryTests|FullyQualifiedName~ChoiceLabelFormatterTests|FullyQualifiedName~TransactionTypeFieldTests'
+          --filter 'FullyQualifiedName~ViewModelWorkflowTests|FullyQualifiedName~PlanningAndIntegrityTests|FullyQualifiedName~CategoryAppearanceTests|FullyQualifiedName~SqliteRepositoryTests|FullyQualifiedName~ChoiceLabelFormatterTests|FullyQualifiedName~TransactionTypeFieldTests|FullyQualifiedName~PolishWorkflowTests|FullyQualifiedName~ExportWorkflowTests|FullyQualifiedName~ImportIntegrityPolishTests|FullyQualifiedName~ImportAccountAmbiguityTests'

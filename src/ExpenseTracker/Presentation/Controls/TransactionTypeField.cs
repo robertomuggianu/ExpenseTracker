@@ -52,7 +52,7 @@ public sealed class TransactionTypeField : Grid
     private static void StyleButton(Button button, bool selected)
     {
         button.SetDynamicResource(BackgroundColorProperty, selected ? "PrimaryGlow" : "DarkSurface");
-        button.SetDynamicResource(Button.TextColorProperty, selected ? "DarkText" : "PrimaryGlow");
+        button.SetDynamicResource(Button.TextColorProperty, selected ? "DarkBackground" : "PrimaryGlow");
         button.SetDynamicResource(Button.BorderColorProperty, selected ? "PrimaryGlow" : "DarkSurface");
         SemanticProperties.SetDescription(button, selected ? $"{button.Text}, selezionata" : button.Text);
     }

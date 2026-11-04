@@ -23,7 +23,14 @@ public partial class ChoiceSelectionPage : ContentPage
     {
         InitializeComponent();
         BindingContext = new ChoiceSelectionModel(title, items);
-        AssistantLauncher.Attach(this);
+    }
+
+    private void OnViewportSizeChanged(object? sender, EventArgs e)
+    {
+        if (sender is not VisualElement { Height: > 0 } viewport || BindingContext is not ChoiceSelectionModel model) return;
+        // Keep the search field and dismissal action reachable on short phones and in landscape.
+        ChoiceSheet.MaximumHeightRequest = Math.Min(660, viewport.Height - 28);
+        ChoicesList.HeightRequest = Math.Min(model.ListHeight, Math.Max(64, viewport.Height - 260));
     }
 
     public static async Task<(bool Accepted, object? Value)> ShowAsync(string title, IReadOnlyList<ChoiceSelectionItem> items)

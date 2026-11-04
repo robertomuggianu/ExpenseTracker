@@ -30,7 +30,10 @@ public partial class ExportViewModel(
     public bool UseExportFilters => !ExportAll;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCustomPeriod))]
     public partial PeriodOption SelectedPeriod { get; set; } = PeriodOption.All[1];
+
+    public bool IsCustomPeriod => SelectedPeriod.Value == DateRangePreset.Custom;
 
     [ObservableProperty]
     public partial DateTime CustomFrom { get; set; } = DateTime.Today.AddMonths(-1);
@@ -51,8 +54,12 @@ public partial class ExportViewModel(
     public partial string? ImportSummary { get; set; }
 
     [RelayCommand]
-    public Task LoadAsync() => RunAsync(async () =>
+    public Task LoadAsync() => RunAsync(LoadOptionsAsync);
+
+    private async Task LoadOptionsAsync()
     {
+        var accountId = SelectedAccount?.Id;
+        var categoryId = SelectedCategory?.Id;
         Accounts.Clear();
         Accounts.Add(new AccountFilterOption(null, "Tutti i conti"));
         foreach (var item in await accountService.GetAccountsAsync())
@@ -60,7 +67,7 @@ public partial class ExportViewModel(
             Accounts.Add(new AccountFilterOption(item.Account.Id, item.Account.Name));
         }
 
-        SelectedAccount = Accounts[0];
+        SelectedAccount = Accounts.FirstOrDefault(account => account.Id == accountId) ?? Accounts[0];
         Categories.Clear();
         Categories.Add(new CategoryFilterOption(null, "Tutte le categorie"));
         foreach (var item in await categoryService.GetCategoriesAsync())
@@ -68,8 +75,8 @@ public partial class ExportViewModel(
             Categories.Add(new CategoryFilterOption(item.Id, item.Name));
         }
 
-        SelectedCategory = Categories[0];
-    });
+        SelectedCategory = Categories.FirstOrDefault(category => category.Id == categoryId) ?? Categories[0];
+    }
 
     [RelayCommand]
     private Task ExportAsync() => RunAsync(async () =>
@@ -111,6 +118,7 @@ public partial class ExportViewModel(
         }
 
         var result = await importService.ImportAsync(selectedFile.Content, selectedFile.FileName);
+        await LoadOptionsAsync();
         ImportSummary = $"{result.Created} nuovi · {result.Updated} aggiornati · {result.CategoriesCreated} categorie create";
         var warningText = result.Warnings.Count == 0
             ? string.Empty

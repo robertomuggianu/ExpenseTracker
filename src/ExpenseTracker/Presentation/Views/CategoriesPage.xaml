@@ -46,7 +46,7 @@
           <FlexLayout Wrap="Wrap" BindableLayout.ItemsSource="{Binding Icons}">
             <BindableLayout.ItemTemplate>
               <DataTemplate>
-                <Border BackgroundColor="{StaticResource DarkSurfaceAlt}" Padding="10" Margin="0,0,8,8" WidthRequest="60" HeightRequest="60" StrokeShape="RoundRectangle 18" StrokeThickness="2">
+                <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightSurfaceAlt}, Dark={StaticResource DarkSurfaceAlt}}" Padding="10" Margin="0,0,8,8" WidthRequest="60" HeightRequest="60" StrokeShape="RoundRectangle 18" StrokeThickness="2">
                   <Border.Stroke>
                     <MultiBinding Converter="{StaticResource SelectionOutline}">
                       <Binding Path="."/>
@@ -65,7 +65,7 @@
           <FlexLayout Wrap="Wrap" BindableLayout.ItemsSource="{Binding Palette}">
             <BindableLayout.ItemTemplate>
               <DataTemplate>
-                <Border BackgroundColor="{Binding .}" WidthRequest="44" HeightRequest="44" Margin="0,0,8,8" StrokeShape="RoundRectangle 22" SemanticProperties.Description="{Binding .}" StrokeThickness="3">
+                <Border BackgroundColor="{Binding .}" WidthRequest="48" HeightRequest="48" Margin="0,0,8,8" StrokeShape="RoundRectangle 24" SemanticProperties.Description="{Binding .}" StrokeThickness="3">
                   <Border.Stroke>
                     <MultiBinding Converter="{StaticResource SelectionOutline}" ConverterParameter="#FFFFFF">
                       <Binding Path="."/>
@@ -107,7 +107,7 @@
         </BindableLayout.ItemTemplate>
       </FlexLayout>
       <Label Text="Nessuna categoria trovata" IsVisible="{Binding HasNoCategories}" Style="{StaticResource MutedLabel}"/>
-      <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
+      <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
       <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
     </VerticalStackLayout>
     </VerticalStackLayout>

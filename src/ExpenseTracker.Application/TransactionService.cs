@@ -73,6 +73,17 @@ public sealed class TransactionService(IExpenseRepository repository)
 
     public Task<IReadOnlyDictionary<Guid, int>> GetCategoryUsageAsync() => repository.GetCategoryUsageAsync();
 
+    public async Task<IReadOnlyList<Guid>> GetRecentCategoryRankingAsync(CancellationToken cancellationToken = default)
+    {
+        var recent = await repository.GetTransactionsAsync(new TransactionFilter(Limit: 20), cancellationToken);
+        return recent.Where(item => item.TransferId is null)
+            .GroupBy(item => item.CategoryId)
+            .OrderByDescending(group => group.Count())
+            .ThenByDescending(group => group.Max(item => item.OccurredAtUtc))
+            .ThenBy(group => group.Key)
+            .Select(group => group.Key).ToArray();
+    }
+
     public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
         repository.DeleteTransactionAsync(id, cancellationToken);
 

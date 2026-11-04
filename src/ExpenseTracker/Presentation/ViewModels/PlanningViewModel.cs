@@ -97,8 +97,17 @@ public partial class PlanningViewModel(PlanningService planning, TransferService
     }
     partial void OnRuleTypeChanged(TransactionTypeOption value) => RefreshCategories();
     private void RefreshCategories() { Categories.Clear(); foreach (var c in allCategories.Where(c => c.Type == RuleType.Value)) Categories.Add(c); RuleCategory = null; }
-    [RelayCommand] private Task PreviousMonthAsync() => RunAsync(async () => { Month = Month.AddMonths(-1); OnPropertyChanged(nameof(MonthLabel)); await RefreshAsync(); });
-    [RelayCommand] private Task NextMonthAsync() => RunAsync(async () => { Month = Month.AddMonths(1); OnPropertyChanged(nameof(MonthLabel)); await RefreshAsync(); });
+    private async Task ChangeMonthAsync(int offset)
+    {
+        Month = Month.AddMonths(offset);
+        BudgetCategory = null;
+        BudgetAmount = "";
+        StatusMessage = null;
+        OnPropertyChanged(nameof(MonthLabel));
+        await RefreshAsync();
+    }
+    [RelayCommand] private Task PreviousMonthAsync() => RunAsync(() => ChangeMonthAsync(-1));
+    [RelayCommand] private Task NextMonthAsync() => RunAsync(() => ChangeMonthAsync(1));
     [RelayCommand] private Task SaveBudgetAsync() => RunAsync(async () =>
     {
         if (BudgetCategory is null || !AmountParser.TryParse(BudgetAmount, out var amount)) throw new DomainValidationException("Scegli categoria e importo del budget.");
@@ -106,21 +115,35 @@ public partial class PlanningViewModel(PlanningService planning, TransferService
     });
     [RelayCommand] private void EditBudget(BudgetItem item) { BudgetCategory = ExpenseCategories.FirstOrDefault(c => c.Id == item.Item.Budget.CategoryId); BudgetCurrency = item.Item.Budget.Currency; BudgetAmount = item.Item.Budget.Limit.ToString("0.00", System.Globalization.CultureInfo.GetCultureInfo("it-IT")); }
     [RelayCommand] private Task RemoveBudgetAsync(BudgetItem item) => RunAsync(async () => { if (await dialogs.ConfirmAsync("Elimina budget", "I movimenti resteranno invariati.", "Elimina", "Annulla")) { await planning.RemoveBudgetAsync(item.Item.Budget.Id); await RefreshAsync(); } });
-    [RelayCommand] private void NewRule() { editingRule = null; RuleName = RuleAmount = ""; StartDate = DateTime.Today; Frequency = Frequencies[0]; IsRuleEditorVisible = true; OnPropertyChanged(nameof(CanChangeSchedule)); }
+    private void ResetRuleEditor()
+    {
+        editingRule = null;
+        RuleName = RuleAmount = "";
+        RuleType = Types.Single(t => t.Value == TransactionType.Expense);
+        RuleAccount = Accounts.FirstOrDefault(a => a.Account.IsPrimary) ?? Accounts.FirstOrDefault();
+        RuleCategory = null;
+        StartDate = DateTime.Today;
+        Frequency = Frequencies[0];
+        IsRuleEditorVisible = false;
+        ErrorMessage = StatusMessage = null;
+        OnPropertyChanged(nameof(CanChangeSchedule));
+    }
+    [RelayCommand] private void NewRule() { ResetRuleEditor(); IsRuleEditorVisible = true; }
     [RelayCommand] private void EditRule(RuleItem item)
     {
+        ErrorMessage = StatusMessage = null;
         editingRule = item.Rule; RuleType = Types.Single(t => t.Value == item.Rule.Type); RuleName = item.Rule.Name;
         RuleAmount = item.Rule.Amount.ToString("0.00", System.Globalization.CultureInfo.GetCultureInfo("it-IT"));
         RuleAccount = Accounts.FirstOrDefault(a => a.Account.Id == item.Rule.AccountId); RuleCategory = Categories.FirstOrDefault(c => c.Id == item.Rule.CategoryId);
         StartDate = item.Rule.StartDate; Frequency = Frequencies.Single(f => f.Value == item.Rule.Frequency); IsRuleEditorVisible = true; OnPropertyChanged(nameof(CanChangeSchedule));
     }
-    [RelayCommand] private void CancelRule() => IsRuleEditorVisible = false;
+    [RelayCommand] private void CancelRule() => ResetRuleEditor();
     [RelayCommand] private Task SaveRuleAsync() => RunAsync(async () =>
     {
         if (RuleAccount is null || RuleCategory is null || Frequency is null || !AmountParser.TryParse(RuleAmount, out var amount)) throw new DomainValidationException("Completa importo, conto, categoria e frequenza.");
         await planning.SaveRuleAsync(new(editingRule?.Id ?? Guid.NewGuid(), RuleName.Trim(), RuleAccount.Account.Id, RuleCategory.Id,
             RuleType.Value!.Value, amount, RuleAccount.Account.Currency, StartDate.Date, Frequency.Value, editingRule?.NextIndex ?? 0, editingRule?.IsActive ?? true));
-        IsRuleEditorVisible = false; StatusMessage = "Ricorrenza salvata. Conferma ogni scadenza per registrarla."; await RefreshAsync();
+        ResetRuleEditor(); StatusMessage = "Ricorrenza salvata. Conferma ogni scadenza per registrarla."; await RefreshAsync();
     });
     [RelayCommand] private Task ConfirmRuleAsync(RuleItem item) => RunAsync(async () => { await planning.ConfirmAsync(item.Rule.Id, item.Rule.NextDate, DateTime.Today); StatusMessage = "Movimento registrato."; await RefreshAsync(); });
     [RelayCommand] private Task SkipRuleAsync(RuleItem item) => RunAsync(async () => { if (await dialogs.ConfirmAsync("Salta scadenza", $"Saltare il {item.Rule.NextDate:dd/MM/yyyy} senza registrare movimenti?", "Salta", "Annulla")) { await planning.SkipAsync(item.Rule.Id, item.Rule.NextDate); await RefreshAsync(); } });
@@ -129,7 +152,7 @@ public partial class PlanningViewModel(PlanningService planning, TransferService
     {
         if (!await dialogs.ConfirmAsync("Elimina ricorrenza", "I movimenti già confermati resteranno nello storico.", "Elimina", "Annulla")) return;
         await planning.RemoveRuleAsync(item.Rule.Id);
-        if (editingRule?.Id == item.Rule.Id) { editingRule = null; IsRuleEditorVisible = false; OnPropertyChanged(nameof(CanChangeSchedule)); }
+        if (editingRule?.Id == item.Rule.Id) ResetRuleEditor();
         await RefreshAsync();
     });
     [RelayCommand] private Task SaveTransferAsync() => RunAsync(async () =>

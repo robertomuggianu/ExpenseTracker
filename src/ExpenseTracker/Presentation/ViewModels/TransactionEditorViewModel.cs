@@ -20,20 +20,12 @@ public partial class TransactionEditorViewModel(
     private TimeSpan defaultTime;
     public bool ReturnToHome { get; set; }
     private Guid? originalCategoryId;
-    private readonly HashSet<Guid> favorites = (preferences.Get("favorite-categories", "").Split(',').Where(s => Guid.TryParse(s, out _)).Select(Guid.Parse)).ToHashSet();
     [ObservableProperty] public partial string? StatusMessage { get; set; }
     [ObservableProperty] public partial string? AmountError { get; set; }
     [ObservableProperty] public partial string? CategoryError { get; set; }
     [ObservableProperty] public partial string? AccountError { get; set; }
     [ObservableProperty] public partial bool RememberAccount { get; set; } = preferences.Get("remember-account", false);
     partial void OnRememberAccountChanged(bool value) => preferences.Set("remember-account", value);
-    [RelayCommand] private void ToggleFavorite()
-    {
-        if (SelectedCategory is null) return;
-        if (!favorites.Add(SelectedCategory.Id)) favorites.Remove(SelectedCategory.Id);
-        preferences.Set("favorite-categories", string.Join(',', favorites));
-        RefreshCategories(); StatusMessage = "Categorie preferite aggiornate.";
-    }
     public void StoreDraft()
     {
         if (!initialized || IsBusy) return;
@@ -53,7 +45,7 @@ public partial class TransactionEditorViewModel(
             or nameof(Description) or nameof(Notes) or nameof(SelectedAccount) or nameof(SelectedCategory) or nameof(SelectedType) or nameof(ShowDetails)) StoreDraft();
     }
     private IReadOnlyList<Category> _allCategories = [];
-    private Dictionary<Guid, int> _categoryUsage = [];
+    private IReadOnlyList<Guid> _recentCategoryRanking = [];
 
     [ObservableProperty]
     public partial bool ShowDetails { get; set; }
@@ -62,14 +54,63 @@ public partial class TransactionEditorViewModel(
     private void ToggleDetails() => ShowDetails = !ShowDetails;
 
     [RelayCommand]
-    private void ChooseCategory(Category category) => SelectedCategory = category;
+    private void ChooseCategory(Category category)
+    {
+        SelectedCategory = category;
+        ShowAllCategories = false;
+    }
+
+    [RelayCommand]
+    private void ToggleCategoryBrowser() => ShowAllCategories = !ShowAllCategories;
 
     public IReadOnlyList<TransactionTypeOption> Types { get; } = TransactionTypeOption.Required;
 
     public ObservableCollection<AccountSummary> Accounts { get; } = [];
 
-    [ObservableProperty] public partial IReadOnlyList<Category> Categories { get; set; } = [];
-    [ObservableProperty] public partial IReadOnlyList<Category> QuickCategories { get; set; } = [];
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasOtherCategories))]
+    public partial IReadOnlyList<Category> Categories { get; set; } = [];
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasOtherCategories))]
+    public partial IReadOnlyList<Category> QuickCategories { get; set; } = [];
+
+    [ObservableProperty] public partial int QuickCategoryCapacity { get; set; } = 4;
+
+    partial void OnQuickCategoryCapacityChanged(int value) => RefreshCategories();
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CategoryPickerToggleText))]
+    [NotifyPropertyChangedFor(nameof(HasNoCategoryMatches))]
+    public partial bool ShowAllCategories { get; set; }
+
+    [ObservableProperty] public partial string CategorySearchText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasNoCategoryMatches))]
+    public partial IReadOnlyList<Category> VisibleCategories { get; set; } = [];
+
+    public string CategoryPickerToggleText => ShowAllCategories ? "Chiudi ⌃" : "Altre ⌄";
+    public bool HasOtherCategories => Categories.Count > QuickCategories.Count;
+    public bool HasNoCategoryMatches => ShowAllCategories && VisibleCategories.Count == 0;
+
+    partial void OnShowAllCategoriesChanged(bool value)
+    {
+        if (!value) CategorySearchText = string.Empty;
+        RefreshVisibleCategories();
+    }
+
+    partial void OnCategorySearchTextChanged(string value) => RefreshVisibleCategories();
+
+    private void RefreshVisibleCategories()
+    {
+        var search = CategorySearchText.Trim();
+        VisibleCategories = ShowAllCategories
+            ? Categories.Where(category => (search.Length > 0 || !QuickCategories.Any(quick => quick.Id == category.Id))
+                    && CultureInfo.CurrentCulture.CompareInfo.IndexOf(
+                    category.Name, search, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0)
+                .OrderBy(category => category.Name, StringComparer.CurrentCultureIgnoreCase).ToArray()
+            : [];
+    }
 
     [ObservableProperty]
     public partial Guid? EditingId { get; set; }
@@ -82,6 +123,13 @@ public partial class TransactionEditorViewModel(
 
     [ObservableProperty]
     public partial Category? SelectedCategory { get; set; }
+
+    partial void OnSelectedCategoryChanged(Category? value)
+    {
+        if (value is null) return;
+        if (ErrorMessage == CategoryError) ErrorMessage = null;
+        CategoryError = null;
+    }
 
     [ObservableProperty]
     public partial DateTime Date { get; set; } = DateTime.Today;
@@ -138,7 +186,7 @@ public partial class TransactionEditorViewModel(
             }
 
             _allCategories = (await categoryService.GetCategoriesAsync()).Where(c => c.IsActive || c.Id == originalCategoryId).ToArray();
-            _categoryUsage = new Dictionary<Guid, int>(await transactionService.GetCategoryUsageAsync());
+            _recentCategoryRanking = await transactionService.GetRecentCategoryRankingAsync();
             ShowDetails = transactionId.HasValue;
 
             if (transactionId.HasValue)
@@ -220,6 +268,7 @@ public partial class TransactionEditorViewModel(
 
         if (RememberAccount) preferences.Set("last-account", SelectedAccount.Account.Id.ToString());
         preferences.Remove("transaction-draft");
+        _recentCategoryRanking = await transactionService.GetRecentCategoryRankingAsync();
         var nextType = addAnother ? SelectedType.Value : null;
         EditingId = null; originalCategoryId = null; ResetForm(nextType); Title = "Nuovo movimento";
         StatusMessage = "Movimento salvato.";
@@ -232,6 +281,8 @@ public partial class TransactionEditorViewModel(
 
     partial void OnSelectedTypeChanged(TransactionTypeOption value)
     {
+        ShowAllCategories = false;
+        CategorySearchText = string.Empty;
         SelectedCategory = null;
         RefreshCategories();
         CategoryError = null;
@@ -241,6 +292,8 @@ public partial class TransactionEditorViewModel(
     {
         AmountError = CategoryError = AccountError = null;
         ShowDetails = false;
+        ShowAllCategories = false;
+        CategorySearchText = string.Empty;
         SelectedType = Types.FirstOrDefault(t => t.Value == initialType) ?? Types[1];
         var remembered = RememberAccount && Guid.TryParse(preferences.Get("last-account", ""), out var id) ? id : (Guid?)null;
         SelectedAccount = Accounts.FirstOrDefault(item => item.Account.IsActive && item.Account.Id == remembered)
@@ -260,9 +313,12 @@ public partial class TransactionEditorViewModel(
     private void RefreshCategories()
     {
         var selectedId = SelectedCategory?.Id;
+        var ranking = _recentCategoryRanking.Select((id, index) => (id, index)).ToDictionary(item => item.id, item => item.index);
         Categories = _allCategories.Where(item => item.Type == SelectedType.Value && (item.IsActive || item.Id == originalCategoryId))
-            .OrderByDescending(item => favorites.Contains(item.Id)).ThenByDescending(item => _categoryUsage.GetValueOrDefault(item.Id)).ThenBy(item => item.Name).ToArray();
-        QuickCategories = Categories.Take(8).ToArray();
+            .OrderBy(item => ranking.GetValueOrDefault(item.Id, int.MaxValue)).ThenBy(item => item.Name).ToArray();
+        QuickCategories = Categories.Take(Math.Max(1, QuickCategoryCapacity)).ToArray();
+        if (!HasOtherCategories) ShowAllCategories = false;
+        RefreshVisibleCategories();
         SelectedCategory = Categories.FirstOrDefault(item => item.Id == selectedId);
     }
 

@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="ExpenseTracker.Presentation.Controls.PageHeader" x:Name="Header">
-  <Border Style="{StaticResource HeaderCard}">
-    <Grid ColumnDefinitions="46,*,46">
+  <Border Style="{StaticResource HeaderCard}" Padding="18,14,18,22">
+    <Grid ColumnDefinitions="46,*" ColumnSpacing="12">
       <Button Style="{StaticResource HeaderMenuButton}" Clicked="OnMenu" Text="{Binding MenuText, Source={x:Reference Header}}" SemanticProperties.Description="{Binding MenuDescription, Source={x:Reference Header}}"/>
-      <Label Grid.Column="1" Text="{Binding Heading, Source={x:Reference Header}}" FontSize="23" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
-      <Image Grid.Column="2" Source="brand_mark.png" WidthRequest="46" HeightRequest="46"/>
+      <Label Grid.Column="1" Text="{Binding Heading, Source={x:Reference Header}}" Style="{StaticResource PageTitle}" TextColor="{StaticResource White}" VerticalTextAlignment="Center" SemanticProperties.HeadingLevel="Level1"/>
     </Grid>
   </Border>
 </ContentView>

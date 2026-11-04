@@ -44,7 +44,7 @@
           </Grid>
         </VerticalStackLayout>
       </ScrollView>
-      <Label Grid.Row="2" Text="v1.6.1" TextColor="{StaticResource DarkTextMuted}" FontSize="11"/>
+      <Label Grid.Row="2" Text="{Binding AppVersion, Source={x:Reference Root}}" TextColor="{StaticResource DarkTextMuted}" FontSize="11"/>
     </Grid>
   </Shell.FlyoutContent>
   <!-- One section per menu destination avoids the native iOS More tab navigation. -->
