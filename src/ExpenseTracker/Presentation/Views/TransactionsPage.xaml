@@ -53,13 +53,13 @@
         <Label Text="{Binding Title}" Style="{StaticResource MutedLabel}" FontSize="12" FontAttributes="Bold" Margin="4,14,0,10"/>
       </DataTemplate></CollectionView.GroupHeaderTemplate>
       <CollectionView.ItemTemplate><DataTemplate>
-        <Border AutomationId="Transactions.Item" SemanticProperties.Description="{Binding DisplayDescription}" Style="{StaticResource Card}" Padding="14" Margin="0,0,0,10">
+        <Border Style="{StaticResource Card}" Padding="14" Margin="0,0,0,10">
           <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding Source={x:Reference Page}, Path=BindingContext.ShowDetailCommand}" CommandParameter="{Binding .}"/></Border.GestureRecognizers>
           <Grid ColumnDefinitions="42,*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="4" MinimumHeightRequest="64">
             <Border Grid.RowSpan="3" WidthRequest="42" HeightRequest="42" Padding="0" BackgroundColor="{Binding CategoryColor}" StrokeShape="RoundRectangle 14" VerticalOptions="Center">
               <Image Source="{Binding IconSource}" WidthRequest="24" HeightRequest="24"/>
             </Border>
-            <Label Grid.Column="1" Text="{Binding DisplayDescription}" FontAttributes="Bold" LineBreakMode="TailTruncation"/>
+            <Label AutomationId="Transactions.Item" Grid.Column="1" Text="{Binding DisplayDescription}" FontAttributes="Bold" LineBreakMode="TailTruncation"/>
             <Label Grid.Column="2" FontSize="16" FontAttributes="Bold" TextColor="{StaticResource Expense}">
               <Label.Text><MultiBinding Converter="{StaticResource MoneyConverter}"><Binding Path="SignedAmount"/><Binding Path="Transaction.Currency"/></MultiBinding></Label.Text>
               <Label.Triggers>
