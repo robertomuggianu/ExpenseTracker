@@ -15,8 +15,8 @@
         </Button>
       </Grid>
     </Border>
-    <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
-    <Label Text="{Binding StatusMessage}" TextColor="{StaticResource PrimaryGlow}"/>
+    <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
+    <Label Style="{StaticResource FeedbackLabel}" Text="{Binding StatusMessage}" TextColor="{StaticResource PrimaryGlow}"/>
     <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}"/>
     <VerticalStackLayout IsVisible="{Binding ShowBudgets}" IsEnabled="{Binding CanInteract}" Spacing="14">
       <Grid ColumnDefinitions="44,*,44">

@@ -9,13 +9,13 @@ public partial class ChoiceField : ContentView
     public static readonly BindableProperty ItemsSourceProperty = BindableProperty.Create(nameof(ItemsSource), typeof(IEnumerable), typeof(ChoiceField));
     public static readonly BindableProperty SelectedItemProperty = BindableProperty.Create(
         nameof(SelectedItem), typeof(object), typeof(ChoiceField), defaultBindingMode: BindingMode.TwoWay,
-        propertyChanged: static (bindable, _, _) => ((ChoiceField)bindable).OnPropertyChanged(nameof(SelectedLabel)));
+        propertyChanged: static (bindable, _, _) => ((ChoiceField)bindable).RefreshLabel());
     public static readonly BindableProperty DisplayMemberPathProperty = BindableProperty.Create(
         nameof(DisplayMemberPath), typeof(string), typeof(ChoiceField), string.Empty,
-        propertyChanged: static (bindable, _, _) => ((ChoiceField)bindable).OnPropertyChanged(nameof(SelectedLabel)));
+        propertyChanged: static (bindable, _, _) => ((ChoiceField)bindable).RefreshLabel());
     public static readonly BindableProperty TitleProperty = BindableProperty.Create(
         nameof(Title), typeof(string), typeof(ChoiceField), "Scegli un'opzione",
-        propertyChanged: static (bindable, _, _) => ((ChoiceField)bindable).OnPropertyChanged(nameof(SelectedLabel)));
+        propertyChanged: static (bindable, _, _) => ((ChoiceField)bindable).RefreshLabel());
 
     public ChoiceField() => InitializeComponent();
 
@@ -24,8 +24,15 @@ public partial class ChoiceField : ContentView
     public string DisplayMemberPath { get => (string)GetValue(DisplayMemberPathProperty); set => SetValue(DisplayMemberPathProperty, value); }
     public string Title { get => (string)GetValue(TitleProperty); set => SetValue(TitleProperty, value); }
     public string SelectedLabel => SelectedItem is null ? Title : GetLabel(SelectedItem);
+    public string AccessibilityLabel => SelectedItem is null ? Title : $"{Title}: {SelectedLabel}";
 
-    private async void OnTapped(object? sender, TappedEventArgs e)
+    private void RefreshLabel()
+    {
+        OnPropertyChanged(nameof(SelectedLabel));
+        OnPropertyChanged(nameof(AccessibilityLabel));
+    }
+
+    private async void OnClicked(object? sender, EventArgs e)
     {
         if (opening || ChoiceSelectionPage.IsOpen) return;
         var items = ItemsSource?.Cast<object>().ToArray() ?? [];

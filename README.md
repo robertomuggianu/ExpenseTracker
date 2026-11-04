@@ -1,5 +1,7 @@
 # ExpenseTracker
 
+Revisione dell'interfaccia e verifiche del 4 novembre 2026: [resoconto del collaudo](docs/collaudo-2026-11-04.md), con test ripetibili, pacchetto Android e limiti della verifica iPhone.
+
 ExpenseTracker è un'applicazione personale offline-first realizzata con .NET MAUI 10, C#, XAML e MVVM. Conti, categorie e movimenti restano nel database SQLite del dispositivo. L'assistente opzionale usa un servizio locale sul PC con Ollama, senza sincronizzazione cloud.
 
 ## Funzioni MVP
@@ -15,6 +17,8 @@ ExpenseTracker è un'applicazione personale offline-first realizzata con .NET MA
 - esportazione CSV completa, filtrata o del mese selezionato e importazione CSV/XLSX.
 
 L'interfaccia usa un tema scuro verde petrolio con superfici arrotondate, accenti menta e il pulsante di aggiunta ambrato. Il colore di ogni categoria è condiviso tra selezione, movimenti e grafici. Per il mese corrente il confronto usa i giorni trascorsi in entrambi i mesi; per un mese passato usa i due mesi completi.
+
+Nell'inserimento dei movimenti, una sola riga mostra le categorie che entrano nello spazio disponibile, ordinate per frequenza negli ultimi 20 movimenti e, a parità, per utilizzo più recente. **Altre** espande sotto la riga le categorie rimanenti in ordine alfabetico, con ricerca anche senza accenti. Un tocco seleziona la categoria e richiude l'elenco; il nome scelto resta visibile accanto a **Categoria**. Importo, data e dettagli compilati vengono conservati.
 
 Nella Home, scorrendo verso la lista, la ciambella lascia posto a un riepilogo fisso con barra orizzontale proporzionale alle categorie. Risalendo torna la ciambella. Il pulsante con l'occhio accanto al saldo nasconde o mostra soltanto il saldo totale e ricorda la scelta sul dispositivo. Nelle Categorie, il riquadro **Crea** aggiunge una categoria del tipo della scheda selezionata. La data del movimento è sempre disponibile sotto l'importo; ora, descrizione e note si aprono nei dettagli, prima dei pulsanti di salvataggio.
 

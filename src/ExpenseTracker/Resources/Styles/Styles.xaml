@@ -21,12 +21,10 @@
 
     <Style TargetType="Label">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource LightText}, Dark={StaticResource DarkText}}" />
-        <Setter Property="FontFamily" Value="OpenSansRegular" />
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontSize" Value="15" />
     </Style>
 
     <Style x:Key="PageTitle" TargetType="Label">
-        <Setter Property="FontFamily" Value="OpenSansSemibold" />
         <Setter Property="FontSize" Value="30" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="LineHeight" Value="1.05" />
@@ -35,7 +33,6 @@
     <Style x:Key="Headline" TargetType="Label" BasedOn="{StaticResource PageTitle}" />
 
     <Style x:Key="SectionTitle" TargetType="Label">
-        <Setter Property="FontFamily" Value="OpenSansSemibold" />
         <Setter Property="FontSize" Value="20" />
         <Setter Property="FontAttributes" Value="Bold" />
     </Style>
@@ -44,7 +41,6 @@
 
     <Style x:Key="Eyebrow" TargetType="Label">
         <Setter Property="TextColor" Value="{StaticResource PrimaryGlow}" />
-        <Setter Property="FontFamily" Value="OpenSansSemibold" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="CharacterSpacing" Value="1.6" />
@@ -55,15 +51,24 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource LightTextMuted}, Dark={StaticResource DarkTextMuted}}" />
     </Style>
 
+    <Style x:Key="FeedbackLabel" TargetType="Label">
+        <Style.Triggers>
+            <Trigger TargetType="Label" Property="Text" Value="{x:Null}">
+                <Setter Property="IsVisible" Value="False" />
+            </Trigger>
+            <Trigger TargetType="Label" Property="Text" Value="">
+                <Setter Property="IsVisible" Value="False" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <Style x:Key="MetricValue" TargetType="Label">
-        <Setter Property="FontFamily" Value="OpenSansSemibold" />
         <Setter Property="FontSize" Value="26" />
         <Setter Property="FontAttributes" Value="Bold" />
     </Style>
 
     <Style x:Key="HeroValue" TargetType="Label">
         <Setter Property="TextColor" Value="{StaticResource White}" />
-        <Setter Property="FontFamily" Value="OpenSansSemibold" />
         <Setter Property="FontSize" Value="38" />
         <Setter Property="FontAttributes" Value="Bold" />
     </Style>
@@ -98,10 +103,9 @@
     <Style TargetType="Button">
         <Setter Property="TextColor" Value="{StaticResource DarkBackground}" />
         <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
-        <Setter Property="FontFamily" Value="OpenSansSemibold" />
         <Setter Property="FontAttributes" Value="Bold" />
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="CornerRadius" Value="18" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="CornerRadius" Value="14" />
         <Setter Property="Padding" Value="16,11" />
         <Setter Property="MinimumHeightRequest" Value="48" />
         <Setter Property="BorderWidth" Value="0" />
@@ -128,14 +132,14 @@
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource LightSurfaceAlt}, Dark={StaticResource DarkSurfaceAlt}}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource LightText}, Dark={StaticResource DarkText}}" />
         <Setter Property="BorderColor" Value="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" />
-        <Setter Property="BorderWidth" Value="1" />
+        <Setter Property="BorderWidth" Value="0" />
     </Style>
 
     <Style x:Key="TextButton" TargetType="Button">
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="TextColor" Value="{StaticResource PrimaryGlow}" />
         <Setter Property="Padding" Value="10,6" />
-        <Setter Property="MinimumHeightRequest" Value="40" />
+        <Setter Property="MinimumHeightRequest" Value="44" />
     </Style>
 
     <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource TextButton}">
@@ -153,7 +157,7 @@
         <Setter Property="Padding" Value="0,-3,0,0" />
         <Setter Property="Shadow">
             <Setter.Value>
-                <Shadow Brush="{StaticResource Warning}" Offset="0,6" Radius="16" Opacity="0.4" />
+                <Shadow Brush="{StaticResource Black}" Offset="0,4" Radius="12" Opacity="0.22" />
             </Setter.Value>
         </Setter>
     </Style>
@@ -161,7 +165,7 @@
     <Style x:Key="HeaderMenuButton" TargetType="Button">
         <Setter Property="Text" Value="≡" />
         <Setter Property="TextColor" Value="{StaticResource White}" />
-        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BackgroundColor" Value="#18FFFFFF" />
         <Setter Property="FontSize" Value="22" />
         <Setter Property="CornerRadius" Value="18" />
         <Setter Property="WidthRequest" Value="46" />
@@ -194,6 +198,7 @@
     </Style>
 
     <Style TargetType="DatePicker">
+        <Setter Property="Format" Value="dd/MM/yyyy" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource LightText}, Dark={StaticResource DarkText}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="MinimumHeightRequest" Value="48" />

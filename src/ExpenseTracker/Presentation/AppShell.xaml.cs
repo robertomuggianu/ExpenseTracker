@@ -14,6 +14,7 @@ public partial class AppShell : Shell
     private AssistantPage? assistantPage;
     private bool assistantTransition;
     public bool IsAssistantOpen { get; private set; }
+    public string AppVersion => $"v{Microsoft.Maui.ApplicationModel.AppInfo.Current.VersionString}";
     private string menuBalance = "I tuoi conti, sempre a portata di mano";
     public string MenuBalance { get => menuBalance; private set { menuBalance = value; OnPropertyChanged(nameof(MenuBalance)); } }
 

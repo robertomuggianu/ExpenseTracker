@@ -67,6 +67,11 @@ public sealed class TransactionImportService(
                      .GroupBy(item => item.AccountName, StringComparer.OrdinalIgnoreCase)
                      .Select(group => group.First()))
         {
+            if (accounts.Count(item => string.Equals(item.Name, sourceAccount.AccountName, StringComparison.OrdinalIgnoreCase)) > 1)
+            {
+                throw new DomainValidationException($"Più conti hanno il nome «{sourceAccount.AccountName}». Assegna nomi distinti in Conti prima di importare. Nessun movimento è stato importato.");
+            }
+
             if (accounts.Any(item => string.Equals(item.Name, sourceAccount.AccountName, StringComparison.OrdinalIgnoreCase)))
             {
                 continue;

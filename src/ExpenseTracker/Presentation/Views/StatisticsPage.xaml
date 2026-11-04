@@ -102,7 +102,7 @@
               </DataTemplate>
             </BindableLayout.ItemTemplate>
           </VerticalStackLayout>
-        <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
+        <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
         <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
       </VerticalStackLayout>
     </VerticalStackLayout>

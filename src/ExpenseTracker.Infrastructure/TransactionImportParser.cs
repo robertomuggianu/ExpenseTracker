@@ -486,6 +486,11 @@ public sealed class TransactionImportParser : ITransactionImportParser
             field.Append(character);
         }
 
+        if (quoted)
+        {
+            throw new DomainValidationException("Il CSV contiene un campo tra virgolette non chiuso. Importazione annullata.");
+        }
+
         row.Add(field.ToString());
         if (row.Any(value => !string.IsNullOrWhiteSpace(value)))
         {

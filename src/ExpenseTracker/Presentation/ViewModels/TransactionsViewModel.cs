@@ -27,7 +27,9 @@ public partial class TransactionsViewModel(TransactionService transactionService
     public bool HasStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
     public bool HasSearch => !string.IsNullOrWhiteSpace(SearchText);
     public string FiltersToggleLabel => FiltersVisible ? "Chiudi filtri ⌃" : "Filtri ⌄";
-    public string VisibleCountLabel => $"{Transactions.Count} movimenti" + (HasMore ? " · altri disponibili" : "");
+    public string VisibleCountLabel => (Transactions.Count == 1 ? "1 movimento" : $"{Transactions.Count} movimenti")
+        + (HasMore ? " · altri disponibili" : "");
+    public bool IsFloatingActionsVisible => !HasSelectedTransaction;
     [ObservableProperty] public partial bool FiltersVisible { get; set; }
     [ObservableProperty] public partial PeriodOption SelectedPeriod { get; set; } = PeriodOption.All[1];
     [ObservableProperty] public partial DateTime CustomFrom { get; set; } = DateTime.Today.AddMonths(-1);
@@ -42,7 +44,9 @@ public partial class TransactionsViewModel(TransactionService transactionService
     [ObservableProperty] public partial string? StatusMessage { get; set; }
     [ObservableProperty] public partial bool HasMore { get; set; }
     [ObservableProperty] public partial TransactionListItem? SelectedTransaction { get; set; }
-    [ObservableProperty] public partial bool HasSelectedTransaction { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFloatingActionsVisible))]
+    public partial bool HasSelectedTransaction { get; set; }
     public bool IsCustomPeriod => SelectedPeriod.Value == DateRangePreset.Custom;
     public bool IsReferencePeriod => SelectedPeriod.Value is DateRangePreset.SelectedMonth or DateRangePreset.SelectedYear;
     [RelayCommand] private void ToggleFilters() => FiltersVisible = !FiltersVisible;

@@ -1,31 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ContentPage Shell.NavBarIsVisible="False" xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="ExpenseTracker.Presentation.Views.DashboardPage" x:Name="Page" Title="Home">
   <Grid x:Name="HomeLayout" RowDefinitions="Auto,*">
-    <Border x:Name="HomeHeader" Style="{StaticResource HeaderCard}" Padding="18,14,18,38">
-      <VerticalStackLayout Spacing="12">
-        <Grid ColumnDefinitions="46,*,46">
+    <Border x:Name="HomeHeader" Style="{StaticResource HeaderCard}" Padding="18,8,18,28">
+      <VerticalStackLayout Spacing="10">
+        <Label Text="{Binding BalanceCurrency, StringFormat='Saldo conti in {0}'}" TextColor="{StaticResource DarkTextMuted}" FontSize="13" HorizontalTextAlignment="Center" Margin="0,4,0,-4"/>
+        <Grid ColumnDefinitions="46,*,44" ColumnSpacing="6">
           <Button Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}" SemanticProperties.Description="Apri menu"/>
-          <Label Grid.Column="1" Text="ExpenseTracker" FontSize="21" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
-          <Image Grid.Column="2" Source="brand_mark.png" WidthRequest="46" HeightRequest="46"/>
+          <Label Grid.Column="1" Text="{Binding BalanceText}" Style="{StaticResource HeroValue}" FontSize="34" HorizontalTextAlignment="Center"
+                 VerticalTextAlignment="Center" SemanticProperties.Description="{Binding BalanceAccessibilityText}"/>
+          <Button Grid.Column="2" ImageSource="{Binding BalanceVisibilityIcon}" Command="{Binding ToggleBalanceVisibilityCommand}"
+                  Style="{StaticResource TextButton}" WidthRequest="44" HeightRequest="44" Padding="10" TextColor="{StaticResource White}"
+                  SemanticProperties.Description="{Binding BalanceVisibilityDescription}"/>
         </Grid>
-        <VerticalStackLayout Spacing="3">
-          <Label Text="SALDO DEI CONTI" Style="{StaticResource Eyebrow}" HorizontalTextAlignment="Center" TextColor="{StaticResource DarkTextMuted}" FontSize="10"/>
-          <Grid ColumnDefinitions="44,Auto,44" HorizontalOptions="Center" ColumnSpacing="6">
-            <Label Grid.Column="1" Text="{Binding BalanceText}" Style="{StaticResource HeroValue}" FontSize="34" HorizontalTextAlignment="Center"
-                   VerticalTextAlignment="Center" SemanticProperties.Description="{Binding BalanceAccessibilityText}"/>
-            <Button Grid.Column="2" ImageSource="{Binding BalanceVisibilityIcon}" Command="{Binding ToggleBalanceVisibilityCommand}"
-                    Style="{StaticResource TextButton}" WidthRequest="44" HeightRequest="44" Padding="10" TextColor="{StaticResource White}"
-                    SemanticProperties.Description="{Binding BalanceVisibilityDescription}"/>
-          </Grid>
-        </VerticalStackLayout>
-        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-          <Button Text="SPESE" Style="{StaticResource ReportTab}" Command="{Binding SelectExpensesCommand}">
-            <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsExpenseSelected}" Value="True"><Setter Property="TextColor" Value="{StaticResource DarkText}"/><Setter Property="BackgroundColor" Value="#3442C6A5"/></DataTrigger></Button.Triggers>
+        <Border Padding="4" BackgroundColor="#40000000" StrokeShape="RoundRectangle 17">
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+          <Button Text="Spese" Style="{StaticResource ReportTab}" Command="{Binding SelectExpensesCommand}">
+            <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsExpenseSelected}" Value="True"><Setter Property="TextColor" Value="{StaticResource DarkBackground}"/><Setter Property="BackgroundColor" Value="{StaticResource PrimaryGlow}"/></DataTrigger></Button.Triggers>
           </Button>
-          <Button Grid.Column="1" Text="ENTRATE" Style="{StaticResource ReportTab}" Command="{Binding SelectIncomeCommand}">
-            <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsIncomeSelected}" Value="True"><Setter Property="TextColor" Value="{StaticResource DarkText}"/><Setter Property="BackgroundColor" Value="#3442C6A5"/></DataTrigger></Button.Triggers>
+          <Button Grid.Column="1" Text="Entrate" Style="{StaticResource ReportTab}" Command="{Binding SelectIncomeCommand}">
+            <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsIncomeSelected}" Value="True"><Setter Property="TextColor" Value="{StaticResource DarkBackground}"/><Setter Property="BackgroundColor" Value="{StaticResource PrimaryGlow}"/></DataTrigger></Button.Triggers>
           </Button>
         </Grid>
+        </Border>
       </VerticalStackLayout>
     </Border>
     <Grid x:Name="ReportViewport" Grid.Row="1" Margin="0,-20,0,0">
@@ -57,9 +53,9 @@
               </DataTemplate>
             </BindableLayout.ItemTemplate>
           </VerticalStackLayout>
-          <Label Text="{Binding BalanceWarning}" TextColor="{StaticResource Expense}"/>
+          <Label Style="{StaticResource FeedbackLabel}" Text="{Binding BalanceWarning}" TextColor="{StaticResource Expense}"/>
           <Label Text="{Binding ComparisonText}" Style="{StaticResource MutedLabel}" FontSize="12" Margin="2,4"/>
-          <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
+          <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
           <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
         </VerticalStackLayout>
       </ScrollView>

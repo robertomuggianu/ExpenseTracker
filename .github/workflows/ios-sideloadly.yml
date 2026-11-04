@@ -51,7 +51,7 @@ jobs:
         run: |
           dotnet test tests/ExpenseTracker.Application.Tests/ExpenseTracker.Application.Tests.csproj \
             -p:JsonSerializerIsReflectionEnabledByDefault=false \
-            --filter 'FullyQualifiedName~ViewModelWorkflowTests|FullyQualifiedName~PlanningAndIntegrityTests|FullyQualifiedName~CategoryAppearanceTests|FullyQualifiedName~SqliteRepositoryTests|FullyQualifiedName~ChoiceLabelFormatterTests|FullyQualifiedName~TransactionTypeFieldTests|FullyQualifiedName~CategoryComparison_UsesAllCategoriesBeforeLimitingDisplay'
+            --filter 'FullyQualifiedName~ViewModelWorkflowTests|FullyQualifiedName~PlanningAndIntegrityTests|FullyQualifiedName~CategoryAppearanceTests|FullyQualifiedName~SqliteRepositoryTests|FullyQualifiedName~ChoiceLabelFormatterTests|FullyQualifiedName~TransactionTypeFieldTests|FullyQualifiedName~CategoryComparison_UsesAllCategoriesBeforeLimitingDisplay|FullyQualifiedName~PolishWorkflowTests|FullyQualifiedName~ExportWorkflowTests|FullyQualifiedName~ImportIntegrityPolishTests|FullyQualifiedName~ImportAccountAmbiguityTests'
 
       - name: Build unsigned app for a physical iPhone
         run: |

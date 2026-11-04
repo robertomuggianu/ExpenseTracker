@@ -15,48 +15,85 @@
           </Grid>
         </VerticalStackLayout>
       </Border>
-      <Label Text="{Binding AmountError}" TextColor="{StaticResource Expense}"/>
+      <Label Style="{StaticResource FeedbackLabel}" Text="{Binding AmountError}" TextColor="{StaticResource Expense}"/>
       <Border Style="{StaticResource InputCard}">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
           <Label Text="Data" FontAttributes="Bold" VerticalTextAlignment="Center"/>
-          <DatePicker Grid.Column="1" Date="{Binding Date}" Format="dd MMMM yyyy" HorizontalOptions="Fill" SemanticProperties.Description="Data del movimento"/>
+          <DatePicker Grid.Column="1" Date="{Binding Date}" Format="dd/MM/yyyy" HorizontalOptions="Fill" SemanticProperties.Description="Data del movimento"/>
         </Grid>
       </Border>
-      <Grid ColumnDefinitions="*,Auto">
-        <Label Text="Categoria" Style="{StaticResource SectionTitle}"/>
-        <Label Grid.Column="1" Text="{Binding SelectedCategory.Name, TargetNullValue='Scegli qui sotto'}" TextColor="{StaticResource PrimaryGlow}" VerticalTextAlignment="Center"/>
-      </Grid>
-      <ScrollView Orientation="Horizontal">
-        <HorizontalStackLayout BindableLayout.ItemsSource="{Binding QuickCategories}">
+      <VerticalStackLayout Spacing="6">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+          <Label Text="Categoria" Style="{StaticResource SectionTitle}" VerticalTextAlignment="Center"/>
+          <Label Grid.Column="1" Text="{Binding SelectedCategory.Name}" TextColor="{StaticResource PrimaryGlow}" FontSize="12" VerticalTextAlignment="Center" HorizontalTextAlignment="End" MaxLines="1" LineBreakMode="TailTruncation"/>
+          <Button Grid.Column="2" Text="{Binding CategoryPickerToggleText}" Command="{Binding ToggleCategoryBrowserCommand}" IsVisible="{Binding HasOtherCategories}"
+                  Style="{StaticResource TextButton}" FontSize="13" MinimumHeightRequest="44" Padding="8,0"/>
+        </Grid>
+        <FlexLayout x:Name="QuickCategoryRow" Wrap="NoWrap" AlignItems="Start" SizeChanged="OnQuickCategoryRowSizeChanged" BindableLayout.ItemsSource="{Binding QuickCategories}">
           <BindableLayout.ItemTemplate>
             <DataTemplate>
-              <Border Padding="10" Margin="0,0,8,8" WidthRequest="98" HeightRequest="92" BackgroundColor="{StaticResource DarkSurface}" StrokeShape="RoundRectangle 22" StrokeThickness="2">
-                <Border.Stroke>
-                  <MultiBinding Converter="{StaticResource SelectionOutline}">
-                    <Binding Path="."/>
-                    <Binding Source="{x:Reference Page}" Path="BindingContext.SelectedCategory"/>
-                  </MultiBinding>
-                </Border.Stroke>
-                <VerticalStackLayout Spacing="6">
-                  <Border WidthRequest="36" HeightRequest="36" Padding="8" BackgroundColor="{Binding Color}" StrokeShape="RoundRectangle 12">
-                    <Image Source="{Binding IconSource}"/>
-                  </Border>
-                  <Label Text="{Binding Name}" FontSize="11" HorizontalTextAlignment="Center" MaxLines="2" LineBreakMode="TailTruncation"/>
-                </VerticalStackLayout>
-                <Border.GestureRecognizers>
-                  <TapGestureRecognizer Command="{Binding Source={x:Reference Page}, Path=BindingContext.ChooseCategoryCommand}" CommandParameter="{Binding .}"/>
-                </Border.GestureRecognizers>
-              </Border>
+              <Grid WidthRequest="76" FlexLayout.Grow="1" FlexLayout.Shrink="0" Padding="3">
+                <Border Padding="4,7" HeightRequest="88" BackgroundColor="{StaticResource DarkSurface}" StrokeShape="RoundRectangle 16" StrokeThickness="2"
+                        SemanticProperties.Description="{Binding Name}" SemanticProperties.Hint="Seleziona questa categoria">
+                  <Border.Stroke>
+                    <MultiBinding Converter="{StaticResource SelectionOutline}">
+                      <Binding Path="."/>
+                      <Binding Source="{x:Reference Page}" Path="BindingContext.SelectedCategory"/>
+                    </MultiBinding>
+                  </Border.Stroke>
+                  <VerticalStackLayout Spacing="5" InputTransparent="True">
+                    <Border WidthRequest="34" HeightRequest="34" Padding="7" BackgroundColor="{Binding Color}" StrokeShape="RoundRectangle 11" HorizontalOptions="Center">
+                      <Image Source="{Binding IconSource}"/>
+                    </Border>
+                    <Label Text="{Binding Name}" FontSize="11" HorizontalTextAlignment="Center" MaxLines="2" LineBreakMode="TailTruncation"/>
+                  </VerticalStackLayout>
+                  <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding Source={x:Reference Page}, Path=BindingContext.ChooseCategoryCommand}" CommandParameter="{Binding .}"/>
+                  </Border.GestureRecognizers>
+                </Border>
+              </Grid>
             </DataTemplate>
           </BindableLayout.ItemTemplate>
-        </HorizontalStackLayout>
-      </ScrollView>
-      <controls:ChoiceField ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" DisplayMemberPath="Name" Title="Tutte le categorie"/>
-      <Label Text="{Binding CategoryError}" TextColor="{StaticResource Expense}"/>
-      <Button Text="Aggiungi / rimuovi categoria dai preferiti" Command="{Binding ToggleFavoriteCommand}" Style="{StaticResource TextButton}"/>
+        </FlexLayout>
+        <VerticalStackLayout Spacing="8" IsVisible="{Binding ShowAllCategories}">
+        <controls:SearchField Placeholder="Cerca una categoria" Text="{Binding CategorySearchText}"/>
+        <FlexLayout Wrap="Wrap" AlignItems="Start" BindableLayout.ItemsSource="{Binding VisibleCategories}">
+          <BindableLayout.ItemTemplate>
+            <DataTemplate>
+              <Grid FlexLayout.Basis="25%" Padding="3">
+                <Border Padding="5,8" MinimumHeightRequest="94"
+                        BackgroundColor="{StaticResource DarkSurface}" StrokeShape="RoundRectangle 18" StrokeThickness="2"
+                        SemanticProperties.Description="{Binding Name}" SemanticProperties.Hint="Seleziona questa categoria">
+                  <Border.Stroke>
+                    <MultiBinding Converter="{StaticResource SelectionOutline}">
+                      <Binding Path="."/>
+                      <Binding Source="{x:Reference Page}" Path="BindingContext.SelectedCategory"/>
+                    </MultiBinding>
+                  </Border.Stroke>
+                  <VerticalStackLayout Spacing="7" InputTransparent="True">
+                    <Border WidthRequest="40" HeightRequest="40" Padding="9" BackgroundColor="{Binding Color}" StrokeShape="RoundRectangle 14" HorizontalOptions="Center">
+                      <Image Source="{Binding IconSource}"/>
+                    </Border>
+                    <Label Text="{Binding Name}" FontSize="12" HorizontalTextAlignment="Center" MaxLines="3" LineBreakMode="TailTruncation"/>
+                  </VerticalStackLayout>
+                  <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding Source={x:Reference Page}, Path=BindingContext.ChooseCategoryCommand}" CommandParameter="{Binding .}"/>
+                  </Border.GestureRecognizers>
+                </Border>
+              </Grid>
+            </DataTemplate>
+          </BindableLayout.ItemTemplate>
+        </FlexLayout>
+        <Label Text="Nessuna categoria trovata. Prova un altro nome." IsVisible="{Binding HasNoCategoryMatches}" Style="{StaticResource MutedLabel}"/>
+        </VerticalStackLayout>
+        <Label Style="{StaticResource FeedbackLabel}" Text="{Binding CategoryError}" TextColor="{StaticResource Expense}"/>
+      </VerticalStackLayout>
       <controls:ChoiceField ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount}" DisplayMemberPath="DisplayName" Title="Scegli un conto"/>
-      <Label Text="{Binding AccountError}" TextColor="{StaticResource Expense}"/>
-      <HorizontalStackLayout><Switch IsToggled="{Binding RememberAccount}"/><Label Text="Ricorda l'ultimo conto" VerticalTextAlignment="Center"/></HorizontalStackLayout>
+      <Label Style="{StaticResource FeedbackLabel}" Text="{Binding AccountError}" TextColor="{StaticResource Expense}"/>
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Padding="4,0">
+        <Label Text="Ricorda l'ultimo conto" VerticalTextAlignment="Center"/>
+        <Switch Grid.Column="1" IsToggled="{Binding RememberAccount}" SemanticProperties.Description="Ricorda l'ultimo conto"/>
+      </Grid>
       <Button Text="Descrizione, ora e altri dettagli ⌄" Style="{StaticResource TextButton}" Command="{Binding ToggleDetailsCommand}"/>
       <Border Style="{StaticResource Card}" IsVisible="{Binding ShowDetails}">
         <VerticalStackLayout Spacing="12">
@@ -80,8 +117,8 @@
           </Grid>
         </VerticalStackLayout>
       </Border>
-      <Label Text="{Binding StatusMessage}" TextColor="{StaticResource PrimaryGlow}"/>
-      <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
+      <Label Style="{StaticResource FeedbackLabel}" Text="{Binding StatusMessage}" TextColor="{StaticResource PrimaryGlow}"/>
+      <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
       <Button Text="Salva movimento" Command="{Binding SaveCommand}" FontSize="16"/>
       <Button Text="Salva e aggiungi un'altra" Command="{Binding SaveAndAddCommand}" Style="{StaticResource SecondaryButton}"/>
       <Button Text="Scarta bozza" Command="{Binding DiscardDraftCommand}" Style="{StaticResource TextButton}"/>

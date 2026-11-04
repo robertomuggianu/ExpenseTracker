@@ -7,6 +7,185 @@ namespace ExpenseTracker.Application.Tests;
 
 public sealed class ViewModelWorkflowTests
 {
+    [Theory]
+    [InlineData(TransactionType.Expense)]
+    [InlineData(TransactionType.Income)]
+    public Task Editor_FullCategorySearchSelectsAndSavesOutsideRecommendations(TransactionType type) => WithDatabase(async repo =>
+    {
+        var service = new CategoryService(repo);
+        for (var i = 0; i < 9; i++)
+            await service.SaveCategoryAsync(new(null, $"Catalogo {i:00}", type, "#123456", true, "tag"));
+        var target = await service.SaveCategoryAsync(new(null, "ZZZ Caffè occasionale", type, "#123456", true, "coffee"));
+        var preferences = new PreferencesStore();
+        var editor = Editor(repo, preferences);
+        await editor.LoadAsync(initialType: type);
+        Assert.DoesNotContain(editor.QuickCategories, c => c.Id == target.Id);
+        editor.Amount = "12,50";
+        editor.Description = "Da conservare durante la scelta";
+        editor.Date = DateTime.Today.AddDays(-2);
+        await editor.SaveCommand.ExecuteAsync(null);
+        Assert.NotNull(editor.CategoryError);
+
+        editor.ToggleCategoryBrowserCommand.Execute(null);
+        Assert.True(editor.ShowAllCategories);
+        Assert.Equal(editor.Categories.Count - editor.QuickCategories.Count, editor.VisibleCategories.Count);
+        editor.CategorySearchText = "  caffe OCCASIONALE  ";
+        Assert.Equal(target.Id, Assert.Single(editor.VisibleCategories).Id);
+        Assert.Null(editor.SelectedCategory);
+        editor.ChooseCategoryCommand.Execute(Assert.Single(editor.VisibleCategories));
+        Assert.Equal(target.Id, editor.SelectedCategory?.Id);
+        Assert.False(editor.ShowAllCategories);
+        Assert.Equal("", editor.CategorySearchText);
+        Assert.Null(editor.CategoryError);
+        Assert.Null(editor.ErrorMessage);
+        Assert.Empty(editor.VisibleCategories);
+
+        var restored = Editor(repo, preferences);
+        await restored.LoadAsync();
+        Assert.Equal(target.Id, restored.SelectedCategory?.Id);
+        Assert.Equal("12,50", restored.Amount);
+        Assert.Equal(editor.Description, restored.Description);
+        Assert.Equal(editor.Date, restored.Date);
+        await restored.SaveCommand.ExecuteAsync(null);
+        Assert.Null(restored.ErrorMessage);
+        var saved = Assert.Single(await repo.GetTransactionsAsync());
+        Assert.Equal(target.Id, saved.CategoryId);
+        Assert.Equal(type, saved.Type);
+        Assert.Equal(12.50m, saved.Amount);
+    });
+
+    [Fact] public Task Editor_CategoryBrowserPreservesSelectionAndResetsSearchWhenClosedOrTypeChanges() => WithDatabase(async repo =>
+    {
+        var editor = Editor(repo, new PreferencesStore());
+        await editor.LoadAsync();
+        var selected = editor.QuickCategories[0];
+        editor.ChooseCategoryCommand.Execute(selected);
+        editor.ToggleCategoryBrowserCommand.Execute(null);
+        editor.CategorySearchText = "categoria inesistente";
+        Assert.True(editor.HasNoCategoryMatches);
+        Assert.Empty(editor.VisibleCategories);
+        Assert.Equal(selected.Id, editor.SelectedCategory?.Id);
+        editor.ToggleCategoryBrowserCommand.Execute(null);
+        Assert.False(editor.HasNoCategoryMatches);
+        Assert.Equal("", editor.CategorySearchText);
+        Assert.Equal(selected.Id, editor.SelectedCategory?.Id);
+        editor.ToggleCategoryBrowserCommand.Execute(null);
+        Assert.Equal(editor.Categories.Count - editor.QuickCategories.Count, editor.VisibleCategories.Count);
+        editor.CategorySearchText = selected.Name;
+        editor.SelectedType = editor.Types.Single(t => t.Value == TransactionType.Income);
+        Assert.False(editor.ShowAllCategories);
+        Assert.Equal("", editor.CategorySearchText);
+        Assert.Null(editor.SelectedCategory);
+        Assert.Empty(editor.VisibleCategories);
+        Assert.NotEmpty(editor.QuickCategories);
+        Assert.All(editor.QuickCategories, c => Assert.Equal(TransactionType.Income, c.Type));
+        editor.ToggleCategoryBrowserCommand.Execute(null);
+        Assert.All(editor.VisibleCategories, c => Assert.Equal(TransactionType.Income, c.Type));
+    });
+
+    [Fact] public Task Editor_CategoryBrowserSortsAlphabeticallyAndKeepsInactiveCategoriesOut() => WithDatabase(async repo =>
+    {
+        var service = new CategoryService(repo);
+        var favorite = await service.SaveCategoryAsync(new(null, "ZZZ Preferita", TransactionType.Expense, "#123456", true, "tag"));
+        var inactive = await service.SaveCategoryAsync(new(null, "Inattiva", TransactionType.Expense, "#123456", false, "tag"));
+        var preferences = new PreferencesStore();
+        preferences.Set("favorite-categories", favorite.Id.ToString());
+        var editor = Editor(repo, preferences);
+        await editor.LoadAsync();
+        Assert.DoesNotContain(editor.QuickCategories, c => c.Id == favorite.Id);
+        editor.ToggleCategoryBrowserCommand.Execute(null);
+        Assert.Equal(editor.Categories.Except(editor.QuickCategories).OrderBy(c => c.Name, StringComparer.CurrentCultureIgnoreCase), editor.VisibleCategories);
+        Assert.DoesNotContain(editor.VisibleCategories, c => c.Id == inactive.Id);
+        editor.ChooseCategoryCommand.Execute(editor.VisibleCategories.Single(c => c.Id == favorite.Id));
+        Assert.Equal(favorite.Id, editor.SelectedCategory?.Id);
+        editor.ToggleCategoryBrowserCommand.Execute(null);
+        editor.CategorySearchText = "inesistente";
+        await editor.DiscardDraftCommand.ExecuteAsync(null);
+        Assert.False(editor.ShowAllCategories);
+        Assert.Equal("", editor.CategorySearchText);
+        Assert.Null(editor.SelectedCategory);
+    });
+
+    [Fact] public Task Editor_QuickCategoriesUseOnlyTheLastTwentyMovementsAndBreakTiesByRecency() => WithDatabase(async repo =>
+    {
+        var service = new CategoryService(repo);
+        var old = await service.SaveCategoryAsync(new(null, "AAA Storica", TransactionType.Expense, "#123456", true, "tag"));
+        var popular = await service.SaveCategoryAsync(new(null, "ZZZ Frequente", TransactionType.Expense, "#123456", true, "tag"));
+        var recent = await service.SaveCategoryAsync(new(null, "ZZZ Recente", TransactionType.Expense, "#123456", true, "tag"));
+        var earlier = await service.SaveCategoryAsync(new(null, "AAA Meno recente", TransactionType.Expense, "#123456", true, "tag"));
+        var account = Assert.Single(await repo.GetAccountsAsync());
+        var now = DateTime.UtcNow;
+        for (var i = 0; i < 30; i++)
+            await repo.SaveTransactionAsync(new(Guid.NewGuid(), now.AddMinutes(-20 - i), TransactionType.Expense, account.Id, old.Id, 1m));
+        for (var i = 0; i < 20; i++)
+        {
+            var category = i < 10 ? popular : i < 15 ? recent : earlier;
+            await repo.SaveTransactionAsync(new(Guid.NewGuid(), now.AddMinutes(-i), TransactionType.Expense, account.Id, category.Id, 1m));
+        }
+        var preferences = new PreferencesStore();
+        preferences.Set("favorite-categories", old.Id.ToString());
+        var editor = Editor(repo, preferences);
+        editor.QuickCategoryCapacity = 3;
+        await editor.LoadAsync();
+        Assert.Equal(new[] { popular.Id, recent.Id, earlier.Id }, editor.QuickCategories.Select(c => c.Id));
+        Assert.DoesNotContain(editor.QuickCategories, c => c.Id == old.Id);
+        var ranking = await new TransactionService(repo).GetRecentCategoryRankingAsync();
+        Assert.Equal(new[] { popular.Id, recent.Id, earlier.Id }, ranking);
+    });
+
+    [Fact] public Task Editor_QuickRowAdaptsToAvailableSlotsWithoutDuplicatingExpandedCategories() => WithDatabase(async repo =>
+    {
+        var editor = Editor(repo, new PreferencesStore());
+        await editor.LoadAsync();
+        editor.QuickCategoryCapacity = 3;
+        Assert.Equal(3, editor.QuickCategories.Count);
+        Assert.Empty(editor.VisibleCategories);
+        editor.ToggleCategoryBrowserCommand.Execute(null);
+        Assert.Equal(editor.Categories.Count - 3, editor.VisibleCategories.Count);
+        Assert.Empty(editor.VisibleCategories.Intersect(editor.QuickCategories));
+        editor.QuickCategoryCapacity = 5;
+        Assert.Equal(5, editor.QuickCategories.Count);
+        Assert.Equal(editor.Categories.Count - 5, editor.VisibleCategories.Count);
+        var selected = editor.QuickCategories[^1];
+        editor.ChooseCategoryCommand.Execute(selected);
+        editor.QuickCategoryCapacity = 2;
+        Assert.Equal(2, editor.QuickCategories.Count);
+        Assert.Equal(selected.Id, editor.SelectedCategory?.Id);
+        Assert.DoesNotContain(editor.QuickCategories, c => c.Id == selected.Id);
+        editor.ToggleCategoryBrowserCommand.Execute(null);
+        editor.CategorySearchText = editor.QuickCategories[0].Name;
+        Assert.Contains(editor.VisibleCategories, c => c.Id == editor.QuickCategories[0].Id);
+        editor.QuickCategoryCapacity = editor.Categories.Count;
+        Assert.False(editor.HasOtherCategories);
+        Assert.False(editor.ShowAllCategories);
+        Assert.Empty(editor.VisibleCategories);
+        Assert.Equal("", editor.CategorySearchText);
+    });
+
+    [Fact] public Task Editor_SaveAndAddRefreshesRecentRecommendations() => WithDatabase(async repo =>
+    {
+        var editor = Editor(repo, new PreferencesStore());
+        await editor.LoadAsync();
+        var chosen = editor.Categories[^1];
+        Assert.DoesNotContain(editor.QuickCategories, c => c.Id == chosen.Id);
+        editor.ToggleCategoryBrowserCommand.Execute(null);
+        editor.ChooseCategoryCommand.Execute(chosen);
+        editor.Amount = "3";
+        await editor.SaveAndAddCommand.ExecuteAsync(null);
+        Assert.Null(editor.ErrorMessage);
+        Assert.Equal(chosen.Id, editor.QuickCategories[0].Id);
+        Assert.False(editor.ShowAllCategories);
+    });
+
+    [Fact] public Task RecentCategoryRanking_IgnoresTransfers() => WithDatabase(async repo =>
+    {
+        var account = Assert.Single(await repo.GetAccountsAsync());
+        var categories = (await repo.GetCategoriesAsync()).Where(c => c.Type == TransactionType.Expense).Take(2).ToArray();
+        await repo.SaveTransactionAsync(new(Guid.NewGuid(), DateTime.UtcNow.AddMinutes(-1), TransactionType.Expense, account.Id, categories[0].Id, 1m));
+        await repo.SaveTransactionAsync(new(Guid.NewGuid(), DateTime.UtcNow, TransactionType.Expense, account.Id, categories[1].Id, 1m, transferId: Guid.NewGuid()));
+        Assert.Equal(new[] { categories[0].Id }, await new TransactionService(repo).GetRecentCategoryRankingAsync());
+    });
+
     [Fact] public Task Home_HiddenBalanceSurvivesReloadAndRestartWithoutChangingTotals() => WithDatabase(async repo =>
     {
         var preferences = new PreferencesStore();
@@ -631,10 +810,19 @@ public sealed class ViewModelWorkflowTests
         var account = Assert.Single(await repo.GetAccountsAsync()); var category = (await repo.GetCategoriesAsync()).First(c => c.Type == TransactionType.Expense);
         var transaction = new Transaction(Guid.NewGuid(), DateTime.UtcNow, TransactionType.Expense, account.Id, category.Id, 10m, description: "Pane"); await repo.SaveTransactionAsync(transaction);
         var vm = new TransactionsViewModel(new(repo), new(repo), new(repo), new Dialogs(), new Navigation(), new NavigationRequests());
-        await vm.LoadAsync(); vm.ShowDetailCommand.Execute(Assert.Single(vm.Transactions));
+        await vm.LoadAsync();
+        Assert.Equal("1 movimento", vm.VisibleCountLabel);
+        Assert.True(vm.IsFloatingActionsVisible);
+        vm.ShowDetailCommand.Execute(Assert.Single(vm.Transactions));
+        Assert.False(vm.IsFloatingActionsVisible);
         transaction.Update(transaction.OccurredAtUtc, transaction.Type, account.Id, category.Id, 10m, "EUR", "Pane", "Nota nuova"); await repo.SaveTransactionAsync(transaction);
         await vm.LoadAsync(); Assert.Equal("Nota nuova", vm.SelectedTransaction?.Transaction.Notes);
         vm.SelectedType = vm.Types.Single(t => t.Value == TransactionType.Income); await SettledAsync(vm);
         Assert.Empty(vm.Transactions); Assert.Null(vm.SelectedTransaction);
+        Assert.Equal("0 movimenti", vm.VisibleCountLabel);
+        Assert.True(vm.IsFloatingActionsVisible);
+        await repo.SaveTransactionAsync(new(Guid.NewGuid(), DateTime.UtcNow, TransactionType.Expense, account.Id, category.Id, 5m));
+        vm.SelectedType = vm.Types.Single(t => t.Value == TransactionType.Expense); await SettledAsync(vm);
+        Assert.Equal("2 movimenti", vm.VisibleCountLabel);
     });
 }

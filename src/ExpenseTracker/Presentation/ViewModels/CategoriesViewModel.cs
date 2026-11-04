@@ -81,6 +81,7 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
     [RelayCommand]
     private void NewCategory()
     {
+        ErrorMessage = null;
         EditingCategoryId = null;
         iconChosen = false;
         CategoryName = string.Empty;
@@ -94,6 +95,7 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
     [RelayCommand]
     private void EditCategory(Category category)
     {
+        ErrorMessage = null;
         EditingCategoryId = category.Id;
         CategoryName = category.Name;
         SelectedCategoryType = Types.Single(option => option.Value == category.Type);
@@ -125,7 +127,18 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
     private void SelectIcon(CategoryIcon icon) { iconChosen = true; SelectedIcon = icon; }
 
     [RelayCommand]
-    private void CancelEdit() => IsEditorVisible = false;
+    private void CancelEdit()
+    {
+        IsEditorVisible = false;
+        EditingCategoryId = null;
+        iconChosen = false;
+        CategoryName = string.Empty;
+        SelectedCategoryType = Types.Single(option => option.Value == (IsIncomeSelected ? TransactionType.Income : TransactionType.Expense));
+        CategoryColor = "#E2383F";
+        SelectedIcon = Icons.Single(icon => icon.Key == CategoryAppearance.InferIcon(CategoryName));
+        CategoryIsActive = true;
+        ErrorMessage = null;
+    }
 }
 
 public sealed record CategoryTile(Category? Category)

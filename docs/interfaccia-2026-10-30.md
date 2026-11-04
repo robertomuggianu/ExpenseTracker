@@ -11,12 +11,16 @@ Su finestre basse (per esempio un telefono in orizzontale) la Home scorre intera
 
 ## Verifica manuale
 
-1. Nella Home scorrere fino alle categorie e risalire: passaggio tra ciambella e barra senza spostamenti della lista. Cambiare tipo, periodo e mese anche dal riepilogo compatto; provare periodi vuoti e personalizzati.
+1. Nella Home scorrere fino alle categorie e risalire: passaggio tra ciambella e barra senza spostamenti della lista. Cambiare tipo e mese anche dal riepilogo compatto; cambiare la vista del periodo dal riepilogo espanso e provare periodi vuoti e personalizzati.
 2. Nascondere il saldo, passare a un'altra pagina e riaprire l'app: il totale resta nascosto. Mostrarlo nuovamente e controllare che il valore sia invariato.
 3. Nelle Categorie controllare i nomi lunghi, cercare per nome in entrambe le schede, aprire una categoria e annullare. Da Entrate, usare Crea e verificare il tipo iniziale.
 4. Nel nuovo movimento cambiare la data senza aprire i dettagli. Uscire e rientrare per recuperare la bozza; salvare e verificare il giorno nella lista. Ripetere con modifica, duplicazione e Salva e aggiungi un'altra.
 
 La compilazione Android e i test automatici non sostituiscono la verifica finale su iPhone.
+
+## Semplificazione Home — 31 ottobre 2026
+
+La testata mostra saldo e occhio nella stessa riga del menu, con le schede Spese/Entrate subito sotto. Rimossi nome dell'app, logo e sottotitolo del saldo. Durante lo scorrimento il riepilogo fisso mostra navigazione del mese, barra delle categorie e totale sotto la barra: niente pulsante Oggi, selettore del periodo, titolo del riepilogo o didascalia sotto il totale. I controlli del periodo restano disponibili nella vista espansa. Per un periodo personalizzato la barra compatta indica l'intervallo selezionato.
 
 ## Controlli eseguiti
 

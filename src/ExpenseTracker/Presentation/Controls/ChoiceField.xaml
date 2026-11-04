@@ -5,9 +5,12 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Name="Root">
     <Border Style="{StaticResource InputCard}" Padding="14,0">
-        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" MinimumHeightRequest="48">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" MinimumHeightRequest="50">
+            <Button Grid.ColumnSpan="2" BackgroundColor="Transparent" BorderWidth="0" Padding="0"
+                    Clicked="OnClicked" SemanticProperties.Description="{Binding AccessibilityLabel, Source={x:Reference Root}}"
+                    SemanticProperties.Hint="Apre l'elenco delle opzioni" />
             <Label Text="{Binding SelectedLabel, Source={x:Reference Root}}"
-                   VerticalTextAlignment="Center" LineBreakMode="TailTruncation" />
+                   VerticalTextAlignment="Center" LineBreakMode="TailTruncation" InputTransparent="True" />
             <Border Grid.Column="1" WidthRequest="28" HeightRequest="28" Padding="0"
                     VerticalOptions="Center" BackgroundColor="{StaticResource PrimaryDark}"
                     StrokeThickness="0" StrokeShape="RoundRectangle 9" InputTransparent="True">
@@ -15,9 +18,6 @@
                       StrokeThickness="1.8" StrokeLineCap="Round" StrokeLineJoin="Round"
                       HorizontalOptions="Center" VerticalOptions="Center" WidthRequest="14" HeightRequest="11" />
             </Border>
-            <Grid.GestureRecognizers>
-                <TapGestureRecognizer Tapped="OnTapped" />
-            </Grid.GestureRecognizers>
         </Grid>
     </Border>
 </ContentView>
