@@ -27,10 +27,10 @@
           </VerticalStackLayout>
         </Border>
         <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
-          <Border Style="{StaticResource Card}" Stroke="#4036C88A">
+          <Border Style="{StaticResource Card}" Stroke="{DynamicResource BorderColor}">
             <VerticalStackLayout>
-              <Label Text="ENTRATE" Style="{StaticResource Eyebrow}" TextColor="{StaticResource Income}"/>
-              <Label Style="{StaticResource MetricValue}" TextColor="{StaticResource Income}" FontSize="22">
+              <Label Text="ENTRATE" Style="{StaticResource Eyebrow}" TextColor="{DynamicResource IncomeColor}"/>
+              <Label Style="{StaticResource MetricValue}" TextColor="{DynamicResource IncomeColor}" FontSize="22">
                 <Label.Text>
                   <MultiBinding Converter="{StaticResource MoneyConverter}">
                     <Binding Path="Income"/>
@@ -40,10 +40,10 @@
               </Label>
             </VerticalStackLayout>
           </Border>
-          <Border Grid.Column="1" Style="{StaticResource Card}" Stroke="#40FF5960">
+          <Border Grid.Column="1" Style="{StaticResource Card}" Stroke="{DynamicResource BorderColor}">
             <VerticalStackLayout>
               <Label Text="USCITE" Style="{StaticResource Eyebrow}"/>
-              <Label Style="{StaticResource MetricValue}" TextColor="{StaticResource Warning}" FontSize="22">
+              <Label Style="{StaticResource MetricValue}" TextColor="{DynamicResource WarningColor}" FontSize="22">
                 <Label.Text>
                   <MultiBinding Converter="{StaticResource MoneyConverter}">
                     <Binding Path="Expense"/>
@@ -74,7 +74,7 @@
         <Border Style="{StaticResource Card}" Padding="10,16">
           <VerticalStackLayout Spacing="12">
             <Label Text="{Binding TrendCaption}" Style="{StaticResource MutedLabel}" FontSize="12" Margin="4,0"/>
-            <lvc:CartesianChart BackgroundColor="{StaticResource DarkSurface}" Series="{Binding TrendSeries}" XAxes="{Binding XAxes}" YAxes="{Binding YAxes}" HeightRequest="250" LegendPosition="Bottom" LegendTextSize="13" LegendTextPaint="#B2C4B8" IsVisible="{Binding HasTrendData}"/>
+            <lvc:CartesianChart controls:ChartAppearance.IsDark="{DynamicResource ChartDarkTheme}" BackgroundColor="{DynamicResource SurfaceColor}" Series="{Binding TrendSeries}" XAxes="{Binding XAxes}" YAxes="{Binding YAxes}" HeightRequest="250" LegendPosition="Bottom" LegendTextSize="13"  IsVisible="{Binding HasTrendData}"/>
             <Label Text="Nessun movimento in questo periodo" IsVisible="{Binding HasNoTrendData}" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" Margin="0,20"/>
           </VerticalStackLayout>
         </Border>
@@ -102,7 +102,7 @@
               </DataTemplate>
             </BindableLayout.ItemTemplate>
           </VerticalStackLayout>
-        <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
+        <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{DynamicResource ExpenseColor}"/>
         <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
       </VerticalStackLayout>
     </VerticalStackLayout>

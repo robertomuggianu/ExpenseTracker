@@ -24,6 +24,7 @@ public partial class AppShell : Shell
         accountService = services.GetRequiredService<AccountService>();
         preferences = services.GetRequiredService<IAppPreferences>();
         InitializeComponent();
+        UpdateAppearanceButtons();
         DashboardContent.ContentTemplate = Resolve<DashboardPage>(services);
         TransactionsContent.ContentTemplate = Resolve<TransactionsPage>(services);
         NewTransactionContent.ContentTemplate = Resolve<TransactionEditorPage>(services);
@@ -68,6 +69,7 @@ public partial class AppShell : Shell
         // Request them again after the restored page has been attached to the window.
         void ApplyInsets()
         {
+            AppAppearance.RefreshSystemBars();
             CurrentPage?.Handler?.UpdateValue(nameof(ContentPage.SafeAreaEdges));
             if (CurrentPage?.Handler?.PlatformView is Android.Views.View view)
             {
@@ -106,6 +108,32 @@ public partial class AppShell : Shell
             System.Diagnostics.Debug.WriteLine(exception);
             MenuBalance = "Saldo non disponibile";
         }
+    }
+
+    private void OnLightThemeClicked(object? sender, EventArgs e)
+    {
+        AppAppearance.Select(false);
+        UpdateAppearanceButtons();
+    }
+
+    private void OnDarkThemeClicked(object? sender, EventArgs e)
+    {
+        AppAppearance.Select(true);
+        UpdateAppearanceButtons();
+    }
+
+    private void UpdateAppearanceButtons()
+    {
+        UpdateThemeButton(LightThemeButton, "theme_sun", !AppAppearance.IsDark);
+        UpdateThemeButton(DarkThemeButton, "theme_moon", AppAppearance.IsDark);
+    }
+
+    private static void UpdateThemeButton(Button button, string icon, bool selected)
+    {
+        button.SetDynamicResource(Button.BackgroundColorProperty, selected ? "Primary" : "SurfaceAltColor");
+        if (selected) button.ImageSource = icon + ".png";
+        else button.SetDynamicResource(Button.ImageSourceProperty, icon + "Source");
+        SemanticProperties.SetHint(button, selected ? "Tema selezionato" : "Attiva questo tema");
     }
 
     private async void OnNavigate(object? sender, EventArgs e)

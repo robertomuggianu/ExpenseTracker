@@ -191,20 +191,20 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
             new ColumnSeries<decimal> { Name = "Entrate", Values = buckets.Select(t => t.Income).ToArray(),
                 MaxBarWidth = 32, Padding = 3, Rx = 4, Ry = 4,
                 YToolTipLabelFormatter = point => MoneyFormatter.Format(point.Model, ReportCurrency),
-                Fill = new SolidColorPaint(SKColor.Parse("#80D9BE")) },
+                Fill = new SolidColorPaint(SKColor.Parse("#A7C38A")) },
             new ColumnSeries<decimal> { Name = "Spese", Values = buckets.Select(t => t.Expense).ToArray(),
                 MaxBarWidth = 32, Padding = 3, Rx = 4, Ry = 4,
                 YToolTipLabelFormatter = point => MoneyFormatter.Format(point.Model, ReportCurrency),
-                Fill = new SolidColorPaint(SKColor.Parse("#F4C66A")) }];
-        XAxes = [new Axis { LabelsPaint = new SolidColorPaint(SKColor.Parse("#B2C4B8")), TextSize = 12,
+                Fill = new SolidColorPaint(SKColor.Parse("#FFD21F")) }];
+        XAxes = [new Axis { LabelsPaint = new SolidColorPaint(SKColor.Parse("#B4B2AC")), TextSize = 12,
             Labels = labels, MinStep = 1, ForceStepToMin = buckets.Count <= 7,
             MinLimit = -0.5, MaxLimit = buckets.Count - 0.5, LabelsRotation = 0,
             SeparatorsPaint = null }];
-        YAxes = [new Axis { LabelsPaint = new SolidColorPaint(SKColor.Parse("#B2C4B8")), TextSize = 11,
-            SeparatorsPaint = new SolidColorPaint(SKColor.Parse("#3C5147")), MinLimit = 0,
+        YAxes = [new Axis { LabelsPaint = new SolidColorPaint(SKColor.Parse("#B4B2AC")), TextSize = 11,
+            SeparatorsPaint = new SolidColorPaint(SKColor.Parse("#3C3D42")), MinLimit = 0,
             Labeler = value => value.ToString(value >= 1000000 ? "0,,.##' M'" : value >= 1000 ? "0,.##' k'" : "0.##", culture) }];
         ExpenseSeries = summary.ExpensesByCategory
-            .Select(item => (ISeries)new PieSeries<decimal> { Name = item.Name, Values = [item.Total], InnerRadius = 75, MaxRadialColumnWidth = 42, Fill = new SolidColorPaint(SKColor.Parse(item.Color)), Stroke = new SolidColorPaint(SKColor.Parse("#26342F"), 3) })
+            .Select(item => (ISeries)new PieSeries<decimal> { Name = item.Name, Values = [item.Total], InnerRadius = 75, MaxRadialColumnWidth = 42, Fill = new SolidColorPaint(SKColor.Parse(item.Color)), Stroke = new SolidColorPaint(SKColor.Parse("#25262A"), 3) })
             .ToArray();
         HasChartData = summary.ExpensesByCategory.Count > 0;
         CategoryBreakdown.Clear();

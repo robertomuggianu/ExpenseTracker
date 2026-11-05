@@ -24,8 +24,8 @@
                     <Border Style="{StaticResource Card}" IsVisible="{Binding IsEditorVisible}" Stroke="{StaticResource Primary}">
                         <VerticalStackLayout Spacing="12">
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                <Border WidthRequest="42" HeightRequest="42" Padding="0" BackgroundColor="{StaticResource PrimaryDark}" StrokeThickness="0" StrokeShape="RoundRectangle 13">
-                                    <Label Text="¤" TextColor="{StaticResource PrimaryGlow}" FontSize="23" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                <Border WidthRequest="42" HeightRequest="42" Padding="0" BackgroundColor="{DynamicResource CanvasColor}" StrokeThickness="0" StrokeShape="RoundRectangle 13">
+                                    <Label Text="¤" TextColor="{DynamicResource AccentTextColor}" FontSize="23" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
                                 </Border>
                                 <VerticalStackLayout Grid.Column="1">
                                     <Label Text="Dati del conto" FontSize="19" FontAttributes="Bold" />
@@ -64,7 +64,7 @@
                                 <Border Style="{StaticResource Card}">
                                     <VerticalStackLayout Spacing="12">
                                         <Grid ColumnDefinitions="50,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="3">
-                                            <Border Grid.RowSpan="2" WidthRequest="50" HeightRequest="50" Padding="0" BackgroundColor="{StaticResource PrimaryDark}" StrokeThickness="0" StrokeShape="Ellipse">
+                                            <Border Grid.RowSpan="2" WidthRequest="50" HeightRequest="50" Padding="0" BackgroundColor="{DynamicResource CanvasColor}" StrokeThickness="0" StrokeShape="Ellipse">
                                                 <Image Source="category_wallet.png" WidthRequest="27" HeightRequest="27"/>
                                             </Border>
                                             <Label AutomationId="Accounts.RowName" Grid.Column="1" Text="{Binding DisplayName}" FontSize="17" FontAttributes="Bold" LineBreakMode="TailTruncation" VerticalTextAlignment="Center" />
@@ -77,10 +77,10 @@
                         </Label.Text>
                     </Label>
                                             <Label Grid.Row="1" Grid.Column="1" Text="{Binding Account.Currency, StringFormat='Valuta {0}'}" Style="{StaticResource MutedLabel}" FontSize="12" />
-                                            <Label Grid.Row="1" Grid.Column="2" Text="Non attivo" TextColor="{StaticResource Expense}" FontSize="12" IsVisible="{Binding IsInactive}" />
+                                            <Label Grid.Row="1" Grid.Column="2" Text="Non attivo" TextColor="{DynamicResource ExpenseColor}" FontSize="12" IsVisible="{Binding IsInactive}" />
                                         </Grid>
-                                        <Label Style="{StaticResource FeedbackLabel}" Text="{Binding BalanceWarning}" TextColor="{StaticResource Expense}" IsVisible="{Binding HasCurrencyMismatch}"/>
-                                        <BoxView HeightRequest="1" BackgroundColor="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" />
+                                        <Label Style="{StaticResource FeedbackLabel}" Text="{Binding BalanceWarning}" TextColor="{DynamicResource ExpenseColor}" IsVisible="{Binding HasCurrencyMismatch}"/>
+                                        <BoxView HeightRequest="1" BackgroundColor="{DynamicResource BorderColor}" />
                                         <FlexLayout Direction="Row" Wrap="Wrap" JustifyContent="Start">
                                             <Button AutomationId="Accounts.Edit" Text="Modifica" Style="{StaticResource TextButton}" MinimumHeightRequest="44" Margin="0,0,4,0"
                                                     Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditCommand}" CommandParameter="{Binding .}" />
@@ -95,7 +95,7 @@
                         </BindableLayout.ItemTemplate>
                     </VerticalStackLayout>
 
-                    <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}" />
+                    <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{DynamicResource ExpenseColor}" />
                     <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
                 </VerticalStackLayout>
             </VerticalStackLayout>

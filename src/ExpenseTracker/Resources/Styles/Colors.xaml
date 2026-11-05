@@ -3,37 +3,37 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
-    <!-- Petrolio e ambra, con superfici verdi e testi avorio. -->
-    <Color x:Key="Primary">#42C6A5</Color>
-    <Color x:Key="PrimaryDark">#214F46</Color>
-    <Color x:Key="PrimarySoft">#E2F3EB</Color>
-    <Color x:Key="PrimaryGlow">#80D9BE</Color>
+    <!-- Grafite e Avorio: superfici neutre e azioni gialle. -->
+    <Color x:Key="Primary">#FFD21F</Color>
+    <Color x:Key="PrimaryDark">#17181B</Color>
+    <Color x:Key="PrimarySoft">#FFF2B3</Color>
+    <Color x:Key="PrimaryGlow">#FFD21F</Color>
 
-    <Color x:Key="White">#F6F2E7</Color>
-    <Color x:Key="OffWhite">#F6F2E7</Color>
-    <Color x:Key="Black">#101C19</Color>
-    <Color x:Key="OffBlack">#101C19</Color>
-    <Color x:Key="Charcoal">#26342F</Color>
-    <Color x:Key="Graphite">#32443C</Color>
+    <Color x:Key="White">#F4F0E7</Color>
+    <Color x:Key="OffWhite">#F4F0E7</Color>
+    <Color x:Key="Black">#17181B</Color>
+    <Color x:Key="OffBlack">#17181B</Color>
+    <Color x:Key="Charcoal">#25262A</Color>
+    <Color x:Key="Graphite">#303136</Color>
 
-    <Color x:Key="LightBackground">#F4F3EB</Color>
-    <Color x:Key="LightSurface">#F6F2E7</Color>
-    <Color x:Key="LightSurfaceAlt">#E8EEE8</Color>
-    <Color x:Key="LightText">#172D25</Color>
-    <Color x:Key="LightTextMuted">#617469</Color>
-    <Color x:Key="LightBorder">#D7E2D9</Color>
+    <Color x:Key="LightBackground">#F5F2EA</Color>
+    <Color x:Key="LightSurface">#FFFFFF</Color>
+    <Color x:Key="LightSurfaceAlt">#EBE7DE</Color>
+    <Color x:Key="LightText">#242529</Color>
+    <Color x:Key="LightTextMuted">#62625F</Color>
+    <Color x:Key="LightBorder">#DCD7CE</Color>
 
-    <Color x:Key="DarkBackground">#101C19</Color>
-    <Color x:Key="DarkSurface">#26342F</Color>
-    <Color x:Key="DarkSurfaceAlt">#32443C</Color>
-    <Color x:Key="DarkText">#F6F2E7</Color>
-    <Color x:Key="DarkTextMuted">#B2C4B8</Color>
-    <Color x:Key="DarkBorder">#3C5147</Color>
+    <Color x:Key="DarkBackground">#17181B</Color>
+    <Color x:Key="DarkSurface">#25262A</Color>
+    <Color x:Key="DarkSurfaceAlt">#303136</Color>
+    <Color x:Key="DarkText">#F4F0E7</Color>
+    <Color x:Key="DarkTextMuted">#B4B2AC</Color>
+    <Color x:Key="DarkBorder">#3C3D42</Color>
 
-    <Color x:Key="Income">#80D9BE</Color>
-    <Color x:Key="Expense">#F2AA91</Color>
-    <Color x:Key="Warning">#F4C66A</Color>
-    <Color x:Key="Info">#8ABCD1</Color>
+    <Color x:Key="Income">#A7C38A</Color>
+    <Color x:Key="Expense">#E7A088</Color>
+    <Color x:Key="Warning">#FFD21F</Color>
+    <Color x:Key="Info">#A5B8CC</Color>
 
     <Color x:Key="Gray100">#ECEDEF</Color>
     <Color x:Key="Gray200">#D9DBDF</Color>

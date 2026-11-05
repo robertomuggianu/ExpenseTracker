@@ -29,17 +29,22 @@ class Device:
         # A dump can fail during a page transition; retry once with a fresh hierarchy.
         for attempt in range(2):
             try:
+                self.run("shell", "rm", "-f", "/sdcard/expense-smoke.xml")
                 self.run("shell", "uiautomator", "dump", "/sdcard/expense-smoke.xml")
                 return ET.fromstring(self.run("exec-out", "cat", "/sdcard/expense-smoke.xml"))
-            except (subprocess.CalledProcessError, ET.ParseError):
+            except (subprocess.CalledProcessError, ET.ParseError, RuntimeError):
                 if attempt:
                     raise
                 time.sleep(1)
 
     def wait(self, predicate, label):
-        deadline = time.monotonic() + 35
+        deadline = time.monotonic() + 90
         while time.monotonic() < deadline:
-            root = self.tree()
+            try:
+                root = self.tree()
+            except (subprocess.CalledProcessError, ET.ParseError, RuntimeError):
+                time.sleep(1)
+                continue
             if predicate(root):
                 return root
             time.sleep(.3)

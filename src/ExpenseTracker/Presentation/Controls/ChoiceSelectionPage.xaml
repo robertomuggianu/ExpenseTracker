@@ -9,8 +9,8 @@
     BackgroundColor="#B0000000">
     <Grid Padding="14" SizeChanged="OnViewportSizeChanged">
         <Border x:Name="ChoiceSheet" VerticalOptions="End" Padding="20,18,20,20"
-                BackgroundColor="{AppThemeBinding Light={StaticResource LightSurface}, Dark={StaticResource DarkSurface}}"
-                Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
+                BackgroundColor="{DynamicResource SurfaceColor}"
+                Stroke="{DynamicResource BorderColor}"
                 StrokeShape="RoundRectangle 26">
             <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="12" MaximumHeightRequest="620">
                 <Border WidthRequest="42" HeightRequest="4" Padding="0" HorizontalOptions="Center"
@@ -24,7 +24,7 @@
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="controls:ChoiceSelectionItem">
                             <Border Padding="0" Margin="0,0,0,6" HeightRequest="58" StrokeThickness="0"
-                                    BackgroundColor="{AppThemeBinding Light={StaticResource LightSurfaceAlt}, Dark={StaticResource DarkSurfaceAlt}}"
+                                    BackgroundColor="{DynamicResource SurfaceAltColor}"
                                     StrokeShape="RoundRectangle 14">
                                 <Grid>
                                   <Button BackgroundColor="Transparent" BorderWidth="0" CornerRadius="14" Clicked="OnItemClicked"

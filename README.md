@@ -18,7 +18,7 @@ ExpenseTracker è un'applicazione personale offline-first realizzata con .NET MA
 - assistente AI accessibile dal pulsante in basso a sinistra, con ritorno alla pagina precedente senza perdere i campi compilati;
 - esportazione CSV completa, filtrata o del mese selezionato e importazione CSV/XLSX.
 
-L'interfaccia usa un tema scuro verde petrolio con superfici arrotondate, accenti menta e il pulsante di aggiunta ambrato. Il colore di ogni categoria è condiviso tra selezione, movimenti e grafici. Per il mese corrente il confronto usa i giorni trascorsi in entrambi i mesi; per un mese passato usa i due mesi completi.
+L'interfaccia offre i temi Grafite (scuro) e Avorio (chiaro), con superfici arrotondate e azioni gialle. Nel menu, il sole attiva Avorio e la luna attiva Grafite; la scelta viene ricordata al riavvio. Icona, splash screen e marchio condividono il portafoglio a carte sovrapposte. Dettagli e collaudo: [Grafite e Avorio](docs/temi-grafite-avorio.md). Il colore di ogni categoria è condiviso tra selezione, movimenti e grafici. Per il mese corrente il confronto usa i giorni trascorsi in entrambi i mesi; per un mese passato usa i due mesi completi.
 
 Nell'inserimento dei movimenti, una sola riga mostra le categorie che entrano nello spazio disponibile, ordinate per frequenza negli ultimi 20 movimenti e, a parità, per utilizzo più recente. **Altre** espande sotto la riga le categorie rimanenti in ordine alfabetico, con ricerca anche senza accenti. Un tocco seleziona la categoria e richiude l'elenco; il nome scelto resta visibile accanto a **Categoria**. Importo, data e dettagli compilati vengono conservati.
 

@@ -40,7 +40,7 @@ public partial class DashboardPage : ContentPage
             ReportContent.Children.Remove(HomeHeader);
             HomeLayout.Children.Insert(0, HomeHeader);
             HomeHeader.Margin = 0;
-            ReportViewport.Margin = new Thickness(0, -20, 0, 0);
+            ReportViewport.Margin = new Thickness(0);
         }
         UpdateSummary();
     }
