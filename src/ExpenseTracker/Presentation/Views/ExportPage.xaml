@@ -13,8 +13,8 @@
                 <Border Style="{StaticResource Card}" Stroke="{StaticResource Primary}" Padding="16">
                     <VerticalStackLayout Spacing="12">
                         <Grid ColumnDefinitions="48,*" ColumnSpacing="12">
-                            <Border WidthRequest="48" HeightRequest="48" Padding="0" BackgroundColor="{AppThemeBinding Light={StaticResource LightSurfaceAlt}, Dark={StaticResource DarkSurfaceAlt}}" StrokeThickness="0" StrokeShape="RoundRectangle 15">
-                                <Label Text="⇧" TextColor="{StaticResource PrimaryGlow}" FontSize="25" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                            <Border WidthRequest="48" HeightRequest="48" Padding="0" BackgroundColor="{DynamicResource SurfaceAltColor}" StrokeThickness="0" StrokeShape="RoundRectangle 15">
+                                <Label Text="⇧" TextColor="{DynamicResource AccentTextColor}" FontSize="25" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                 <Label Text="Importa lo storico" FontSize="18" FontAttributes="Bold" />
@@ -24,7 +24,7 @@
                         <Label Text="Il formato dell'app precedente viene riconosciuto automaticamente. Conti e categorie mancanti vengono creati. La reimportazione dello stesso file conserva i movimenti; file esterni modificati possono produrre nuovi movimenti."
                                Style="{StaticResource MutedLabel}" FontSize="13" LineHeight="1.2" />
                         <Button Text="Scegli file e importa" Command="{Binding ImportCommand}" />
-                        <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ImportSummary}" TextColor="{StaticResource Income}" FontAttributes="Bold" FontSize="12" />
+                        <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ImportSummary}" TextColor="{DynamicResource IncomeColor}" FontAttributes="Bold" FontSize="12" />
                     </VerticalStackLayout>
                 </Border>
 
@@ -56,7 +56,7 @@
                 </Border>
 
                 <Button Text="Crea e condividi CSV" Command="{Binding ExportCommand}" FontSize="16" />
-                <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}" />
+                <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{DynamicResource ExpenseColor}" />
                 <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
             </VerticalStackLayout>
         </VerticalStackLayout>

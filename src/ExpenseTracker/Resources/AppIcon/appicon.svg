@@ -1,1 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="456" height="456" viewBox="0 0 456 456"><rect width="456" height="456" fill="#214F46"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="456" height="456" viewBox="0 0 456 456"><defs>
+  <linearGradient id="back" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#303136"/><stop offset="1" stop-color="#101113"/></linearGradient>
+  <linearGradient id="silver" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#E0E2E5"/><stop offset="1" stop-color="#A9ADB4"/></linearGradient>
+  <linearGradient id="cream" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFFCF6"/><stop offset="1" stop-color="#E5DDCE"/></linearGradient>
+  <linearGradient id="yellow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFE451"/><stop offset="1" stop-color="#F4C400"/></linearGradient>
+  <linearGradient id="wallet" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#45474B"/><stop offset="0.5" stop-color="#303236"/><stop offset="1" stop-color="#222326"/></linearGradient>
+  <linearGradient id="clasp" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFF0CD"/><stop offset="0.48" stop-color="#D8BD8B"/><stop offset="1" stop-color="#AB8D56"/></linearGradient>
+</defs><rect width="456" height="456" fill="url(#back)"/></svg>

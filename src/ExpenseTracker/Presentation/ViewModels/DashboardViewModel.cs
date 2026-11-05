@@ -57,7 +57,7 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
         {
             Name = item.Name, Values = [item.Total], InnerRadius = 75, MaxRadialColumnWidth = 42,
             Fill = new SolidColorPaint(SKColor.Parse(item.Color)),
-            Stroke = new SolidColorPaint(SKColor.Parse("#26342F"), 3)
+            Stroke = new SolidColorPaint(SKColor.Parse("#25262A"), 3)
         }).ToArray();
         HasChartData = groups.Count > 0;
         CategoryBreakdown.Clear();

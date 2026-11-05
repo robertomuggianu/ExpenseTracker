@@ -27,7 +27,7 @@
           <Button Text="Categories" Margin="0,0,8,6" Command="{Binding SuggestQuestionCommand}" CommandParameter="Which categories increased most compared with last month?" Style="{StaticResource SecondaryButton}"/>
         </FlexLayout>
         <Label Text="{Binding StatusMessage}" Style="{StaticResource MutedLabel}"/>
-        <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
+        <Label Text="{Binding ErrorMessage}" TextColor="{DynamicResource ExpenseColor}"/>
         <VerticalStackLayout x:Name="MessagesLayout" BindableLayout.ItemsSource="{Binding Messages}" Spacing="12">
           <BindableLayout.ItemTemplate>
             <DataTemplate>
@@ -39,7 +39,7 @@
                   </DataTrigger>
                 </Border.Triggers>
                 <VerticalStackLayout Spacing="8">
-                  <Label Text="{Binding Role}" FontAttributes="Bold" TextColor="{StaticResource PrimaryGlow}"/>
+                  <Label Text="{Binding Role}" FontAttributes="Bold" TextColor="{DynamicResource AccentTextColor}"/>
                   <HorizontalStackLayout IsVisible="{Binding IsPending}" Spacing="10" SemanticProperties.Description="Waiting for the assistant's response">
                     <ActivityIndicator IsRunning="{Binding IsPending}" Color="{StaticResource PrimaryGlow}" WidthRequest="20" HeightRequest="20"/>
                     <Label Text="Thinking…" VerticalOptions="Center" Style="{StaticResource MutedLabel}"/>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage Shell.NavBarIsVisible="False"
+<ContentPage HideSoftInputOnTapped="True" Shell.NavBarIsVisible="False"
     x:Class="ExpenseTracker.Presentation.Views.AccountsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
@@ -13,7 +13,7 @@
                 <controls:PageHeader Heading="Conti"/>
                 <VerticalStackLayout Spacing="6" Padding="20,30,20,22">
                     <Label Text="Saldo totale" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" FontSize="16"/>
-                    <Label Style="{StaticResource HeroValue}" HorizontalTextAlignment="Center">
+                    <Label AutomationId="Accounts.TotalBalance" Style="{StaticResource HeroValue}" HorizontalTextAlignment="Center">
                         <Label.Text><MultiBinding Converter="{StaticResource MoneyConverter}"><Binding Path="TotalBalance"/><Binding Path="BalanceCurrency"/></MultiBinding></Label.Text>
                     </Label>
                 </VerticalStackLayout>
@@ -24,8 +24,8 @@
                     <Border Style="{StaticResource Card}" IsVisible="{Binding IsEditorVisible}" Stroke="{StaticResource Primary}">
                         <VerticalStackLayout Spacing="12">
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                <Border WidthRequest="42" HeightRequest="42" Padding="0" BackgroundColor="{StaticResource PrimaryDark}" StrokeThickness="0" StrokeShape="RoundRectangle 13">
-                                    <Label Text="¤" TextColor="{StaticResource PrimaryGlow}" FontSize="23" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                <Border WidthRequest="42" HeightRequest="42" Padding="0" BackgroundColor="{DynamicResource CanvasColor}" StrokeThickness="0" StrokeShape="RoundRectangle 13">
+                                    <Label Text="¤" TextColor="{DynamicResource AccentTextColor}" FontSize="23" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
                                 </Border>
                                 <VerticalStackLayout Grid.Column="1">
                                     <Label Text="Dati del conto" FontSize="19" FontAttributes="Bold" />
@@ -33,15 +33,15 @@
                                 </VerticalStackLayout>
                             </Grid>
                             <Label Text="Nome" FontAttributes="Bold" FontSize="12" />
-                            <Border Style="{StaticResource InputCard}"><Entry Placeholder="Es. Conto principale" Text="{Binding Name}" /></Border>
+                            <Border Style="{StaticResource InputCard}"><Entry AutomationId="Accounts.Name" Placeholder="Es. Conto principale" Text="{Binding Name}" /></Border>
                             <Grid ColumnDefinitions="2*,*" ColumnSpacing="10">
                                 <VerticalStackLayout Spacing="5">
                                     <Label Text="Saldo iniziale" FontAttributes="Bold" FontSize="12" />
-                                    <Border Style="{StaticResource InputCard}"><Entry Placeholder="0,00" Text="{Binding OpeningBalance}" Keyboard="Numeric" /></Border>
+                                    <Border Style="{StaticResource InputCard}"><Entry AutomationId="Accounts.OpeningBalance" Placeholder="0,00" Text="{Binding OpeningBalance}" Keyboard="Numeric" /></Border>
                                 </VerticalStackLayout>
                                 <VerticalStackLayout Grid.Column="1" Spacing="5">
                                     <Label Text="Valuta" FontAttributes="Bold" FontSize="12" />
-                                    <Border Style="{StaticResource InputCard}"><Entry Text="{Binding Currency}" MaxLength="3" /></Border>
+                                    <Border Style="{StaticResource InputCard}"><Entry AutomationId="Accounts.Currency" Text="{Binding Currency}" MaxLength="3" /></Border>
                                 </VerticalStackLayout>
                             </Grid>
                             <Grid ColumnDefinitions="*,*">
@@ -52,8 +52,8 @@
                                 <Grid.Triggers>
                                     <DataTrigger TargetType="Grid" Binding="{Binding IsBusy}" Value="True"><Setter Property="IsEnabled" Value="False" /></DataTrigger>
                                 </Grid.Triggers>
-                                <Button Text="Annulla" Style="{StaticResource SecondaryButton}" Command="{Binding CancelEditCommand}" />
-                                <Button Grid.Column="1" Text="Salva conto" Command="{Binding SaveCommand}" />
+                                <Button AutomationId="Accounts.Cancel" Text="Annulla" Style="{StaticResource SecondaryButton}" Command="{Binding CancelEditCommand}" />
+                                <Button AutomationId="Accounts.Save" Grid.Column="1" Text="Salva conto" Command="{Binding SaveCommand}" />
                             </Grid>
                         </VerticalStackLayout>
                     </Border>
@@ -64,10 +64,10 @@
                                 <Border Style="{StaticResource Card}">
                                     <VerticalStackLayout Spacing="12">
                                         <Grid ColumnDefinitions="50,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="3">
-                                            <Border Grid.RowSpan="2" WidthRequest="50" HeightRequest="50" Padding="0" BackgroundColor="{StaticResource PrimaryDark}" StrokeThickness="0" StrokeShape="Ellipse">
+                                            <Border Grid.RowSpan="2" WidthRequest="50" HeightRequest="50" Padding="0" BackgroundColor="{DynamicResource CanvasColor}" StrokeThickness="0" StrokeShape="Ellipse">
                                                 <Image Source="category_wallet.png" WidthRequest="27" HeightRequest="27"/>
                                             </Border>
-                                            <Label Grid.Column="1" Text="{Binding DisplayName}" FontSize="17" FontAttributes="Bold" LineBreakMode="TailTruncation" VerticalTextAlignment="Center" />
+                                            <Label AutomationId="Accounts.RowName" Grid.Column="1" Text="{Binding DisplayName}" FontSize="17" FontAttributes="Bold" LineBreakMode="TailTruncation" VerticalTextAlignment="Center" />
                                             <Label Grid.Column="2" FontSize="17" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalTextAlignment="Center" LineBreakMode="TailTruncation" >
                         <Label.Text>
                             <MultiBinding Converter="{StaticResource MoneyConverter}">
@@ -77,12 +77,12 @@
                         </Label.Text>
                     </Label>
                                             <Label Grid.Row="1" Grid.Column="1" Text="{Binding Account.Currency, StringFormat='Valuta {0}'}" Style="{StaticResource MutedLabel}" FontSize="12" />
-                                            <Label Grid.Row="1" Grid.Column="2" Text="Non attivo" TextColor="{StaticResource Expense}" FontSize="12" IsVisible="{Binding IsInactive}" />
+                                            <Label Grid.Row="1" Grid.Column="2" Text="Non attivo" TextColor="{DynamicResource ExpenseColor}" FontSize="12" IsVisible="{Binding IsInactive}" />
                                         </Grid>
-                                        <Label Style="{StaticResource FeedbackLabel}" Text="{Binding BalanceWarning}" TextColor="{StaticResource Expense}" IsVisible="{Binding HasCurrencyMismatch}"/>
-                                        <BoxView HeightRequest="1" BackgroundColor="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" />
+                                        <Label Style="{StaticResource FeedbackLabel}" Text="{Binding BalanceWarning}" TextColor="{DynamicResource ExpenseColor}" IsVisible="{Binding HasCurrencyMismatch}"/>
+                                        <BoxView HeightRequest="1" BackgroundColor="{DynamicResource BorderColor}" />
                                         <FlexLayout Direction="Row" Wrap="Wrap" JustifyContent="Start">
-                                            <Button Text="Modifica" Style="{StaticResource TextButton}" MinimumHeightRequest="44" Margin="0,0,4,0"
+                                            <Button AutomationId="Accounts.Edit" Text="Modifica" Style="{StaticResource TextButton}" MinimumHeightRequest="44" Margin="0,0,4,0"
                                                     Command="{Binding Source={x:Reference Page}, Path=BindingContext.EditCommand}" CommandParameter="{Binding .}" />
                                             <Button Text="Rendi principale" Style="{StaticResource TextButton}" MinimumHeightRequest="44" Margin="0,0,4,0"
                                                     IsEnabled="{Binding Account.IsActive}" Command="{Binding Source={x:Reference Page}, Path=BindingContext.SetPrimaryCommand}" CommandParameter="{Binding .}" />
@@ -95,12 +95,12 @@
                         </BindableLayout.ItemTemplate>
                     </VerticalStackLayout>
 
-                    <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}" />
+                    <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{DynamicResource ExpenseColor}" />
                     <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
                 </VerticalStackLayout>
             </VerticalStackLayout>
         </ScrollView>
-        <Button Style="{StaticResource FloatingActionButton}" Command="{Binding NewAccountCommand}"
+        <Button AutomationId="Accounts.New" Style="{StaticResource FloatingActionButton}" Command="{Binding NewAccountCommand}"
                 IsVisible="{Binding IsFloatingActionsVisible}"
                 HorizontalOptions="End" VerticalOptions="End" Margin="0,0,18,24"
                 SemanticProperties.Description="Aggiungi un nuovo conto" />

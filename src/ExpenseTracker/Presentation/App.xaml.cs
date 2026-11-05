@@ -7,7 +7,7 @@ public partial class App : Microsoft.Maui.Controls.Application
     public App(IServiceProvider services)
     {
         InitializeComponent();
-        UserAppTheme = AppTheme.Dark;
+        Services.AppAppearance.Initialize(this);
         // Shell XAML uses application resources, so resolve it after they are loaded.
         _appShell = services.GetRequiredService<AppShell>();
     }

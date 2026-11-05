@@ -1,50 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="ExpenseTracker.Presentation.AppShell" x:Name="Root" Title="ExpenseTracker" FlyoutBehavior="Flyout" FlyoutWidth="300" FlyoutBackgroundColor="{StaticResource PrimaryDark}" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False" BackgroundColor="{StaticResource PrimaryDark}">
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="ExpenseTracker.Presentation.AppShell" x:Name="Root" Title="ExpenseTracker" FlyoutBehavior="Flyout" FlyoutWidth="300" FlyoutBackgroundColor="{DynamicResource CanvasColor}" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False" BackgroundColor="{DynamicResource CanvasColor}">
   <Shell.FlyoutContent>
-    <Grid RowDefinitions="Auto,*,Auto" Padding="22,36,22,24" RowSpacing="20" BackgroundColor="{StaticResource PrimaryDark}">
+    <Grid RowDefinitions="Auto,*,Auto" Padding="22,20,22,18" RowSpacing="14" BackgroundColor="{DynamicResource CanvasColor}">
       <VerticalStackLayout Spacing="8">
-        <Image Source="brand_mark.png" WidthRequest="80" HeightRequest="80" HorizontalOptions="Start"/>
+        <Image Source="brand_mark.png" WidthRequest="64" HeightRequest="64" HorizontalOptions="Start"/>
         <Label Text="ExpenseTracker" FontSize="24" FontAttributes="Bold"/>
-        <Label Text="{Binding MenuBalance, Source={x:Reference Root}}" FontSize="16" TextColor="{StaticResource PrimaryGlow}"/>
-        <BoxView HeightRequest="1" BackgroundColor="{StaticResource DarkBorder}" Margin="0,12,0,0"/>
+        <Label Text="{Binding MenuBalance, Source={x:Reference Root}}" FontSize="16" TextColor="{DynamicResource AccentTextColor}"/>
+        <BoxView HeightRequest="1" BackgroundColor="{DynamicResource BorderColor}" Margin="0,12,0,0"/>
       </VerticalStackLayout>
       <ScrollView Grid.Row="1">
         <VerticalStackLayout Spacing="4">
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
-            <Image Source="tab_month.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Home" Style="{StaticResource DrawerButton}" CommandParameter="//DashboardRoot/Dashboard" Clicked="OnNavigate"/>
+            <Image Source="{DynamicResource tab_monthSource}" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
+            <Button AutomationId="Navigation.Home" Grid.Column="1" Text="Home" Style="{StaticResource DrawerButton}" CommandParameter="//DashboardRoot/Dashboard" Clicked="OnNavigate"/>
           </Grid>
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
-            <Image Source="category_wallet.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Conti" Style="{StaticResource DrawerButton}" CommandParameter="//AccountsRoot/Accounts" Clicked="OnNavigate"/>
+            <Image Source="{DynamicResource menu_walletSource}" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
+            <Button AutomationId="Navigation.Accounts" Grid.Column="1" Text="Conti" Style="{StaticResource DrawerButton}" CommandParameter="//AccountsRoot/Accounts" Clicked="OnNavigate"/>
           </Grid>
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
-            <Image Source="tab_transactions.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Movimenti" Style="{StaticResource DrawerButton}" CommandParameter="//TransactionsRoot/Transactions" Clicked="OnNavigate"/>
+            <Image Source="{DynamicResource tab_transactionsSource}" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
+            <Button AutomationId="Navigation.Transactions" Grid.Column="1" Text="Movimenti" Style="{StaticResource DrawerButton}" CommandParameter="//TransactionsRoot/Transactions" Clicked="OnNavigate"/>
           </Grid>
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
-            <Image Source="tab_chart.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Statistiche" Style="{StaticResource DrawerButton}" CommandParameter="//StatisticsRoot/Statistics" Clicked="OnNavigate"/>
+            <Image Source="{DynamicResource tab_chartSource}" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
+            <Button AutomationId="Navigation.Statistics" Grid.Column="1" Text="Statistiche" Style="{StaticResource DrawerButton}" CommandParameter="//StatisticsRoot/Statistics" Clicked="OnNavigate"/>
           </Grid>
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
-            <Image Source="category_tag.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Categorie" Style="{StaticResource DrawerButton}" CommandParameter="//CategoriesRoot/Categories" Clicked="OnNavigate"/>
+            <Image Source="{DynamicResource menu_tagSource}" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
+            <Button AutomationId="Navigation.Categories" Grid.Column="1" Text="Categorie" Style="{StaticResource DrawerButton}" CommandParameter="//CategoriesRoot/Categories" Clicked="OnNavigate"/>
           </Grid>
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
-            <Image Source="category_repeat.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Esporta e importa" Style="{StaticResource DrawerButton}" CommandParameter="//ExportRoot/Export" Clicked="OnNavigate"/>
+            <Image Source="{DynamicResource menu_repeatSource}" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
+            <Button AutomationId="Navigation.Export" Grid.Column="1" Text="Esporta e importa" Style="{StaticResource DrawerButton}" CommandParameter="//ExportRoot/Export" Clicked="OnNavigate"/>
           </Grid>
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
-            <Image Source="tab_plan.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Pianifica" Style="{StaticResource DrawerButton}" CommandParameter="//PlanningRoot/Planning" Clicked="OnNavigate"/>
+            <Image Source="{DynamicResource tab_planSource}" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
+            <Button AutomationId="Navigation.Planning" Grid.Column="1" Text="Pianifica" Style="{StaticResource DrawerButton}" CommandParameter="//PlanningRoot/Planning" Clicked="OnNavigate"/>
           </Grid>
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
-            <Image Source="tab_plus.png" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button Grid.Column="1" Text="Nuovo movimento" Style="{StaticResource DrawerButton}" CommandParameter="//NewTransactionRoot/NewTransaction?returnToHome=false" Clicked="OnNavigate"/>
+            <Image Source="{DynamicResource tab_plusSource}" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
+            <Button AutomationId="Navigation.NewTransaction" Grid.Column="1" Text="Nuovo movimento" Style="{StaticResource DrawerButton}" CommandParameter="//NewTransactionRoot/NewTransaction?returnToHome=false" Clicked="OnNavigate"/>
           </Grid>
         </VerticalStackLayout>
       </ScrollView>
-      <Label Grid.Row="2" Text="{Binding AppVersion, Source={x:Reference Root}}" TextColor="{StaticResource DarkTextMuted}" FontSize="11"/>
+      <VerticalStackLayout Grid.Row="2" Spacing="8">
+        <Border BackgroundColor="{DynamicResource SurfaceAltColor}" Padding="4" StrokeShape="RoundRectangle 20">
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+            <Button x:Name="LightThemeButton" AutomationId="Appearance.Light" Clicked="OnLightThemeClicked" Padding="12" HeightRequest="48" CornerRadius="16" SemanticProperties.Description="Tema chiaro Avorio"/>
+            <Button x:Name="DarkThemeButton" Grid.Column="1" AutomationId="Appearance.Dark" Clicked="OnDarkThemeClicked" Padding="12" HeightRequest="48" CornerRadius="16" SemanticProperties.Description="Tema scuro Grafite"/>
+          </Grid>
+        </Border>
+        <Label Text="{Binding AppVersion, Source={x:Reference Root}}" Style="{StaticResource MutedLabel}" FontSize="11"/>
+      </VerticalStackLayout>
     </Grid>
   </Shell.FlyoutContent>
   <!-- One section per menu destination avoids the native iOS More tab navigation. -->

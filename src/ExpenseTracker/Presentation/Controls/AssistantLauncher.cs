@@ -8,7 +8,7 @@ public static class AssistantLauncher
         propertyChanged: (bindable, _, value) =>
         {
             if (bindable is ContentPage { Content: Grid layout })
-                foreach (var action in layout.Children.OfType<ImageButton>().Where(button => button.StyleId == "AssistantLauncher"))
+                foreach (var action in layout.Children.OfType<Button>().Where(button => button.StyleId == "AssistantLauncher"))
                     action.IsVisible = (bool)value;
         });
 
@@ -23,14 +23,18 @@ public static class AssistantLauncher
         page.Content = null;
         var layout = new Grid { RowDefinitions = { new RowDefinition(GridLength.Star) } };
         layout.Add(content);
-        var button = new ImageButton
+        var button = new Button
         {
             StyleId = "AssistantLauncher", IsVisible = GetIsVisible(page),
-            Source = "ui_assistant.png", WidthRequest = 54, HeightRequest = 54,
-            Padding = 13, CornerRadius = 27, BackgroundColor = Color.FromArgb("#42C6A5"),
+            Text = "✧ AI", FontSize = 16, WidthRequest = 76, HeightRequest = 50,
+            Padding = 8, CornerRadius = 22,
             HorizontalOptions = LayoutOptions.Start, VerticalOptions = LayoutOptions.End,
             Margin = new Thickness(18, 0, 0, 24), ZIndex = 10
         };
+        button.SetDynamicResource(Button.BackgroundColorProperty, "SurfaceColor");
+        button.SetDynamicResource(Button.TextColorProperty, "TextColor");
+        button.SetDynamicResource(Button.BorderColorProperty, "BorderColor");
+        button.BorderWidth = 1;
         SemanticProperties.SetDescription(button, "Apri assistente AI");
         button.Clicked += async (_, _) =>
         {

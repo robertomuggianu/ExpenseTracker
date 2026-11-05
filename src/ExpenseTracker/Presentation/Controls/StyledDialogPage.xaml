@@ -7,20 +7,20 @@
     BackgroundColor="#B0000000">
     <Grid Padding="24">
         <Border VerticalOptions="Center" Padding="22"
-                BackgroundColor="{AppThemeBinding Light={StaticResource LightSurface}, Dark={StaticResource DarkSurface}}"
-                Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
+                BackgroundColor="{DynamicResource SurfaceColor}"
+                Stroke="{DynamicResource BorderColor}"
                 StrokeShape="RoundRectangle 24">
             <VerticalStackLayout Spacing="16">
                 <Border WidthRequest="48" HeightRequest="48" Padding="0" HorizontalOptions="Start"
-                        BackgroundColor="#2642C6A5" StrokeThickness="0" StrokeShape="RoundRectangle 15">
-                    <Label Text="!" TextColor="{StaticResource PrimaryGlow}" FontSize="24" FontAttributes="Bold"
+                        BackgroundColor="{DynamicResource SurfaceAltColor}" StrokeThickness="0" StrokeShape="RoundRectangle 15">
+                    <Label Text="!" TextColor="{DynamicResource AccentTextColor}" FontSize="24" FontAttributes="Bold"
                            HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
                 </Border>
                 <Label x:Name="TitleLabel" Style="{StaticResource SectionTitle}" />
                 <Label x:Name="MessageLabel" Style="{StaticResource MutedLabel}" FontSize="15" LineHeight="1.25" />
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                    <Button x:Name="CancelButton" Text="Annulla" Style="{StaticResource SecondaryButton}" Clicked="OnCancelClicked" />
-                    <Button x:Name="AcceptButton" Grid.Column="1" Text="OK" Clicked="OnAcceptClicked" />
+                    <Button AutomationId="Dialog.Cancel" x:Name="CancelButton" Text="Annulla" Style="{StaticResource SecondaryButton}" Clicked="OnCancelClicked" />
+                    <Button AutomationId="Dialog.Accept" x:Name="AcceptButton" Grid.Column="1" Text="OK" Clicked="OnAcceptClicked" />
                 </Grid>
             </VerticalStackLayout>
         </Border>

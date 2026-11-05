@@ -20,9 +20,10 @@ public sealed class TransactionTypeField : Grid
     {
         ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
         ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-        ColumnSpacing = 10;
-        income = CreateButton(TransactionType.Income, 0);
-        expense = CreateButton(TransactionType.Expense, 1);
+        ColumnSpacing = 4;
+        Padding = 4;
+        income = CreateButton(TransactionType.Income, 1);
+        expense = CreateButton(TransactionType.Expense, 0);
         UpdateSelection();
     }
 
@@ -35,7 +36,7 @@ public sealed class TransactionTypeField : Grid
     private Button CreateButton(TransactionType type, int column)
     {
         var option = TransactionTypeOption.Required.Single(item => item.Value == type);
-        var button = new Button { Text = option.Label, MinimumHeightRequest = 48, CornerRadius = 16, BorderWidth = 2 };
+        var button = new Button { Text = option.Label, MinimumHeightRequest = 48, CornerRadius = 16, BorderWidth = 0 };
         button.Clicked += (_, _) => SelectedItem = option;
         button.SetValue(ColumnProperty, column);
         Children.Add(button);
@@ -51,9 +52,9 @@ public sealed class TransactionTypeField : Grid
 
     private static void StyleButton(Button button, bool selected)
     {
-        button.SetDynamicResource(BackgroundColorProperty, selected ? "PrimaryGlow" : "DarkSurface");
-        button.SetDynamicResource(Button.TextColorProperty, selected ? "DarkBackground" : "PrimaryGlow");
-        button.SetDynamicResource(Button.BorderColorProperty, selected ? "PrimaryGlow" : "DarkSurface");
+        button.SetDynamicResource(BackgroundColorProperty, selected ? "Primary" : "SurfaceAltColor");
+        button.SetDynamicResource(Button.TextColorProperty, selected ? "DarkBackground" : "TextColor");
+        button.SetDynamicResource(Button.BorderColorProperty, selected ? "Primary" : "SurfaceAltColor");
         SemanticProperties.SetDescription(button, selected ? $"{button.Text}, selezionata" : button.Text);
     }
 }

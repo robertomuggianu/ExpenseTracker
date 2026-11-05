@@ -1,7 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="456" height="456" viewBox="0 0 456 456">
-  <rect x="105" y="142" width="246" height="185" rx="39" fill="#F6F2E7"/>
-  <path d="M129 146v-17c0-14 10-24 24-24h151c14 0 24 10 24 24v17" fill="none" stroke="#80D9BE" stroke-width="17"/>
-  <rect x="258" y="198" width="104" height="73" rx="24" fill="#F4C66A"/>
-  <circle cx="288" cy="234" r="9" fill="#214F46"/>
-  <path d="M142 267v-24m35 24v-44m35 44v-64" stroke="#214F46" stroke-width="16" stroke-linecap="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="456" height="456" viewBox="0 0 456 456"><defs>
+  <linearGradient id="back" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#303136"/><stop offset="1" stop-color="#101113"/></linearGradient>
+  <linearGradient id="silver" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#E0E2E5"/><stop offset="1" stop-color="#A9ADB4"/></linearGradient>
+  <linearGradient id="cream" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFFCF6"/><stop offset="1" stop-color="#E5DDCE"/></linearGradient>
+  <linearGradient id="yellow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFE451"/><stop offset="1" stop-color="#F4C400"/></linearGradient>
+  <linearGradient id="wallet" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#45474B"/><stop offset="0.5" stop-color="#303236"/><stop offset="1" stop-color="#222326"/></linearGradient>
+  <linearGradient id="clasp" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFF0CD"/><stop offset="0.48" stop-color="#D8BD8B"/><stop offset="1" stop-color="#AB8D56"/></linearGradient>
+</defs><rect width="456" height="456" rx="100" fill="url(#back)"/><rect x="70" y="218" width="316" height="168" rx="48" fill="#090A0C" opacity="0.32"/>
+<rect x="98" y="84" width="260" height="188" rx="26" fill="url(#silver)" stroke="#F1F0EE" stroke-width="1.5"/>
+<rect x="86" y="116" width="284" height="180" rx="27" fill="url(#cream)" stroke="#FFFFFF" stroke-width="1.5"/>
+<rect x="74" y="150" width="308" height="172" rx="28" fill="url(#yellow)" stroke="#FFE974" stroke-width="1.5"/>
+<rect x="64" y="192" width="328" height="184" rx="39" fill="url(#wallet)" stroke="#5A5C5F" stroke-width="2"/>
+<path d="M81 200H375" fill="none" stroke="#77797B" stroke-width="1.5" opacity="0.5"/>
+<rect x="300" y="313" width="50" height="23" rx="11.5" fill="#101113" opacity="0.45"/>
+<rect x="300" y="310" width="50" height="22" rx="11" fill="url(#clasp)" stroke="#DBCAA8" stroke-width="1"/>
+<path d="M309 315H325" stroke="#FFF8E9" stroke-width="2" stroke-linecap="round" opacity="0.85"/></svg>

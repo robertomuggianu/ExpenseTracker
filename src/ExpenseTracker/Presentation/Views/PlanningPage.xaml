@@ -2,7 +2,7 @@
   <ScrollView><VerticalStackLayout Spacing="0">
     <controls:PageHeader Heading="Pianifica"/>
     <VerticalStackLayout Padding="18,18,18,100" Spacing="16">
-    <Border Padding="4" BackgroundColor="{StaticResource DarkSurfaceAlt}" StrokeShape="RoundRectangle 18">
+    <Border Padding="4" BackgroundColor="{DynamicResource SurfaceAltColor}" StrokeShape="RoundRectangle 18">
       <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
         <Button Text="Budget" Style="{StaticResource PlanningTab}" Command="{Binding SelectBudgetsCommand}">
           <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding ShowBudgets}" Value="True"><Setter Property="BackgroundColor" Value="{StaticResource Primary}"/><Setter Property="TextColor" Value="{StaticResource DarkBackground}"/></DataTrigger></Button.Triggers>
@@ -15,8 +15,8 @@
         </Button>
       </Grid>
     </Border>
-    <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{StaticResource Expense}"/>
-    <Label Style="{StaticResource FeedbackLabel}" Text="{Binding StatusMessage}" TextColor="{StaticResource PrimaryGlow}"/>
+    <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{DynamicResource ExpenseColor}"/>
+    <Label Style="{StaticResource FeedbackLabel}" Text="{Binding StatusMessage}" TextColor="{DynamicResource AccentTextColor}"/>
     <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}"/>
     <VerticalStackLayout IsVisible="{Binding ShowBudgets}" IsEnabled="{Binding CanInteract}" Spacing="14">
       <Grid ColumnDefinitions="44,*,44">
@@ -45,7 +45,7 @@
       <Border Style="{StaticResource Card}" IsVisible="{Binding IsRuleEditorVisible}"><VerticalStackLayout Spacing="10">
         <Border Style="{StaticResource InputCard}"><Entry Placeholder="Nome, es. Netflix o stipendio" Text="{Binding RuleName}"/></Border>
         <Border Style="{StaticResource InputCard}"><Entry Placeholder="Importo, es. 12,50" Keyboard="Numeric" Text="{Binding RuleAmount}"/></Border>
-        <controls:TransactionTypeField SelectedItem="{Binding RuleType}"/>
+        <Border Padding="0" BackgroundColor="{DynamicResource SurfaceAltColor}" StrokeShape="RoundRectangle 20"><controls:TransactionTypeField SelectedItem="{Binding RuleType}"/></Border>
         <controls:ChoiceField Title="Conto" ItemsSource="{Binding Accounts}" SelectedItem="{Binding RuleAccount}" DisplayMemberPath="DisplayName"/>
         <controls:ChoiceField Title="Categoria" ItemsSource="{Binding Categories}" SelectedItem="{Binding RuleCategory}" DisplayMemberPath="Name"/>
         <VerticalStackLayout IsEnabled="{Binding CanChangeSchedule}" Spacing="8"><Label Text="Prima scadenza" Style="{StaticResource MutedLabel}"/><Border Style="{StaticResource InputCard}"><DatePicker Date="{Binding StartDate}" Format="dd/MM/yyyy"/></Border><controls:ChoiceField Title="Frequenza" ItemsSource="{Binding Frequencies}" SelectedItem="{Binding Frequency}" DisplayMemberPath="Label"/></VerticalStackLayout>

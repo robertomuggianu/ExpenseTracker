@@ -38,7 +38,7 @@ public sealed class CategoryDistributionBar : Border
         HeightRequest = 18;
         StrokeThickness = 0;
         StrokeShape = new RoundRectangle { CornerRadius = 9 };
-        BackgroundColor = Color.FromArgb("#56615B");
+        SetDynamicResource(BackgroundColorProperty, "SurfaceAltColor");
         Content = segments;
         Loaded += (_, _) => { Observe(ItemsSource as INotifyCollectionChanged); Rebuild(); };
         Unloaded += (_, _) => Observe(null);
