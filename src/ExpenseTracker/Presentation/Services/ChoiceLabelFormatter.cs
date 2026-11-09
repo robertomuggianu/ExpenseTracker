@@ -16,6 +16,7 @@ public static class ChoiceLabelFormatter
         (CategoryFilterOption option, nameof(CategoryFilterOption.Name)) => option.Name,
         (AccountSummary account, nameof(AccountSummary.DisplayName)) => account.DisplayName,
         (Category category, nameof(Category.Name)) => category.Name,
+        (CategoryIcon icon, nameof(CategoryIcon.Label)) => icon.Label,
         (string text, _) => text,
         _ => fallback
     };

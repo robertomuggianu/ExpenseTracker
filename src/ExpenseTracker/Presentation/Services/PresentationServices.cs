@@ -1,5 +1,6 @@
 using System.Text;
 using ExpenseTracker.Application;
+using ExpenseTracker.Domain;
 using ExpenseTracker.Presentation.Controls;
 
 namespace ExpenseTracker.Presentation.Services;
@@ -11,6 +12,13 @@ public sealed class UserDialogService : IUserDialogService
 
     public Task<bool> ConfirmAsync(string title, string message, string accept, string cancel) =>
         StyledDialogPage.ShowAsync(title, message, accept, cancel);
+
+    public async Task<Category?> ChooseCategoryAsync(string title, IReadOnlyList<Category> categories)
+    {
+        var items = categories.Select(category => new ChoiceSelectionItem(category, category.Name, false)).ToArray();
+        var (accepted, value) = await ChoiceSelectionPage.ShowAsync(title, items);
+        return accepted ? value as Category : null;
+    }
 }
 
 public sealed class ImportFilePickerService : IImportFilePickerService
@@ -51,17 +59,8 @@ public sealed class ImportFilePickerService : IImportFilePickerService
 public sealed class AppNavigationService(NavigationRequests requests) : IAppNavigationService
 {
     public Task GoToTransactionEditorAsync(Guid? transactionId = null, bool duplicate = false, bool returnToHome = false,
-        ExpenseTracker.Domain.TransactionType? initialType = null)
-    {
-        var route = transactionId.HasValue
-            ? $"//NewTransactionRoot/NewTransaction?transactionId={Uri.EscapeDataString(transactionId.Value.ToString("D"))}"
-            : "//NewTransactionRoot/NewTransaction";
-        route += transactionId.HasValue ? "&" : "?";
-        route += $"returnToHome={returnToHome.ToString().ToLowerInvariant()}";
-        if (duplicate) route += "&duplicate=true";
-        if (initialType.HasValue) route += $"&initialType={initialType.Value}";
-        return Shell.Current.GoToAsync(route);
-    }
+        TransactionType? initialType = null) =>
+        ((AppShell)Shell.Current).OpenTransactionEditorAsync(transactionId, duplicate, returnToHome, initialType);
 
     public Task GoToDashboardAsync() => Shell.Current.GoToAsync("//DashboardRoot/Dashboard");
 

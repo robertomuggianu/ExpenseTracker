@@ -17,7 +17,28 @@ public sealed record RecurringRule(Guid Id, string Name, Guid AccountId, Guid Ca
     };
 }
 public sealed record MonthlyBudget(Guid Id, Guid CategoryId, string Currency, DateTime Month, decimal Limit);
-public sealed record PlanningState(List<RecurringRule> Rules, List<MonthlyBudget> Budgets);
+public sealed record PlanningState(List<RecurringRule> Rules, List<MonthlyBudget> Budgets)
+{
+    public const string StorageKey = "planning-v1";
+
+    public static PlanningState Deserialize(string? json) =>
+        JsonSerializer.Deserialize(json ?? "null", LocalStateJsonContext.Default.PlanningState) ?? new([], []);
+
+    public string Serialize() => JsonSerializer.Serialize(this, LocalStateJsonContext.Default.PlanningState);
+
+    public void ReassignCategory(Guid sourceId, Guid targetId)
+    {
+        var targetBudgets = Budgets.Where(b => b.CategoryId == targetId).Select(b => (b.Month, b.Currency)).ToHashSet();
+        if (Budgets.Any(b => b.CategoryId == sourceId && targetBudgets.Contains((b.Month, b.Currency))))
+            throw new DomainValidationException("Le due categorie hanno un budget per lo stesso mese e valuta. Scegli un'altra categoria o risolvi il conflitto in Pianifica.");
+
+        for (var i = 0; i < Rules.Count; i++)
+            if (Rules[i].CategoryId == sourceId) Rules[i] = Rules[i] with { CategoryId = targetId };
+
+        for (var i = 0; i < Budgets.Count; i++)
+            if (Budgets[i].CategoryId == sourceId) Budgets[i] = Budgets[i] with { CategoryId = targetId };
+    }
+}
 public sealed record BudgetProgress(MonthlyBudget Budget, string CategoryName, decimal Spent)
 {
     public decimal Remaining => Budget.Limit - Spent;
@@ -26,9 +47,17 @@ public sealed record BudgetProgress(MonthlyBudget Budget, string CategoryName, d
 
 public sealed class PlanningService(IExpenseRepository repository)
 {
-    private const string Key = "planning-v1";
+    private const string Key = PlanningState.StorageKey;
     private readonly SemaphoreSlim gate = new(1, 1);
-    public async Task<PlanningState> GetAsync() => JsonSerializer.Deserialize(await repository.GetStateAsync(Key) ?? "null", LocalStateJsonContext.Default.PlanningState) ?? new([], []);
+    public async Task<PlanningState> GetAsync() => PlanningState.Deserialize(await repository.GetStateAsync(Key));
+
+    internal async Task DeleteCategoryAsync(Guid id, Guid? replacementId, CategoryDeletionImpact confirmedImpact,
+        CancellationToken cancellationToken)
+    {
+        await gate.WaitAsync(cancellationToken);
+        try { await repository.DeleteCategoryAsync(id, replacementId, confirmedImpact, cancellationToken); }
+        finally { gate.Release(); }
+    }
 
     public async Task SaveRuleAsync(RecurringRule rule)
     {
@@ -159,15 +188,23 @@ public sealed class TransferService(IExpenseRepository repository)
         if (source is null || destination is null) throw new DomainValidationException("Scegli due conti attivi.");
         if (source.Currency != destination.Currency) throw new DomainValidationException("I trasferimenti richiedono conti nella stessa valuta.");
         var categories = await repository.GetCategoriesAsync();
-        var sent = categories.FirstOrDefault(c => c.Name == "Trasferimento inviato" && c.Type == TransactionType.Expense)
-            ?? new Category(Guid.NewGuid(), "Trasferimento inviato", TransactionType.Expense, "#80D9BE");
-        var received = categories.FirstOrDefault(c => c.Name == "Trasferimento ricevuto" && c.Type == TransactionType.Income)
-            ?? new Category(Guid.NewGuid(), "Trasferimento ricevuto", TransactionType.Income, "#80D9BE");
+        var newCategories = new List<Category>(2);
+        var sent = GetCategory("Trasferimento inviato", TransactionType.Expense);
+        var received = GetCategory("Trasferimento ricevuto", TransactionType.Income);
         var transferId = Guid.NewGuid();
         var utc = DateTime.SpecifyKind(date, DateTimeKind.Local).ToUniversalTime();
         Transaction[] pair = [
             new(Guid.NewGuid(), utc, TransactionType.Expense, sourceId, sent.Id, amount, source.Currency, $"Verso {destination.Name}", notes, transferId: transferId),
             new(Guid.NewGuid(), utc, TransactionType.Income, destinationId, received.Id, amount, source.Currency, $"Da {source.Name}", notes, transferId: transferId)];
-        await repository.SaveBatchAsync([], [sent, received], pair);
+        await repository.SaveBatchAsync([], newCategories, pair);
+
+        Category GetCategory(string name, TransactionType type)
+        {
+            var existing = categories.FirstOrDefault(c => c.Name == name && c.Type == type);
+            if (existing is not null) return existing;
+            var category = new Category(Guid.NewGuid(), name, type, "#80D9BE");
+            newCategories.Add(category);
+            return category;
+        }
     }
 }

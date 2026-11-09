@@ -14,12 +14,12 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
 {
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(BalanceText), nameof(BalanceVisibilityIcon), nameof(BalanceVisibilityDescription), nameof(BalanceAccessibilityText))]
-    public partial bool IsBalanceHidden { get; set; } = preferences.Get("hide-home-balance", false);
-    public string BalanceText => IsBalanceHidden ? "••••••" : MoneyFormatter.Format(TotalBalance, BalanceCurrency);
+    public partial bool IsBalanceHidden { get; set; } = preferences.Get(BalanceVisibility.PreferenceKey, false);
+    public string BalanceText => IsBalanceHidden ? BalanceVisibility.Mask : MoneyFormatter.Format(TotalBalance, BalanceCurrency);
     public string BalanceAccessibilityText => IsBalanceHidden ? "Saldo nascosto" : $"Saldo dei conti: {BalanceText}";
     public string BalanceVisibilityIcon => IsBalanceHidden ? "ui_eye_off.png" : "ui_eye.png";
     public string BalanceVisibilityDescription => IsBalanceHidden ? "Mostra saldo totale" : "Nascondi saldo totale";
-    partial void OnIsBalanceHiddenChanged(bool value) => preferences.Set("hide-home-balance", value);
+    partial void OnIsBalanceHiddenChanged(bool value) => preferences.Set(BalanceVisibility.PreferenceKey, value);
     [RelayCommand] private void ToggleBalanceVisibility() => IsBalanceHidden = !IsBalanceHidden;
     [ObservableProperty] public partial string SelectedCurrency { get; set; } = "EUR";
     private bool refreshPending;

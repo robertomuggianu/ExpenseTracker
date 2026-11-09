@@ -14,6 +14,8 @@ internal sealed class AccountRecord
 
     public string Currency { get; set; } = "EUR";
 
+    public string Icon { get; set; } = "wallet";
+
     public bool IsPrimary { get; set; }
 
     public bool IsActive { get; set; }

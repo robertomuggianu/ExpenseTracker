@@ -87,8 +87,11 @@
             <Button Text="Annulla" Style="{StaticResource SecondaryButton}" Command="{Binding CancelEditCommand}"/>
             <Button Grid.Column="1" Text="Salva" Command="{Binding SaveCategoryCommand}"/>
           </Grid>
+          <Button AutomationId="Categories.Delete" Text="Elimina categoria" Style="{StaticResource DangerButton}" IsVisible="{Binding IsEditingCategory}" Command="{Binding DeleteCategoryCommand}"/>
         </VerticalStackLayout>
       </Border>
+      <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{DynamicResource ExpenseColor}"/>
+      <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
       <FlexLayout Wrap="Wrap" AlignItems="Start" BindableLayout.ItemsSource="{Binding CategoryTiles}" MaximumWidthRequest="640" HorizontalOptions="Fill">
         <BindableLayout.ItemTemplate>
           <DataTemplate>
@@ -107,8 +110,6 @@
         </BindableLayout.ItemTemplate>
       </FlexLayout>
       <Label Text="Nessuna categoria trovata" IsVisible="{Binding HasNoCategories}" Style="{StaticResource MutedLabel}"/>
-      <Label Style="{StaticResource FeedbackLabel}" Text="{Binding ErrorMessage}" TextColor="{DynamicResource ExpenseColor}"/>
-      <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
     </VerticalStackLayout>
     </VerticalStackLayout>
   </ScrollView>

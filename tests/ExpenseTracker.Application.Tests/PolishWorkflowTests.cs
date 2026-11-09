@@ -119,7 +119,7 @@ public sealed class PolishWorkflowTests
     {
         var service = new CategoryService(repo);
         var category = await service.SaveCategoryAsync(new(null, "Viaggi", TransactionType.Expense, "#123456", false, "luggage"));
-        var vm = new CategoriesViewModel(service);
+        var vm = new CategoriesViewModel(service, new Dialogs());
         await vm.LoadAsync();
         vm.EditCategoryCommand.Execute(vm.Categories.Single(c => c.Id == category.Id));
         vm.CategoryName = "";
@@ -145,7 +145,7 @@ public sealed class PolishWorkflowTests
     [InlineData(true)]
     public Task Categories_StartingAnotherEditorClearsPreviousValidation(bool editExisting) => WithDatabase(async repo =>
     {
-        var vm = new CategoriesViewModel(new(repo));
+        var vm = new CategoriesViewModel(new(repo), new Dialogs());
         await vm.LoadAsync();
         vm.NewCategoryCommand.Execute(null);
         await vm.SaveCategoryCommand.ExecuteAsync(null);
@@ -168,6 +168,7 @@ public sealed class PolishWorkflowTests
     {
         public Task ShowMessageAsync(string title, string message) => Task.CompletedTask;
         public Task<bool> ConfirmAsync(string title, string message, string accept, string cancel) => Task.FromResult(true);
+        public Task<Category?> ChooseCategoryAsync(string title, IReadOnlyList<Category> categories) => Task.FromResult(categories.FirstOrDefault());
     }
 
     private static async Task WithDatabase(Func<SqliteExpenseRepository, Task> test)

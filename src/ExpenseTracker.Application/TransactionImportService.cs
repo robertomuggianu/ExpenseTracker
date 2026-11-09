@@ -61,7 +61,7 @@ public sealed class TransactionImportService(
         var accounts = (await repository.GetAccountsAsync(cancellationToken)).ToList();
         var categories = (await repository.GetCategoriesAsync(cancellationToken)).ToList();
         var accountsCreated = 0;
-        var categoriesCreated = 0;
+        var newCategories = new List<Category>();
 
         foreach (var sourceAccount in parsed.Transactions
                      .GroupBy(item => item.AccountName, StringComparer.OrdinalIgnoreCase)
@@ -115,7 +115,7 @@ public sealed class TransactionImportService(
                 CategoryAppearance.SuggestColor(categories.Select(item => item.Color)));
             // No writes before the entire import has been validated.
             categories.Add(category);
-            categoriesCreated++;
+            newCategories.Add(category);
         }
 
         var pending = new List<Transaction>();
@@ -178,12 +178,12 @@ public sealed class TransactionImportService(
                 throw new DomainValidationException("Il file contiene un trasferimento incompleto o incoerente. Esporta entrambi i conti.");
         if (pending.Select(t => t.Id).Distinct().Count() != pending.Count)
             throw new DomainValidationException("Il file contiene identificativi duplicati.");
-        await repository.SaveBatchAsync(accounts, categories, pending, cancellationToken: cancellationToken);
+        await repository.SaveBatchAsync(accounts, newCategories, pending, cancellationToken: cancellationToken);
         return new TransactionImportResult(
             created,
             updated,
             accountsCreated,
-            categoriesCreated,
+            newCategories.Count,
             parsed.SkippedTransfers,
             parsed.Warnings);
     }

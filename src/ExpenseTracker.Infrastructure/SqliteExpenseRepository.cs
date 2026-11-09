@@ -8,7 +8,7 @@ namespace ExpenseTracker.Infrastructure;
 
 public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposable
 {
-    private const int CurrentSchemaVersion = 6;
+    private const int CurrentSchemaVersion = 7;
     private readonly SQLiteAsyncConnection _connection;
     private readonly SemaphoreSlim _initializationGate = new(1, 1);
     private bool _initialized;
@@ -75,7 +75,13 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
                 }
                 db.Execute("PRAGMA user_version = 6;");
             });
-            await SeedCategoriesAsync();
+            if (version < 7) await _connection.RunInTransactionAsync(db =>
+            {
+                if (!db.GetTableInfo("Accounts").Any(column => column.Name == "Icon"))
+                    db.Execute("ALTER TABLE Accounts ADD COLUMN Icon TEXT NOT NULL DEFAULT 'wallet';");
+                SeedCategories(db);
+                db.Execute("PRAGMA user_version = 7;");
+            });
             _initialized = true;
         }
         finally
@@ -147,6 +153,58 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
             await _connection.UpdateAsync(record);
         }
     }
+
+    public async Task<CategoryDeletionImpact> GetCategoryDeletionImpactAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        await EnsureReadyAsync(cancellationToken);
+        CategoryDeletionImpact impact = new(0, 0, 0);
+        await _connection.RunInTransactionAsync(db =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var planning = PlanningState.Deserialize(db.Find<AppStateRecord>(PlanningState.StorageKey)?.Value);
+            impact = ReadCategoryImpact(db, id, planning);
+        });
+        return impact;
+    }
+
+    public async Task DeleteCategoryAsync(Guid id, Guid? replacementId, CategoryDeletionImpact confirmedImpact,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureReadyAsync(cancellationToken);
+        await _connection.RunInTransactionAsync(db =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var category = db.Find<CategoryRecord>(id.ToString("D"));
+            if (category is null) return;
+
+            var planning = PlanningState.Deserialize(db.Find<AppStateRecord>(PlanningState.StorageKey)?.Value);
+            var impact = ReadCategoryImpact(db, id, planning);
+            if (impact != confirmedImpact)
+                throw new DomainValidationException("I collegamenti della categoria sono cambiati. Riapri la conferma per verificarli.");
+
+            if (impact.RequiresReplacement)
+            {
+                var target = replacementId is Guid targetId ? db.Find<CategoryRecord>(targetId.ToString("D")) : null;
+                if (target is null || target.Id == category.Id || !target.IsActive || target.Type != category.Type)
+                    throw new DomainValidationException("Scegli un'altra categoria attiva dello stesso tipo.");
+
+                if (impact.Recurrences > 0 || impact.Budgets > 0)
+                {
+                    planning.ReassignCategory(id, replacementId!.Value);
+                    db.InsertOrReplace(new AppStateRecord { Key = PlanningState.StorageKey, Value = planning.Serialize() });
+                }
+                db.Execute("UPDATE Transactions SET CategoryId = ? WHERE CategoryId = ?", target.Id, category.Id);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            db.Delete(category);
+        });
+    }
+
+    private static CategoryDeletionImpact ReadCategoryImpact(SQLiteConnection db, Guid id, PlanningState planning) => new(
+        db.ExecuteScalar<int>("SELECT COUNT(*) FROM Transactions WHERE CategoryId = ?", id.ToString("D")),
+        planning.Rules.Count(rule => rule.CategoryId == id),
+        planning.Budgets.Count(budget => budget.CategoryId == id));
 
     public async Task<IReadOnlyList<Transaction>> GetTransactionsAsync(
         TransactionFilter? filter = null,
@@ -490,40 +548,25 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
         database.Execute("PRAGMA user_version = 4;");
     });
 
-    private async Task SeedCategoriesAsync()
+    private static void SeedCategories(SQLiteConnection database)
     {
-        (string? Id, string Name, int Type, string Color)[] definitions =
+        (string? Id, string Name, int Type)[] definitions =
         [
-            ("20111111-1111-1111-1111-111111111111", "Affitto", 2, "#E2383F"),
-            ("20211111-1111-1111-1111-111111111111", "Bollette", 2, "#E2383F"),
-            ("20311111-1111-1111-1111-111111111111", "Manutenzione", 2, "#E2383F"),
-            ("20122222-2222-2222-2222-222222222222", "Carburante", 2, "#5AA9FF"),
-            ("20222222-2222-2222-2222-222222222222", "Trasporto pubblico", 2, "#5AA9FF"),
-            ("20133333-3333-3333-3333-333333333333", "Spesa", 2, "#F28C45"),
-            ("20233333-3333-3333-3333-333333333333", "Ristoranti", 2, "#F28C45"),
-            ("20144444-4444-4444-4444-444444444444", "Strumenti", 2, "#6F7D91"),
-            ("20155555-5555-5555-5555-555555555555", "Retribuzione", 1, "#36C88A"),
-            (null, "Benzina", 2, "#F4B942"),
-            (null, "Cafe", 2, "#F28C45"),
-            (null, "Education", 2, "#5AA9FF"),
-            (null, "Gifts", 2, "#F477B3"),
-            (null, "Groceries", 2, "#7DBB52"),
-            (null, "Health", 2, "#E2383F"),
-            (null, "Home", 2, "#FF6B70"),
-            (null, "Leisure", 2, "#35B5B0"),
-            (null, "Other", 2, "#9B8B7A"),
-            (null, "Restaurants", 2, "#F28C45"),
-            (null, "Spese per macchina", 2, "#6F7D91"),
-            (null, "Subscription", 2, "#9C7CFF"),
-            (null, "Transportation", 2, "#5AA9FF"),
-            (null, "Uscite", 2, "#E2383F"),
-            (null, "Vape", 2, "#B76E79"),
-            (null, "Gift", 1, "#36C88A"),
-            (null, "Other", 1, "#35B5B0"),
-            (null, "Paycheck", 1, "#36C88A")
+            ("20111111-1111-1111-1111-111111111111", "Affitto", 2),
+            ("20211111-1111-1111-1111-111111111111", "Bollette", 2),
+            ("20311111-1111-1111-1111-111111111111", "Manutenzione", 2),
+            ("20122222-2222-2222-2222-222222222222", "Carburante", 2),
+            ("20222222-2222-2222-2222-222222222222", "Trasporto pubblico", 2),
+            ("20133333-3333-3333-3333-333333333333", "Spesa", 2),
+            ("20233333-3333-3333-3333-333333333333", "Ristoranti", 2),
+            ("20144444-4444-4444-4444-444444444444", "Strumenti", 2),
+            ("20155555-5555-5555-5555-555555555555", "Retribuzione", 1),
+            (null, "Benzina", 2),
+            (null, "Spese per macchina", 2),
+            (null, "Uscite", 2)
         ];
 
-        var existing = await _connection.Table<CategoryRecord>().ToListAsync();
+        var existing = database.Table<CategoryRecord>().ToList();
         foreach (var definition in definitions)
         {
             var seedId = definition.Id ?? StableGuid($"reference-category|{definition.Type}|{definition.Name.ToUpperInvariant()}").ToString("D");
@@ -536,14 +579,14 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
 
             var category = new CategoryRecord
             {
-                Id = definition.Id ?? StableGuid($"reference-category|{definition.Type}|{definition.Name.ToUpperInvariant()}").ToString("D"),
+                Id = seedId,
                 Name = definition.Name,
                 Type = definition.Type,
                 Color = CategoryAppearance.SuggestColor(existing.Select(item => item.Color)),
                 Icon = CategoryAppearance.InferIcon(definition.Name),
                 IsActive = true
             };
-            await _connection.InsertAsync(category);
+            database.Insert(category);
             existing.Add(category);
         }
     }
@@ -565,6 +608,7 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
         Name = item.Name,
         OpeningBalanceMinor = ToMinorUnits(item.OpeningBalance),
         Currency = item.Currency,
+        Icon = item.Icon,
         IsPrimary = item.IsPrimary,
         IsActive = item.IsActive,
         CreatedAtUtc = item.CreatedAtUtc,
@@ -573,7 +617,7 @@ public sealed class SqliteExpenseRepository : IExpenseRepository, IAsyncDisposab
 
     private static Account ToDomain(AccountRecord item) => new(
         Guid.Parse(item.Id), item.Name, FromMinorUnits(item.OpeningBalanceMinor), item.Currency,
-        item.IsPrimary, item.IsActive, item.CreatedAtUtc, item.UpdatedAtUtc);
+        item.IsPrimary, item.IsActive, item.CreatedAtUtc, item.UpdatedAtUtc, item.Icon);
 
     private static CategoryRecord ToRecord(Category item) => new()
     {

@@ -1,3 +1,4 @@
+using ExpenseTracker.Presentation.Controls;
 using ExpenseTracker.Presentation.ViewModels;
 
 namespace ExpenseTracker.Presentation.Views;
@@ -15,7 +16,7 @@ public partial class AccountsPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (Shell.Current is AppShell { IsAssistantOpen: true }) return;
+        if (ChoiceSelectionPage.IsOpen || Shell.Current is AppShell { IsAssistantOpen: true }) return;
         await _viewModel.LoadCommand.ExecuteAsync(null);
     }
 

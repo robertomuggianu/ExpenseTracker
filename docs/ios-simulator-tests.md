@@ -1,5 +1,7 @@
 # Collaudo automatico su iPhone simulato
 
+Questa pagina documenta il collaudo storico. Il workflow del simulatore è stato rimosso da GitHub Actions. Per generare l'IPA è disponibile il [workflow manuale per Sideloadly](iphone-sideloadly.md).
+
 Il workflow `.github/workflows/ios-simulator-tests.yml` usa un Mac temporaneo di GitHub Actions per compilare l'app e provarla nel simulatore iOS di Xcode. Si può avviare e consultare anche da Windows, senza possedere un Mac o un account Apple Developer.
 
 Il simulatore riceve una nuova installazione dell'app e dati fittizi creati dai test. Non accede al database del telefono, non richiede credenziali dell'utente e non chiama Ollama. Il pacchetto per Sideloadly continua a essere preparato dal workflow separato già esistente.

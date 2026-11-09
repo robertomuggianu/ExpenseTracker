@@ -149,6 +149,7 @@ public sealed class ExportWorkflowTests
         public int Messages { get; private set; }
         public Task ShowMessageAsync(string title, string message) { Messages++; return Task.CompletedTask; }
         public Task<bool> ConfirmAsync(string title, string message, string accept, string cancel) => Task.FromResult(true);
+        public Task<Category?> ChooseCategoryAsync(string title, IReadOnlyList<Category> categories) => Task.FromResult(categories.FirstOrDefault());
     }
 
     private sealed class ImportPicker : IImportFilePickerService

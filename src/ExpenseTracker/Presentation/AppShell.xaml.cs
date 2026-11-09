@@ -1,4 +1,5 @@
 using ExpenseTracker.Application;
+using ExpenseTracker.Domain;
 using ExpenseTracker.Presentation.Services;
 using ExpenseTracker.Presentation.Views;
 using ExpenseTracker.Presentation.Controls;
@@ -8,10 +9,13 @@ namespace ExpenseTracker.Presentation;
 
 public partial class AppShell : Shell
 {
+    private const string TransactionEditorRoute = "//NewTransactionRoot/NewTransaction";
+
     private readonly AccountService accountService;
     private readonly IAppPreferences preferences;
     private readonly IServiceProvider services;
     private AssistantPage? assistantPage;
+    private TransactionEditorPage? transactionEditorPage;
     private bool assistantTransition;
     public bool IsAssistantOpen { get; private set; }
     public string AppVersion => $"v{Microsoft.Maui.ApplicationModel.AppInfo.Current.VersionString}";
@@ -27,7 +31,7 @@ public partial class AppShell : Shell
         UpdateAppearanceButtons();
         DashboardContent.ContentTemplate = Resolve<DashboardPage>(services);
         TransactionsContent.ContentTemplate = Resolve<TransactionsPage>(services);
-        NewTransactionContent.ContentTemplate = Resolve<TransactionEditorPage>(services);
+        NewTransactionContent.ContentTemplate = new DataTemplate(GetTransactionEditor);
         StatisticsContent.ContentTemplate = Resolve<StatisticsPage>(services);
         PlanningContent.ContentTemplate = Resolve<PlanningPage>(services);
         MoreContent.ContentTemplate = Resolve<MorePage>(services);
@@ -36,6 +40,15 @@ public partial class AppShell : Shell
         ExportContent.ContentTemplate = Resolve<ExportPage>(services);
         Navigated += (_, _) => RefreshWindowInsets();
     }
+
+    internal async Task OpenTransactionEditorAsync(Guid? transactionId, bool duplicate, bool returnToHome, TransactionType? initialType)
+    {
+        var editor = GetTransactionEditor();
+        await GoToAsync(TransactionEditorRoute);
+        await editor.OpenAsync(transactionId, duplicate, returnToHome, initialType);
+    }
+
+    private TransactionEditorPage GetTransactionEditor() => transactionEditorPage ??= CreatePage<TransactionEditorPage>(services);
 
     public async Task OpenAssistantAsync()
     {
@@ -90,7 +103,7 @@ public partial class AppShell : Shell
         if (propertyName == nameof(FlyoutIsPresented) && FlyoutIsPresented && accountService is not null && preferences is not null)
         {
             // Clear the last displayed balance synchronously before the menu is drawn.
-            MenuBalance = preferences.Get("hide-home-balance", false) ? "Saldo nascosto" : "Aggiornamento saldo…";
+            MenuBalance = preferences.Get(BalanceVisibility.PreferenceKey, false) ? "Saldo nascosto" : "Aggiornamento saldo…";
             _ = RefreshBalanceAsync();
         }
     }
@@ -99,14 +112,15 @@ public partial class AppShell : Shell
     {
         try
         {
-            if (preferences.Get("hide-home-balance", false)) { MenuBalance = "Saldo nascosto"; return; }
+            if (preferences.Get(BalanceVisibility.PreferenceKey, false)) { MenuBalance = "Saldo nascosto"; return; }
             var accounts = (await accountService.GetAccountsAsync()).Where(item => item.Account.IsActive).ToArray();
+            if (preferences.Get(BalanceVisibility.PreferenceKey, false)) { MenuBalance = "Saldo nascosto"; return; }
             MenuBalance = accounts.Any(a => a.HasCurrencyMismatch) ? "Verifica le valute dei conti" : "Saldo: " + MoneyFormatter.Format(accounts.Sum(item => item.CurrentBalance), CurrencySelection.SingleOrDefault(accounts.Select(item => item.Account.Currency)));
         }
         catch (Exception exception)
         {
             System.Diagnostics.Debug.WriteLine(exception);
-            MenuBalance = "Saldo non disponibile";
+            MenuBalance = preferences.Get(BalanceVisibility.PreferenceKey, false) ? "Saldo nascosto" : "Saldo non disponibile";
         }
     }
 
@@ -140,16 +154,21 @@ public partial class AppShell : Shell
     {
         if (sender is not Button { CommandParameter: string route }) return;
         FlyoutIsPresented = false;
-        await GoToAsync(route);
+        if (route == TransactionEditorRoute)
+            await OpenTransactionEditorAsync(null, false, false, null);
+        else
+            await GoToAsync(route);
     }
 
     private static DataTemplate Resolve<TPage>(IServiceProvider services) where TPage : Page =>
-        new(() =>
-        {
-            var page = services.GetRequiredService<TPage>();
-            // Apply to the resolved page: a setting on Shell alone is not sufficient on every platform.
-            Shell.SetNavBarIsVisible(page, false);
-            if (page is ContentPage contentPage) AssistantLauncher.Attach(contentPage);
-            return page;
-        });
+        new(() => CreatePage<TPage>(services));
+
+    private static TPage CreatePage<TPage>(IServiceProvider services) where TPage : Page
+    {
+        var page = services.GetRequiredService<TPage>();
+        // Apply to the resolved page: a setting on Shell alone is not sufficient on every platform.
+        Shell.SetNavBarIsVisible(page, false);
+        if (page is ContentPage contentPage) AssistantLauncher.Attach(contentPage);
+        return page;
+    }
 }

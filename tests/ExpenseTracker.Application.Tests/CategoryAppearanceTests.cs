@@ -49,11 +49,11 @@ public sealed class CategoryAppearanceTests
             {
                 await repo.SaveAccountsAsync([account]);
                 await repo.SaveCategoryAsync(legacy); await repo.SaveCategoryAsync(custom);
+                await repo.SaveCategoryAsync(new Category(Guid.NewGuid(), "Vape", TransactionType.Expense, "#123456", icon: "tag"));
                 await repo.SaveTransactionAsync(transaction);
             }
             using (var raw = new SQLiteConnection(path))
             {
-                raw.Execute("UPDATE Categories SET Icon = 'tag' WHERE Name IN ('Vape', 'Other');");
                 raw.Execute("PRAGMA user_version = 5;");
             }
             await using (var upgraded = new SqliteExpenseRepository(path))
@@ -75,7 +75,7 @@ public sealed class CategoryAppearanceTests
             await using (var reopened = new SqliteExpenseRepository(path))
                 Assert.Equal("tag", (await reopened.GetCategoryAsync(legacy.Id))!.Icon);
             using var check = new SQLiteConnection(path);
-            Assert.Equal(6, check.ExecuteScalar<int>("PRAGMA user_version;"));
+            Assert.Equal(7, check.ExecuteScalar<int>("PRAGMA user_version;"));
         }
         finally { File.Delete(path); }
     }

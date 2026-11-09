@@ -2,8 +2,17 @@ using ExpenseTracker.Domain;
 
 namespace ExpenseTracker.Application;
 
-public sealed class CategoryService(IExpenseRepository repository)
+public sealed class CategoryService(IExpenseRepository repository, PlanningService? planningService = null)
 {
+    private readonly PlanningService planning = planningService ?? new(repository);
+
+    public Task<CategoryDeletionImpact> GetDeletionImpactAsync(Guid id, CancellationToken cancellationToken = default) =>
+        repository.GetCategoryDeletionImpactAsync(id, cancellationToken);
+
+    public Task DeleteAsync(Guid id, Guid? replacementId, CategoryDeletionImpact confirmedImpact,
+        CancellationToken cancellationToken = default) =>
+        planning.DeleteCategoryAsync(id, replacementId, confirmedImpact, cancellationToken);
+
     public async Task<IReadOnlyList<Category>> GetCategoriesAsync(
         bool activeOnly = false,
         CancellationToken cancellationToken = default)
@@ -27,15 +36,8 @@ public sealed class CategoryService(IExpenseRepository repository)
 
         if (input.Id.HasValue)
         {
-            if (item.Type != input.Type)
-            {
-                var hasHistoricalTransactions = (await repository.GetTransactionsAsync(cancellationToken: cancellationToken))
-                    .Any(transaction => transaction.CategoryId == item.Id);
-                if (hasHistoricalTransactions)
-                {
-                    throw new DomainValidationException("Non puoi cambiare il tipo di una categoria già usata nei movimenti.");
-                }
-            }
+            if (item.Type != input.Type && (await repository.GetCategoryDeletionImpactAsync(item.Id, cancellationToken)).RequiresReplacement)
+                throw new DomainValidationException("Non puoi cambiare il tipo di una categoria usata da movimenti, ricorrenze o budget.");
 
             item.Update(input.Name, input.Type, input.Color, input.Icon);
         }

@@ -16,7 +16,7 @@ public sealed class AuditReproductionTests
 
     [Theory]
     [InlineData("Affitto")]
-    [InlineData("Cafe")]
+    [InlineData("Benzina")]
     public async Task RenamingSeedCategory_ShouldSurviveRestart(string name)
     {
         var path = Path.Combine(Path.GetTempPath(), $"audit-{Guid.NewGuid():N}.db3");

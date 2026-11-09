@@ -16,14 +16,14 @@ public sealed class AccountService(IExpenseRepository repository)
         var account = input.Id.HasValue
             ? accounts.SingleOrDefault(item => item.Id == input.Id.Value)
                 ?? throw new DomainValidationException("Il conto da modificare non esiste.")
-            : new Account(Guid.NewGuid(), input.Name, input.OpeningBalance, input.Currency);
+            : new Account(Guid.NewGuid(), input.Name, input.OpeningBalance, input.Currency, icon: input.Icon);
 
         if (input.Id.HasValue)
         {
             if (!string.Equals(account.Currency, input.Currency.Trim(), StringComparison.OrdinalIgnoreCase)
                 && (await repository.GetTransactionsAsync(new TransactionFilter(AccountId: account.Id), cancellationToken)).Count > 0)
                 throw new DomainValidationException("Non puoi cambiare la valuta di un conto con movimenti. Crea un nuovo conto.");
-            account.Update(input.Name, input.OpeningBalance, input.Currency);
+            account.Update(input.Name, input.OpeningBalance, input.Currency, input.Icon);
         }
         else
         {

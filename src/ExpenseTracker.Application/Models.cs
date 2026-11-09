@@ -83,7 +83,8 @@ public sealed record AccountInput(
     decimal OpeningBalance,
     string Currency,
     bool IsPrimary,
-    bool IsActive);
+    bool IsActive,
+    string? Icon = null);
 
 public sealed record CategoryInput(
     Guid? Id,
@@ -92,6 +93,11 @@ public sealed record CategoryInput(
     string Color,
     bool IsActive,
     string? Icon = null);
+
+public sealed record CategoryDeletionImpact(int Transactions, int Recurrences, int Budgets)
+{
+    public bool RequiresReplacement => Transactions > 0 || Recurrences > 0 || Budgets > 0;
+}
 
 public sealed record TransactionInput(
     Guid? Id,
@@ -141,7 +147,10 @@ public sealed record ExpenseGroup(Guid CategoryId, string Name, string Color, de
     public string Icon { get; init; } = "tag";
 }
 
-public sealed record TrendPoint(DateTime Date, decimal Income, decimal Expense);
+public sealed record TrendPoint(DateTime Date, decimal Income, decimal Expense)
+{
+    public decimal Difference => Income - Expense;
+}
 
 public sealed record DashboardSummary(
     decimal PrimaryAccountBalance,
