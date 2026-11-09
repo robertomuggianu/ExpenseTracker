@@ -32,7 +32,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                         <VerticalStackLayout Spacing="2" VerticalOptions="Center">
                             <Label Text="Esporta tutto" FontAttributes="Bold" FontSize="16" />
-                            <Label Text="Disattiva per scegliere i filtri." Style="{StaticResource MutedLabel}" FontSize="12" />
+                            <Label Text="{Binding ExportScopeDescription}" Style="{StaticResource MutedLabel}" FontSize="12" />
                         </VerticalStackLayout>
                         <Switch Grid.Column="1" IsToggled="{Binding ExportAll}" VerticalOptions="Center" SemanticProperties.Description="Esporta tutti i movimenti" />
                     </Grid>
@@ -48,7 +48,7 @@
                             <Border Grid.Row="1" Style="{StaticResource InputCard}"><DatePicker Date="{Binding CustomFrom}" Format="dd/MM/yyyy" SemanticProperties.Description="Data iniziale dell'esportazione" /></Border>
                             <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource InputCard}"><DatePicker Date="{Binding CustomTo}" Format="dd/MM/yyyy" SemanticProperties.Description="Data finale dell'esportazione" /></Border>
                         </Grid>
-                        <controls:ChoiceField ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount}" DisplayMemberPath="Name" Title="Conto" />
+                        <Label Text="{Binding AccountScope.Name, StringFormat='Conto: {0}'}" Style="{StaticResource MutedLabel}" />
                         <controls:ChoiceField ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType}" DisplayMemberPath="Label" Title="Tipo" />
                         <controls:ChoiceField ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" DisplayMemberPath="Name" Title="Categoria" />
                         <Label Text="Per reimportare i movimenti, scegli «Esporta tutto». I filtri possono escludere una delle due registrazioni di un trasferimento." Style="{StaticResource MutedLabel}" FontSize="12" />

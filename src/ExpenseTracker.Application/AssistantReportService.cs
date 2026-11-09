@@ -6,7 +6,7 @@ namespace ExpenseTracker.Application;
 public sealed class AssistantReportService(IExpenseRepository repository)
 {
     public async Task<AssistantReportRequest> CreateAsync(AssistantReportKind kind, string currency,
-        DateTime todayLocal, CancellationToken cancellationToken = default)
+        DateTime todayLocal, CancellationToken cancellationToken = default, Guid? accountId = null)
     {
         if (!Enum.IsDefined(kind)) throw new DomainValidationException("Tipo di resoconto non valido.");
         currency = currency.Trim().ToUpperInvariant();
@@ -18,8 +18,8 @@ public sealed class AssistantReportService(IExpenseRepository repository)
         async Task<AssistantPeriod> ReadAsync(DateTime from, DateTime through)
         {
             var range = new DateRange(ToUtc(from), ToUtc(through.AddDays(1)));
-            var items = (await repository.GetTransactionsAsync(new(range.FromUtc, range.ToUtcExclusive, Currency: currency), cancellationToken))
-                .Where(t => range.Contains(t.OccurredAtUtc) && t.Currency == currency && t.TransferId is null).ToArray();
+            var items = (await repository.GetTransactionsAsync(new(range.FromUtc, range.ToUtcExclusive, AccountId: accountId, Currency: currency), cancellationToken))
+                .Where(t => (!accountId.HasValue || t.AccountId == accountId) && range.Contains(t.OccurredAtUtc) && t.Currency == currency && t.TransferId is null).ToArray();
             var totals = FinancialAggregator.CalculateTotals(items, range);
             var groups = FinancialAggregator.GroupExpensesByCategory(items, categories, range);
             var selected = groups.Take(10).Select(g => new AssistantCategory(g.Name.Length > 120 ? g.Name[..120] : g.Name, g.Total)).ToList();

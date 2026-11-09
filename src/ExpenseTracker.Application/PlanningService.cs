@@ -16,7 +16,7 @@ public sealed record RecurringRule(Guid Id, string Name, Guid AccountId, Guid Ca
         _ => StartDate.Date.AddYears(NextIndex)
     };
 }
-public sealed record MonthlyBudget(Guid Id, Guid CategoryId, string Currency, DateTime Month, decimal Limit);
+public sealed record MonthlyBudget(Guid Id, Guid CategoryId, string Currency, DateTime Month, decimal Limit, Guid? AccountId = null);
 public sealed record PlanningState(List<RecurringRule> Rules, List<MonthlyBudget> Budgets)
 {
     public const string StorageKey = "planning-v1";
@@ -28,8 +28,8 @@ public sealed record PlanningState(List<RecurringRule> Rules, List<MonthlyBudget
 
     public void ReassignCategory(Guid sourceId, Guid targetId)
     {
-        var targetBudgets = Budgets.Where(b => b.CategoryId == targetId).Select(b => (b.Month, b.Currency)).ToHashSet();
-        if (Budgets.Any(b => b.CategoryId == sourceId && targetBudgets.Contains((b.Month, b.Currency))))
+        var targetBudgets = Budgets.Where(b => b.CategoryId == targetId).Select(b => (b.Month, b.Currency, b.AccountId)).ToHashSet();
+        if (Budgets.Any(b => b.CategoryId == sourceId && targetBudgets.Contains((b.Month, b.Currency, b.AccountId))))
             throw new DomainValidationException("Le due categorie hanno un budget per lo stesso mese e valuta. Scegli un'altra categoria o risolvi il conflitto in Pianifica.");
 
         for (var i = 0; i < Rules.Count; i++)
@@ -134,7 +134,7 @@ public sealed class PlanningService(IExpenseRepository repository)
         }
         finally { gate.Release(); }
     }
-    public async Task SaveBudgetAsync(Guid categoryId, string currency, DateTime month, decimal limit)
+    public async Task SaveBudgetAsync(Guid categoryId, string currency, DateTime month, decimal limit, Guid? accountId = null)
     {
         await gate.WaitAsync();
         try
@@ -143,10 +143,14 @@ public sealed class PlanningService(IExpenseRepository repository)
             if (category is null || category.Type != TransactionType.Expense) throw new DomainValidationException("Scegli una categoria di spesa.");
             if (limit <= 0 || decimal.Round(limit, 2) != limit) throw new DomainValidationException("Inserisci un limite positivo con al massimo due decimali.");
             if (!(await repository.GetAccountsAsync()).Any(a => a.Currency == currency)) throw new DomainValidationException("Scegli una valuta dei tuoi conti.");
+            if (accountId.HasValue && (await repository.GetAccountAsync(accountId.Value)) is not { IsActive: true })
+                throw new DomainValidationException("Scegli un conto attivo per il budget.");
+            if (accountId.HasValue && (await repository.GetAccountAsync(accountId.Value))?.Currency != currency)
+                throw new DomainValidationException("La valuta del budget deve coincidere con quella del conto.");
             month = new DateTime(month.Year, month.Month, 1);
             var state = await GetAsync();
-            state.Budgets.RemoveAll(b => b.CategoryId == categoryId && b.Currency == currency && b.Month == month);
-            state.Budgets.Add(new(Guid.NewGuid(), categoryId, currency, month, limit));
+            state.Budgets.RemoveAll(b => b.CategoryId == categoryId && b.Currency == currency && b.Month == month && b.AccountId == accountId);
+            state.Budgets.Add(new(Guid.NewGuid(), categoryId, currency, month, limit, accountId));
             await repository.SaveStateAsync(Key, JsonSerializer.Serialize(state, LocalStateJsonContext.Default.PlanningState));
         }
         finally { gate.Release(); }
@@ -157,12 +161,12 @@ public sealed class PlanningService(IExpenseRepository repository)
         try { var state = await GetAsync(); state.Budgets.RemoveAll(b => b.Id == id); await repository.SaveStateAsync(Key, JsonSerializer.Serialize(state, LocalStateJsonContext.Default.PlanningState)); }
         finally { gate.Release(); }
     }
-    public async Task<IReadOnlyList<BudgetProgress>> GetBudgetsAsync(DateTime month)
+    public async Task<IReadOnlyList<BudgetProgress>> GetBudgetsAsync(DateTime month, Guid? accountId = null)
     {
         var state = await GetAsync(); var range = MonthlyPeriods.FullMonth(month);
-        var transactions = await repository.GetTransactionsAsync(new(range.FromUtc, range.ToUtcExclusive, Type: TransactionType.Expense));
+        var transactions = await repository.GetTransactionsAsync(new(range.FromUtc, range.ToUtcExclusive, AccountId: accountId, Type: TransactionType.Expense));
         var categories = (await repository.GetCategoriesAsync()).ToDictionary(c => c.Id);
-        return state.Budgets.Where(b => b.Month.Year == month.Year && b.Month.Month == month.Month)
+        return state.Budgets.Where(b => b.Month.Year == month.Year && b.Month.Month == month.Month && b.AccountId == accountId)
             .Select(b => new BudgetProgress(b, categories.GetValueOrDefault(b.CategoryId)?.Name ?? "Categoria archiviata",
                 transactions.Where(t => t.TransferId is null && t.CategoryId == b.CategoryId && t.Currency == b.Currency).Sum(t => t.Amount))).ToArray();
     }

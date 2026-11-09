@@ -19,8 +19,8 @@
             <Button Text="Save and check" Command="{Binding CheckConnectionCommand}" Style="{StaticResource SecondaryButton}"/>
           </VerticalStackLayout>
         </Border>
-        <controls:ChoiceField Title="Currency for your next question" ItemsSource="{Binding Currencies}" SelectedItem="{Binding SelectedCurrency}" IsEnabled="{Binding CanInteract}"/>
-        <Label Text="This month up to today; last month in full. Comparisons use equivalent days unless you request the full previous month. Changing currency resets the context." Style="{StaticResource MutedLabel}"/>
+        <Label Text="{Binding AccountScope.Summary}" Style="{StaticResource MutedLabel}"/>
+        <Label Text="This month up to today; last month in full. Comparisons use equivalent days unless you request the full previous month. The account selected on Home applies here too. Changing account starts a new conversation." Style="{StaticResource MutedLabel}"/>
         <FlexLayout Wrap="Wrap" IsEnabled="{Binding CanInteract}">
           <Button Text="Summary" Margin="0,0,8,6" Command="{Binding SuggestQuestionCommand}" CommandParameter="Summarise this month." Style="{StaticResource SecondaryButton}"/>
           <Button Text="Compare" Margin="0,0,8,6" Command="{Binding SuggestQuestionCommand}" CommandParameter="Compare my spending this month with last month." Style="{StaticResource SecondaryButton}"/>

@@ -13,7 +13,8 @@ public partial class TransactionEditorViewModel(
     AccountService accountService,
     CategoryService categoryService,
     TransactionService transactionService,
-    IAppNavigationService navigation, IUserDialogService dialogs, IAppPreferences preferences) : ViewModelBase
+    IAppNavigationService navigation, IUserDialogService dialogs, IAppPreferences preferences,
+    AccountSelection? accountSelection = null) : ViewModelBase(accountSelection)
 {
     private bool initialized;
     private Guid? defaultAccountId;
@@ -90,7 +91,7 @@ public partial class TransactionEditorViewModel(
     [NotifyPropertyChangedFor(nameof(HasNoCategoryMatches))]
     public partial IReadOnlyList<Category> VisibleCategories { get; set; } = [];
 
-    public string CategoryPickerToggleText => ShowAllCategories ? "Chiudi ⌃" : "Altre ⌄";
+    public string CategoryPickerToggleText => ShowAllCategories ? "Chiudi" : "Altre categorie";
     public bool HasOtherCategories => Categories.Count > QuickCategories.Count;
     public bool HasNoCategoryMatches => ShowAllCategories && VisibleCategories.Count == 0;
 
@@ -303,7 +304,8 @@ public partial class TransactionEditorViewModel(
         CategorySearchText = string.Empty;
         SelectedType = Types.FirstOrDefault(t => t.Value == initialType) ?? Types[1];
         var remembered = RememberAccount && Guid.TryParse(preferences.Get("last-account", ""), out var id) ? id : (Guid?)null;
-        SelectedAccount = Accounts.FirstOrDefault(item => item.Account.IsActive && item.Account.Id == remembered)
+        SelectedAccount = Accounts.FirstOrDefault(item => item.Account.IsActive && item.Account.Id == AccountScope.AccountId)
+            ?? Accounts.FirstOrDefault(item => item.Account.IsActive && item.Account.Id == remembered)
             ?? Accounts.FirstOrDefault(item => item.Account.IsPrimary) ?? Accounts.FirstOrDefault(item => item.Account.IsActive);
         RefreshCategories();
         SelectedCategory = null;

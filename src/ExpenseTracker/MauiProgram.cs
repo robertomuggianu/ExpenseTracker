@@ -49,6 +49,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<TransactionImportService>();
 		builder.Services.AddSingleton<IUserDialogService, UserDialogService>();
 		builder.Services.AddSingleton<IAppPreferences, AppPreferences>();
+        builder.Services.AddSingleton<AccountSelection>();
         builder.Services.AddSingleton<NavigationRequests>();
         builder.Services.AddSingleton<IAppNavigationService, AppNavigationService>();
 		builder.Services.AddSingleton<IFileShareService, FileShareService>();

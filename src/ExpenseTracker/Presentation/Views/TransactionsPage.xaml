@@ -9,24 +9,16 @@
                     ItemsSource="{Binding Groups}" IsGrouped="True" SelectionMode="None" ItemSizingStrategy="MeasureAllItems">
       <CollectionView.Header>
         <VerticalStackLayout Spacing="12" Padding="0,14,0,8">
+          <controls:PeriodFilterBar SelectedPeriod="{Binding SelectedPeriod}" ReferenceDate="{Binding ReferenceDate}" CustomFrom="{Binding CustomFrom}" CustomTo="{Binding CustomTo}"/>
           <controls:SearchField Placeholder="Cerca descrizione o note" Text="{Binding SearchText}"/>
-          <Border Style="{StaticResource Card}" Padding="14">
+          <Border BackgroundColor="Transparent" StrokeThickness="0" Padding="0,4">
             <VerticalStackLayout Spacing="10">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <Label AutomationId="Transactions.Count" Text="{Binding VisibleCountLabel}" FontAttributes="Bold" VerticalTextAlignment="Center"/>
-                <Button Grid.Column="1" Text="{Binding FiltersToggleLabel}" Style="{StaticResource TextButton}" Command="{Binding ToggleFiltersCommand}"/>
+                <Button Grid.Column="1" Text="{Binding FiltersToggleLabel}" Style="{StaticResource SecondaryButton}" Padding="16,8" Command="{Binding ToggleFiltersCommand}"/>
               </Grid>
-              <Label Text="{Binding FilterSummary}" Style="{StaticResource MutedLabel}" FontSize="12"/>
+              <Label Text="{Binding ActiveFilterSummary}" Style="{StaticResource MutedLabel}" FontSize="12"/>
               <VerticalStackLayout IsVisible="{Binding FiltersVisible}" Spacing="10">
-                <controls:ChoiceField Title="Periodo" ItemsSource="{Binding Periods}" SelectedItem="{Binding SelectedPeriod}" DisplayMemberPath="Label"/>
-                <Border IsVisible="{Binding IsReferencePeriod}" Style="{StaticResource InputCard}"><DatePicker Date="{Binding ReferenceDate}" Format="MMMM yyyy"/></Border>
-                <VerticalStackLayout IsVisible="{Binding IsCustomPeriod}" Spacing="8">
-                  <Label Text="Dal" Style="{StaticResource MutedLabel}" FontSize="12"/>
-                  <Border Style="{StaticResource InputCard}"><DatePicker Date="{Binding CustomFrom}" Format="dd/MM/yyyy"/></Border>
-                  <Label Text="Al" Style="{StaticResource MutedLabel}" FontSize="12"/>
-                  <Border Style="{StaticResource InputCard}"><DatePicker Date="{Binding CustomTo}" Format="dd/MM/yyyy"/></Border>
-                </VerticalStackLayout>
-                <controls:ChoiceField Title="Conto" ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount}" DisplayMemberPath="Name"/>
                 <controls:ChoiceField Title="Tipo" ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType}" DisplayMemberPath="Label"/>
                 <controls:ChoiceField Title="Categoria" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" DisplayMemberPath="Name"/>
                 <controls:ChoiceField Title="Valuta" ItemsSource="{Binding Currencies}" SelectedItem="{Binding SelectedCurrency}"/>

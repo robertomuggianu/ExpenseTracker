@@ -13,6 +13,7 @@ public partial class AppShell : Shell
 
     private readonly AccountService accountService;
     private readonly IAppPreferences preferences;
+    private readonly AccountSelection accountScope;
     private readonly IServiceProvider services;
     private AssistantPage? assistantPage;
     private TransactionEditorPage? transactionEditorPage;
@@ -27,6 +28,7 @@ public partial class AppShell : Shell
         this.services = services;
         accountService = services.GetRequiredService<AccountService>();
         preferences = services.GetRequiredService<IAppPreferences>();
+        accountScope = services.GetRequiredService<AccountSelection>();
         InitializeComponent();
         UpdateAppearanceButtons();
         DashboardContent.ContentTemplate = Resolve<DashboardPage>(services);
@@ -113,9 +115,12 @@ public partial class AppShell : Shell
         try
         {
             if (preferences.Get(BalanceVisibility.PreferenceKey, false)) { MenuBalance = "Saldo nascosto"; return; }
-            var accounts = (await accountService.GetAccountsAsync()).Where(item => item.Account.IsActive).ToArray();
+            var accountItems = await accountService.GetAccountsAsync();
+            accountScope.UpdateAccounts(accountItems);
+            var accounts = accountItems.Where(item => accountScope.IsSingleAccount ? item.Account.Id == accountScope.AccountId : item.Account.IsActive)
+                .Where(item => item.Account.Currency == accountScope.Currency).ToArray();
             if (preferences.Get(BalanceVisibility.PreferenceKey, false)) { MenuBalance = "Saldo nascosto"; return; }
-            MenuBalance = accounts.Any(a => a.HasCurrencyMismatch) ? "Verifica le valute dei conti" : "Saldo: " + MoneyFormatter.Format(accounts.Sum(item => item.CurrentBalance), CurrencySelection.SingleOrDefault(accounts.Select(item => item.Account.Currency)));
+            MenuBalance = accounts.Any(a => a.HasCurrencyMismatch) ? "Verifica le valute dei conti" : accountScope.Name + ": " + MoneyFormatter.Format(accounts.Sum(item => item.CurrentBalance), accountScope.Currency);
         }
         catch (Exception exception)
         {

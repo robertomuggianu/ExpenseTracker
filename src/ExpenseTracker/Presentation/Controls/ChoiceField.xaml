@@ -4,20 +4,14 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Name="Root">
-    <Border Style="{StaticResource InputCard}" Padding="14,0">
-        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" MinimumHeightRequest="50">
-            <Button Grid.ColumnSpan="2" BackgroundColor="Transparent" BorderWidth="0" Padding="0"
+    <Border BackgroundColor="{DynamicResource SurfaceAltColor}" StrokeThickness="0" StrokeShape="RoundRectangle 16" Padding="0">
+        <Grid MinimumHeightRequest="50">
+            <Button BackgroundColor="Transparent" BorderWidth="0" CornerRadius="16" Padding="0"
                     Clicked="OnClicked" SemanticProperties.Description="{Binding AccessibilityLabel, Source={x:Reference Root}}"
                     SemanticProperties.Hint="Apre l'elenco delle opzioni" />
             <Label Text="{Binding SelectedLabel, Source={x:Reference Root}}"
-                   VerticalTextAlignment="Center" LineBreakMode="TailTruncation" InputTransparent="True" />
-            <Border Grid.Column="1" WidthRequest="28" HeightRequest="28" Padding="0"
-                    VerticalOptions="Center" BackgroundColor="{DynamicResource CanvasColor}"
-                    StrokeThickness="0" StrokeShape="RoundRectangle 9" InputTransparent="True">
-                <Path Data="M 2,3 L 7,8 L 12,3" Stroke="{DynamicResource MutedColor}"
-                      StrokeThickness="1.8" StrokeLineCap="Round" StrokeLineJoin="Round"
-                      HorizontalOptions="Center" VerticalOptions="Center" WidthRequest="14" HeightRequest="11" />
-            </Border>
+                   Padding="16,12" FontAttributes="Bold" VerticalTextAlignment="Center"
+                   LineBreakMode="TailTruncation" InputTransparent="True" />
         </Grid>
     </Border>
 </ContentView>

@@ -23,6 +23,7 @@
     <Compile Include="..\..\src\ExpenseTracker\Presentation\Services\ChoiceLabelFormatter.cs" Link="Presentation\ChoiceLabelFormatter.cs" />
     <None Include="..\..\src\ExpenseTracker\Resources\Images\category_*.svg" Link="Assets\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="..\..\src\ExpenseTracker\Presentation\Services\PresentationContracts.cs" Link="Presentation\PresentationContracts.cs" />
+    <Compile Include="..\..\src\ExpenseTracker\Presentation\Services\AccountSelection.cs" Link="Presentation\AccountSelection.cs" />
     <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\AssistantViewModel.cs" Link="Presentation\AssistantViewModel.cs" />
     <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\ViewModelBase.cs" Link="Presentation\ViewModelBase.cs" />
     <Compile Include="..\..\src\ExpenseTracker\Presentation\ViewModels\TransactionEditorViewModel.cs" Link="Presentation\TransactionEditorViewModel.cs" />

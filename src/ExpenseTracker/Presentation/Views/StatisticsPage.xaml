@@ -4,28 +4,8 @@
     <VerticalStackLayout Spacing="0">
       <controls:PageHeader Heading="Statistiche"/>
       <VerticalStackLayout Padding="16,14,16,100" Spacing="12">
-        <Border Style="{StaticResource Card}" Padding="14">
-          <VerticalStackLayout Spacing="10">
-            <Grid ColumnDefinitions="*,Auto">
-              <Label Text="Intervallo di analisi" FontSize="17" FontAttributes="Bold" VerticalTextAlignment="Center"/>
-              <Button Grid.Column="1" Text="Aggiorna" Command="{Binding ApplyFiltersCommand}" Padding="16,8" MinimumHeightRequest="40"/>
-            </Grid>
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-              <controls:ChoiceField ItemsSource="{Binding Periods}" SelectedItem="{Binding SelectedPeriod}" DisplayMemberPath="Label" Title="Periodo"/>
-              <controls:ChoiceField Grid.Column="1" ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount}" DisplayMemberPath="Name" Title="Conto"/>
-            </Grid>
-            <controls:ChoiceField Title="Valuta del report" ItemsSource="{Binding Currencies}" SelectedItem="{Binding SelectedCurrency}"/>
-            <DatePicker IsVisible="{Binding IsReferencePeriod}" Date="{Binding ReferenceDate}"/>
-            <Grid IsVisible="{Binding IsCustomPeriod}" ColumnDefinitions="*,*" ColumnSpacing="8">
-              <Border Style="{StaticResource InputCard}">
-                <DatePicker Date="{Binding CustomFrom}"/>
-              </Border>
-              <Border Grid.Column="1" Style="{StaticResource InputCard}">
-                <DatePicker Date="{Binding CustomTo}"/>
-              </Border>
-            </Grid>
-          </VerticalStackLayout>
-        </Border>
+        <controls:PeriodFilterBar SelectedPeriod="{Binding SelectedPeriod}" ReferenceDate="{Binding ReferenceDate}" CustomFrom="{Binding CustomFrom}" CustomTo="{Binding CustomTo}"/>
+        <Label Text="{Binding AccountScope.Summary}" Style="{StaticResource MutedLabel}" FontSize="13" Margin="4,0,4,6"/>
         <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
           <Border Style="{StaticResource Card}" Stroke="{DynamicResource BorderColor}">
             <VerticalStackLayout>
