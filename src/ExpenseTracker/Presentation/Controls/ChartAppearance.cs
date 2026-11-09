@@ -23,10 +23,11 @@ public static class ChartAppearance
 
     private static void OnChartChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (sender is ChartView chart && e.PropertyName is "Series" or "XAxes" or "YAxes") Apply(chart);
+        if (sender is ChartView chart && e.PropertyName is "Series" or "XAxes" or "YAxes")
+            Apply(chart, applyAxes: e.PropertyName != "Series");
     }
 
-    private static void Apply(ChartView chart)
+    private static void Apply(ChartView chart, bool applyAxes = true)
     {
         var dark = GetIsDark(chart) == true;
         var text = SKColor.Parse(dark ? "#B4B2AC" : "#62625F");
@@ -45,15 +46,22 @@ public static class ChartAppearance
             cartesian.LegendTextPaint = new SolidColorPaint(text);
             cartesian.TooltipTextPaint = new SolidColorPaint(text);
             cartesian.TooltipBackgroundPaint = new SolidColorPaint(surface);
-            foreach (var axis in (cartesian.XAxes ?? []).Concat(cartesian.YAxes ?? []).OfType<Axis>())
+            if (applyAxes)
             {
-                axis.LabelsPaint = new SolidColorPaint(text);
-                if (axis.SeparatorsPaint is not null) axis.SeparatorsPaint = new SolidColorPaint(border);
+                foreach (var axis in (cartesian.XAxes ?? []).Concat(cartesian.YAxes ?? []).OfType<Axis>())
+                {
+                    if (axis.LabelsPaint is SolidColorPaint labels) labels.Color = text;
+                    if (axis.SeparatorsPaint is SolidColorPaint separators) separators.Color = border;
+                    if (axis.ZeroPaint is SolidColorPaint zero) zero.Color = text;
+                }
             }
             foreach (var series in cartesian.Series?.OfType<ColumnSeries<decimal>>() ?? [])
-                series.Fill = new SolidColorPaint(SKColor.Parse(series.Name == "Entrate"
-                    ? dark ? "#A7C38A" : "#668A64"
-                    : dark ? "#FFD21F" : "#C39420"));
+                series.Fill = new SolidColorPaint(SKColor.Parse(series.Name switch
+                {
+                    "Entrate" => dark ? "#A7C38A" : "#668A64",
+                    "Spese" => dark ? "#FFD21F" : "#C39420",
+                    _ => dark ? "#9BA9F4" : "#6268AD"
+                }));
         }
     }
 }

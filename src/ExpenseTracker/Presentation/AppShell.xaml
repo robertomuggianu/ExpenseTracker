@@ -40,7 +40,7 @@
           </Grid>
           <Grid ColumnDefinitions="32,*" ColumnSpacing="12">
             <Image Source="{DynamicResource tab_plusSource}" WidthRequest="25" HeightRequest="25" VerticalOptions="Center"/>
-            <Button AutomationId="Navigation.NewTransaction" Grid.Column="1" Text="Nuovo movimento" Style="{StaticResource DrawerButton}" CommandParameter="//NewTransactionRoot/NewTransaction?returnToHome=false" Clicked="OnNavigate"/>
+            <Button AutomationId="Navigation.NewTransaction" Grid.Column="1" Text="Nuovo movimento" Style="{StaticResource DrawerButton}" CommandParameter="//NewTransactionRoot/NewTransaction" Clicked="OnNavigate"/>
           </Grid>
         </VerticalStackLayout>
       </ScrollView>

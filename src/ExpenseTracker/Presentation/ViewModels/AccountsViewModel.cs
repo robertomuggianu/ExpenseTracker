@@ -8,9 +8,29 @@ using ExpenseTracker.Presentation.Services;
 
 namespace ExpenseTracker.Presentation.ViewModels;
 
-public partial class AccountsViewModel(AccountService accountService, IUserDialogService dialogs) : ViewModelBase
+public partial class AccountsViewModel(AccountService accountService, IUserDialogService dialogs, IAppPreferences preferences) : ViewModelBase
 {
     public ObservableCollection<AccountSummary> Accounts { get; } = [];
+    private static readonly CategoryIcon DefaultIcon = CategoryAppearance.Icons.Single(icon => icon.Key == "wallet");
+    public IReadOnlyList<CategoryIcon> Icons { get; } = CategoryAppearance.Icons
+        .OrderByDescending(icon => icon.Key is "wallet" or "bank" or "savings" or "transfer").ToArray();
+
+    [ObservableProperty]
+    public partial CategoryIcon SelectedIcon { get; set; } = DefaultIcon;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanEditOpeningBalance), nameof(CanRevealOpeningBalance))]
+    public partial bool IsBalanceHidden { get; set; } = preferences.Get(BalanceVisibility.PreferenceKey, false);
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanEditOpeningBalance), nameof(CanRevealOpeningBalance))]
+    private bool isOpeningBalanceRevealed;
+
+    public bool CanEditOpeningBalance => !IsBalanceHidden || EditingId is null || IsOpeningBalanceRevealed;
+    public bool CanRevealOpeningBalance => !CanEditOpeningBalance;
+
+    [RelayCommand]
+    private void RevealOpeningBalance() => IsOpeningBalanceRevealed = true;
 
     [ObservableProperty]
     public partial string? BalanceCurrency { get; set; } = "EUR";
@@ -25,6 +45,7 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
     public bool IsFloatingActionsVisible => !IsEditorVisible;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanEditOpeningBalance), nameof(CanRevealOpeningBalance))]
     public partial Guid? EditingId { get; set; }
 
     [ObservableProperty]
@@ -43,7 +64,12 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
     public partial bool IsActive { get; set; } = true;
 
     [RelayCommand]
-    public Task LoadAsync() => RunAsync(LoadCoreAsync);
+    public Task LoadAsync()
+    {
+        IsBalanceHidden = preferences.Get(BalanceVisibility.PreferenceKey, false);
+        IsOpeningBalanceRevealed = false;
+        return RunAsync(LoadCoreAsync);
+    }
 
     private async Task LoadCoreAsync()
     {
@@ -63,6 +89,7 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
     {
         ErrorMessage = null;
         EditingId = null;
+        SelectedIcon = DefaultIcon;
         Name = string.Empty;
         OpeningBalance = "0,00";
         Currency = "EUR";
@@ -76,6 +103,8 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
     {
         IsEditorVisible = false;
         EditingId = null;
+        SelectedIcon = DefaultIcon;
+        IsOpeningBalanceRevealed = false;
         Name = string.Empty;
         OpeningBalance = "0,00";
         Currency = "EUR";
@@ -88,7 +117,9 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
     private void Edit(AccountSummary summary)
     {
         ErrorMessage = null;
+        IsOpeningBalanceRevealed = false;
         EditingId = summary.Account.Id;
+        SelectedIcon = Icons.Single(icon => icon.Key == summary.Account.Icon);
         Name = summary.Account.Name;
         OpeningBalance = summary.Account.OpeningBalance.ToString("0.00", CultureInfo.GetCultureInfo("it-IT"));
         Currency = summary.Account.Currency;
@@ -105,7 +136,7 @@ public partial class AccountsViewModel(AccountService accountService, IUserDialo
             throw new DomainValidationException("Inserisci un saldo iniziale valido.");
         }
 
-        await accountService.SaveAsync(new AccountInput(EditingId, Name, balance, Currency, IsPrimary, IsActive));
+        await accountService.SaveAsync(new AccountInput(EditingId, Name, balance, Currency, IsPrimary, IsActive, SelectedIcon.Key));
         IsEditorVisible = false;
         await LoadCoreAsync();
     });

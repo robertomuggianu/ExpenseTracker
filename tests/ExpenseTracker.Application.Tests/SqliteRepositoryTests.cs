@@ -6,6 +6,98 @@ namespace ExpenseTracker.Application.Tests;
 
 public sealed class SqliteRepositoryTests
 {
+    [Fact]
+    public async Task VersionSix_AddsDefaultAccountIconAndPreservesExistingCategories()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"expense-account-icon-{Guid.NewGuid():N}.db3");
+        var account = new Account(Guid.NewGuid(), "Banca", 25m, isPrimary: true);
+        var category = new Category(Guid.NewGuid(), "Groceries", TransactionType.Expense, "#123456");
+        try
+        {
+            await using (var original = new SqliteExpenseRepository(path))
+            {
+                await original.SaveAccountsAsync([account]);
+                await original.SaveCategoryAsync(category);
+            }
+            using (var raw = new SQLiteConnection(path))
+            {
+                raw.Execute("ALTER TABLE Accounts DROP COLUMN Icon;");
+                raw.Execute("PRAGMA user_version = 6;");
+            }
+
+            await using (var upgraded = new SqliteExpenseRepository(path))
+            {
+                Assert.Equal("wallet", (await upgraded.GetAccountAsync(account.Id))!.Icon);
+                Assert.Equal(category.Name, (await upgraded.GetCategoryAsync(category.Id))!.Name);
+                var service = new AccountService(upgraded);
+                await service.SaveAsync(new(account.Id, account.Name, 25m, "EUR", true, true, "bank"));
+                await service.SaveAsync(new(account.Id, "Banca rinominata", 25m, "EUR", true, true));
+            }
+            await using var reopened = new SqliteExpenseRepository(path);
+            var saved = (await reopened.GetAccountAsync(account.Id))!;
+            Assert.Equal("bank", saved.Icon);
+            Assert.Equal(25m, saved.OpeningBalance);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task DeleteCategory_ReassignsAllReferencesAndKeepsDefaultDeletedAfterRestart()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"expense-delete-category-{Guid.NewGuid():N}.db3");
+        var account = new Account(Guid.NewGuid(), "Conto", 100m, isPrimary: true);
+        var month = new DateTime(2026, 1, 1);
+        Guid sourceId, targetId, unusedId, movementId;
+        try
+        {
+            await using (var repo = new SqliteExpenseRepository(path))
+            {
+                await repo.SaveAccountsAsync([account]);
+                var planning = new PlanningService(repo);
+                var service = new CategoryService(repo, planning);
+                var categories = await service.GetCategoriesAsync();
+                sourceId = categories.Single(c => c.Name == "Affitto").Id;
+                targetId = categories.Single(c => c.Name == "Bollette").Id;
+                unusedId = categories.Single(c => c.Name == "Benzina").Id;
+                movementId = Guid.NewGuid();
+                await repo.SaveTransactionAsync(new(movementId, DateTime.UtcNow, TransactionType.Expense,
+                    account.Id, sourceId, 10m, description: "Storico"));
+                await planning.SaveRuleAsync(new(Guid.NewGuid(), "Regola", account.Id, sourceId,
+                    TransactionType.Expense, 30m, "EUR", month, RepeatFrequency.Monthly));
+                await planning.SaveBudgetAsync(sourceId, "EUR", month, 75m);
+                var impact = await service.GetDeletionImpactAsync(sourceId);
+                Assert.Equal(new CategoryDeletionImpact(1, 1, 1), impact);
+                await Assert.ThrowsAsync<DomainValidationException>(() => service.DeleteAsync(sourceId, null, impact));
+                var income = categories.Single(c => c.Type == TransactionType.Income);
+                await Assert.ThrowsAsync<DomainValidationException>(() => service.DeleteAsync(sourceId, income.Id, impact));
+
+                await planning.SaveBudgetAsync(targetId, "EUR", month, 50m);
+                await Assert.ThrowsAsync<DomainValidationException>(() => service.DeleteAsync(sourceId, targetId, impact));
+                Assert.NotNull(await repo.GetCategoryAsync(sourceId));
+                Assert.Equal(sourceId, (await repo.GetTransactionAsync(movementId))!.CategoryId);
+                var duplicate = (await planning.GetAsync()).Budgets.Single(b => b.CategoryId == targetId);
+                await planning.RemoveBudgetAsync(duplicate.Id);
+
+                await service.DeleteAsync(sourceId, targetId, impact);
+                await service.DeleteAsync(unusedId, null, await service.GetDeletionImpactAsync(unusedId));
+            }
+
+            await using var reopened = new SqliteExpenseRepository(path);
+            Assert.Null(await reopened.GetCategoryAsync(sourceId));
+            Assert.Null(await reopened.GetCategoryAsync(unusedId));
+            var movement = (await reopened.GetTransactionAsync(movementId))!;
+            Assert.Equal(targetId, movement.CategoryId);
+            Assert.Equal(10m, movement.Amount);
+            Assert.Equal("Storico", movement.Description);
+            var state = await new PlanningService(reopened).GetAsync();
+            Assert.Equal(targetId, Assert.Single(state.Rules).CategoryId);
+            var budget = Assert.Single(state.Budgets);
+            Assert.Equal(targetId, budget.CategoryId);
+            Assert.Equal(75m, budget.Limit);
+        }
+        finally { File.Delete(path); }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -67,7 +159,7 @@ public sealed class SqliteRepositoryTests
             }
 
             using var check = new SQLiteConnection(path);
-            Assert.Equal(invalidData ? 2 : 6, check.ExecuteScalar<int>("PRAGMA user_version;"));
+            Assert.Equal(invalidData ? 2 : 7, check.ExecuteScalar<int>("PRAGMA user_version;"));
             Assert.Equal(1, check.ExecuteScalar<int>("SELECT COUNT(*) FROM Transactions;"));
             Assert.Equal(0, check.ExecuteScalar<int>("SELECT COUNT(*) FROM sqlite_master WHERE name = 'TransactionsV3';"));
             if (!invalidData)
@@ -98,21 +190,10 @@ public sealed class SqliteRepositoryTests
                 var firstCategories = await repository.GetCategoriesAsync();
                 await repository.InitializeAsync();
 
-                Assert.Equal(27, firstCategories.Count);
-                (string Name, TransactionType Type)[] importedCategorySet =
-                [
-                    ("Benzina", TransactionType.Expense), ("Cafe", TransactionType.Expense),
-                    ("Education", TransactionType.Expense), ("Gifts", TransactionType.Expense),
-                    ("Groceries", TransactionType.Expense), ("Health", TransactionType.Expense),
-                    ("Home", TransactionType.Expense), ("Leisure", TransactionType.Expense),
-                    ("Other", TransactionType.Expense), ("Restaurants", TransactionType.Expense),
-                    ("Spese per macchina", TransactionType.Expense), ("Subscription", TransactionType.Expense),
-                    ("Transportation", TransactionType.Expense), ("Uscite", TransactionType.Expense),
-                    ("Vape", TransactionType.Expense), ("Gift", TransactionType.Income),
-                    ("Other", TransactionType.Income), ("Paycheck", TransactionType.Income)
-                ];
-                Assert.All(importedCategorySet, expected =>
-                    Assert.Contains(firstCategories, item => item.Name == expected.Name && item.Type == expected.Type));
+                Assert.Equal(["Affitto", "Benzina", "Bollette", "Carburante", "Manutenzione", "Ristoranti", "Spesa",
+                    "Spese per macchina", "Strumenti", "Trasporto pubblico", "Uscite"],
+                    firstCategories.Where(item => item.Type == TransactionType.Expense).Select(item => item.Name));
+                Assert.Equal("Retribuzione", Assert.Single(firstCategories, item => item.Type == TransactionType.Income).Name);
                 Assert.Equal(firstCategories.Count, (await repository.GetCategoriesAsync()).Count);
 
                 var account = new Account(Guid.NewGuid(), "Test", 10m, isPrimary: true);

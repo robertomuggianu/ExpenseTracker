@@ -3,10 +3,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ExpenseTracker.Application;
 using ExpenseTracker.Domain;
+using ExpenseTracker.Presentation.Services;
 
 namespace ExpenseTracker.Presentation.ViewModels;
 
-public partial class CategoriesViewModel(CategoryService categoryService) : ViewModelBase
+public partial class CategoriesViewModel(CategoryService categoryService, IUserDialogService dialogs) : ViewModelBase
 {
     private bool iconChosen;
     partial void OnCategoryNameChanged(string value)
@@ -51,7 +52,9 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
     public partial bool IsEditorVisible { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsEditingCategory))]
     public partial Guid? EditingCategoryId { get; set; }
+    public bool IsEditingCategory => EditingCategoryId.HasValue;
 
     [ObservableProperty]
     public partial string CategoryName { get; set; } = string.Empty;
@@ -117,6 +120,33 @@ public partial class CategoriesViewModel(CategoryService categoryService) : View
             SelectedIcon.Key));
         IsEditorVisible = false;
         IsIncomeSelected = SelectedCategoryType.Value == TransactionType.Income;
+        await LoadCoreAsync();
+    });
+
+    [RelayCommand]
+    private Task DeleteCategoryAsync() => RunAsync(async () =>
+    {
+        if (EditingCategoryId is not Guid id) return;
+        var categories = await categoryService.GetCategoriesAsync();
+        var category = categories.FirstOrDefault(item => item.Id == id)
+            ?? throw new DomainValidationException("La categoria è già stata eliminata.");
+        var impact = await categoryService.GetDeletionImpactAsync(id);
+        Category? replacement = null;
+        var message = $"Eliminare «{category.Name}»?";
+        if (impact.RequiresReplacement)
+        {
+            var choices = categories.Where(item => item.IsActive && item.Id != id && item.Type == category.Type).ToArray();
+            if (choices.Length == 0)
+                throw new DomainValidationException("Prima di eliminare questa categoria, crea o riattiva un'altra categoria dello stesso tipo.");
+            replacement = await dialogs.ChooseCategoryAsync($"Scegli la destinazione per «{category.Name}»", choices);
+            if (replacement is null) return;
+            message += $"\n\nSposta i collegamenti in «{replacement.Name}».\n"
+                + $"Movimenti · {impact.Transactions}\nRicorrenze · {impact.Recurrences}\nBudget · {impact.Budgets}";
+        }
+
+        if (!await dialogs.ConfirmAsync("Elimina categoria", message, "Elimina", "Annulla")) return;
+        await categoryService.DeleteAsync(id, replacement?.Id, impact);
+        CancelEdit();
         await LoadCoreAsync();
     });
 

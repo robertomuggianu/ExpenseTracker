@@ -27,7 +27,7 @@ public partial class CategoriesPage : ContentPage
 
     private async void OnCategoryTileTapped(object? sender, TappedEventArgs e)
     {
-        if (e.Parameter is not CategoryTile tile) return;
+        if (_viewModel.IsBusy || e.Parameter is not CategoryTile tile) return;
         if (tile.Category is { } category) _viewModel.EditCategoryCommand.Execute(category);
         else _viewModel.NewCategoryCommand.Execute(null);
         await CategoryScroll.ScrollToAsync(CategoryEditor, ScrollToPosition.Start, true);

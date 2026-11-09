@@ -1,4 +1,5 @@
 using ExpenseTracker.Application;
+using ExpenseTracker.Domain;
 namespace ExpenseTracker.Presentation.Services;
 
 public interface IUserDialogService
@@ -6,6 +7,7 @@ public interface IUserDialogService
     Task ShowMessageAsync(string title, string message);
 
     Task<bool> ConfirmAsync(string title, string message, string accept, string cancel);
+    Task<Category?> ChooseCategoryAsync(string title, IReadOnlyList<Category> categories);
 }
 
 public interface IAppNavigationService
@@ -45,6 +47,12 @@ public interface IAppPreferences
     void Set(string key, string value);
     void Set(string key, bool value);
     void Remove(string key);
+}
+
+internal static class BalanceVisibility
+{
+    public const string PreferenceKey = "hide-home-balance";
+    public const string Mask = "••••••";
 }
 
 public sealed class NavigationRequests { public TransactionFilter? Filter { get; set; } public string? Message { get; set; } }

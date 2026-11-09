@@ -3,7 +3,8 @@
   <ScrollView>
     <VerticalStackLayout Spacing="0">
       <controls:PageHeader Heading="{Binding Title}"/>
-      <VerticalStackLayout Padding="18,12,18,100" Spacing="14">
+      <VerticalStackLayout Padding="18,12,18,100" Spacing="14" IsEnabled="{Binding IsFormReady}">
+        <VerticalStackLayout.Triggers><DataTrigger TargetType="VerticalStackLayout" Binding="{Binding IsBusy}" Value="True"><Setter Property="IsEnabled" Value="False"/></DataTrigger></VerticalStackLayout.Triggers>
 
       <Border Padding="0" BackgroundColor="{DynamicResource SurfaceAltColor}" StrokeShape="RoundRectangle 20">
         <controls:TransactionTypeField SelectedItem="{Binding SelectedType}"/>

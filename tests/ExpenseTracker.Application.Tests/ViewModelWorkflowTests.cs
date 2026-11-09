@@ -2,6 +2,7 @@ using ExpenseTracker.Domain;
 using ExpenseTracker.Infrastructure;
 using ExpenseTracker.Presentation.Services;
 using ExpenseTracker.Presentation.ViewModels;
+using LiveChartsCore.SkiaSharpView;
 
 namespace ExpenseTracker.Application.Tests;
 
@@ -212,7 +213,7 @@ public sealed class ViewModelWorkflowTests
         var service = new CategoryService(repo);
         var expense = await service.SaveCategoryAsync(new(null, "Viaggio personale", TransactionType.Expense, "#123456", true, "luggage"));
         var income = await service.SaveCategoryAsync(new(null, "Rimborso viaggio", TransactionType.Income, "#123456", true, "transfer"));
-        var vm = new CategoriesViewModel(service);
+        var vm = new CategoriesViewModel(service, new Dialogs());
         await vm.LoadAsync(); vm.SearchText = "viaggio";
         Assert.Equal(expense.Id, Assert.Single(vm.VisibleCategories).Id);
         Assert.True(vm.CategoryTiles[^1].IsCreate);
@@ -352,7 +353,7 @@ public sealed class ViewModelWorkflowTests
 
     [Fact] public Task Categories_SuggestIconWhileTypingAndPreserveUserChoice() => WithDatabase(async repo =>
     {
-        var vm = new CategoriesViewModel(new(repo)); await vm.LoadAsync(); vm.NewCategoryCommand.Execute(null);
+        var vm = new CategoriesViewModel(new(repo), new Dialogs()); await vm.LoadAsync(); vm.NewCategoryCommand.Execute(null);
         vm.CategoryName = "Rimborso viaggio"; Assert.Equal("transfer", vm.SelectedIcon.Key);
         vm.CategoryName = "Farmacia e salute"; Assert.Equal("medical", vm.SelectedIcon.Key);
         vm.SelectIconCommand.Execute(vm.Icons.Single(i => i.Key == "heart"));
@@ -386,7 +387,7 @@ public sealed class ViewModelWorkflowTests
 
     [Fact] public Task Accounts_CancelCreationOrEditDiscardsFieldsWithoutSaving() => WithDatabase(async repo =>
     {
-        var vm = new AccountsViewModel(new(repo), new Dialogs());
+        var vm = new AccountsViewModel(new(repo), new Dialogs(), new PreferencesStore());
         await vm.LoadAsync(); var original = Assert.Single(vm.Accounts).Account;
         vm.NewAccountCommand.Execute(null);
         Assert.True(vm.IsEditorVisible); Assert.False(vm.IsFloatingActionsVisible);
@@ -595,7 +596,7 @@ public sealed class ViewModelWorkflowTests
     {
         var service = new ExpenseTracker.Application.CategoryService(repo);
         var saved = await service.SaveCategoryAsync(new(null, "Viaggio Giappone", TransactionType.Expense, "#123456", true, "luggage"));
-        var vm = new CategoriesViewModel(service); await vm.LoadAsync();
+        var vm = new CategoriesViewModel(service, new Dialogs()); await vm.LoadAsync();
         vm.SearchText = " giappone ";
         Assert.Equal(saved.Id, Assert.Single(vm.VisibleCategories).Id);
         vm.EditCategoryCommand.Execute(Assert.Single(vm.VisibleCategories));
@@ -705,6 +706,9 @@ public sealed class ViewModelWorkflowTests
         public Task<IReadOnlyList<Category>> GetCategoriesAsync(CancellationToken cancellationToken = default) => inner.GetCategoriesAsync(cancellationToken);
         public Task<Category?> GetCategoryAsync(Guid id, CancellationToken cancellationToken = default) => inner.GetCategoryAsync(id, cancellationToken);
         public Task SaveCategoryAsync(Category category, CancellationToken cancellationToken = default) => inner.SaveCategoryAsync(category, cancellationToken);
+        public Task<CategoryDeletionImpact> GetCategoryDeletionImpactAsync(Guid id, CancellationToken cancellationToken = default) => inner.GetCategoryDeletionImpactAsync(id, cancellationToken);
+        public Task DeleteCategoryAsync(Guid id, Guid? replacementId, CategoryDeletionImpact confirmedImpact, CancellationToken cancellationToken = default) =>
+            inner.DeleteCategoryAsync(id, replacementId, confirmedImpact, cancellationToken);
         public Task<Transaction?> GetTransactionAsync(Guid id, CancellationToken cancellationToken = default) => inner.GetTransactionAsync(id, cancellationToken);
         public Task SaveTransactionAsync(Transaction transaction, CancellationToken cancellationToken = default) => inner.SaveTransactionAsync(transaction, cancellationToken);
         public Task DeleteTransactionAsync(Guid id, CancellationToken cancellationToken = default) => inner.DeleteTransactionAsync(id, cancellationToken);
@@ -741,6 +745,7 @@ public sealed class ViewModelWorkflowTests
     {
         public Task ShowMessageAsync(string title, string message) => Task.CompletedTask;
         public Task<bool> ConfirmAsync(string title, string message, string accept, string cancel) => Task.FromResult(true);
+        public Task<Category?> ChooseCategoryAsync(string title, IReadOnlyList<Category> categories) => Task.FromResult(categories.FirstOrDefault());
     }
     private static async Task WithDatabase(Func<SqliteExpenseRepository, Task> test)
     {
@@ -804,6 +809,70 @@ public sealed class ViewModelWorkflowTests
         vm.SelectedPeriod = vm.Periods.Single(p => p.Value == DateRangePreset.CurrentYear); await SettledAsync(vm); Assert.Equal(30m, vm.Expense);
         vm.SelectedPeriod = vm.Periods.Single(p => p.Value == DateRangePreset.SelectedMonth); vm.ReferenceDate = new(year, 1, 1); await SettledAsync(vm); Assert.Equal(10m, vm.Expense);
         vm.SelectedCurrency = "USD"; await SettledAsync(vm); Assert.Equal(0m, vm.Expense); Assert.False(vm.HasChartData);
+    });
+
+    [Fact] public Task Statistics_AnnualColumnsKeepEmptyMonthsAndSignedDifference() => WithDatabase(async repo =>
+    {
+        var account = Assert.Single(await repo.GetAccountsAsync());
+        var categories = await repo.GetCategoriesAsync();
+        var income = categories.First(c => c.Type == TransactionType.Income);
+        var expense = categories.First(c => c.Type == TransactionType.Expense);
+        const int year = 2025;
+        await Save(1, income, 800m);
+        await Save(1, expense, 1000m);
+        await Save(12, income, 2000m);
+        await Save(12, expense, 450m);
+
+        var vm = new StatisticsViewModel(new(repo), new(repo), new Navigation());
+        await vm.LoadAsync();
+        var initialXAxis = Assert.Single(vm.XAxes);
+        var initialYAxis = Assert.Single(vm.YAxes);
+        vm.SelectedPeriod = vm.Periods.Single(p => p.Value == DateRangePreset.SelectedYear);
+        vm.ReferenceDate = new(year, 9, 1);
+        await SettledAsync(vm);
+
+        Assert.Same(initialXAxis, Assert.Single(vm.XAxes));
+        Assert.Same(initialYAxis, Assert.Single(vm.YAxes));
+        Assert.Equal(12, initialXAxis.Labels!.Count);
+        Assert.True(initialXAxis.ForceStepToMin);
+        Assert.Null(initialYAxis.MinLimit);
+        Assert.NotNull(initialYAxis.ZeroPaint);
+        var series = vm.TrendSeries.Cast<ColumnSeries<decimal>>().ToDictionary(s => s.Name!);
+        Assert.Equal(3, series.Count);
+        Assert.All(series.Values, s => Assert.Equal(12, s.Values!.Count()));
+        Assert.Equal(800m, series["Entrate"].Values!.First());
+        Assert.Equal(1000m, series["Spese"].Values!.First());
+        var difference = series["Differenza"].Values!.ToArray();
+        Assert.Equal(-200m, difference[0]);
+        Assert.All(difference[1..^1], amount => Assert.Equal(0m, amount));
+        Assert.Equal(1550m, difference[^1]);
+        Assert.Equal(vm.Difference, difference.Sum());
+
+        Task Save(int month, Category category, decimal amount) => repo.SaveTransactionAsync(new(Guid.NewGuid(),
+            new DateTime(year, month, 15, 12, 0, 0).ToUniversalTime(), category.Type, account.Id, category.Id, amount));
+    });
+
+    [Fact] public Task Accounts_UsesHomeVisibilityAndRevealsOpeningBalanceOnRequest() => WithDatabase(async repo =>
+    {
+        var preferences = new PreferencesStore();
+        var home = new DashboardViewModel(new(repo), new Navigation(), new(repo), preferences);
+        var vm = new AccountsViewModel(new(repo), new Dialogs(), preferences);
+        await vm.LoadAsync();
+        Assert.False(vm.IsBalanceHidden);
+
+        home.ToggleBalanceVisibilityCommand.Execute(null);
+        await vm.LoadAsync();
+        vm.EditCommand.Execute(Assert.Single(vm.Accounts));
+        Assert.True(vm.IsBalanceHidden);
+        Assert.False(vm.CanEditOpeningBalance);
+        vm.RevealOpeningBalanceCommand.Execute(null);
+        Assert.True(vm.CanEditOpeningBalance);
+        await vm.LoadAsync();
+        Assert.False(vm.CanEditOpeningBalance);
+
+        home.ToggleBalanceVisibilityCommand.Execute(null);
+        await vm.LoadAsync();
+        Assert.True(vm.CanEditOpeningBalance);
     });
     [Fact] public Task Transactions_AutomaticFiltersAndDetailRefresh() => WithDatabase(async repo =>
     {

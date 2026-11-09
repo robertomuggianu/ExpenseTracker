@@ -2,17 +2,17 @@
 
 Revisione dell'interfaccia e verifiche del 4 novembre 2026: [resoconto del collaudo](docs/collaudo-2026-11-04.md), con test ripetibili, pacchetto Android e limiti della verifica iPhone.
 
-Ambiente iPhone su Mac remoto: [configurazione e test automatici nel simulatore iOS](docs/ios-simulator-tests.md).
+Per generare l'IPA su GitHub e installarlo su iPhone da Windows, segui la [guida a Sideloadly](docs/iphone-sideloadly.md).
 
 ExpenseTracker è un'applicazione personale offline-first realizzata con .NET MAUI 10, C#, XAML e MVVM. Conti, categorie e movimenti restano nel database SQLite del dispositivo. L'assistente opzionale usa un servizio locale sul PC con Ollama, senza sincronizzazione cloud.
 
 ## Funzioni MVP
 
-- gestione di più conti con un solo conto principale e saldo calcolato;
-- categorie di entrata/uscita in schede separate, con icone circolari e nomi visibili in griglia, 45 icone Tabler e una palette di 32 colori, disattivabili senza eliminare lo storico;
+- gestione di più conti con icone personalizzabili, un solo conto principale e saldo calcolato;
+- categorie di entrata/uscita in schede separate, con 45 icone Tabler e una palette di 32 colori. Si possono disattivare o eliminare riassegnando i collegamenti;
 - inserimento, modifica, filtro, dettaglio ed eliminazione dei movimenti;
 - Home con saldo nascondibile, valuta automatica del conto principale, navigazione tra mesi e confronto delle spese con il mese precedente;
-- statistiche per settimana, mese, anno o periodo personalizzato, grafici a ciambella e andamento giornaliero/mensile con LiveCharts2;
+- statistiche per settimana, mese, anno o periodo personalizzato, con distribuzione per categoria e colonne per entrate, spese e differenza;
 - inserimento rapido con le categorie più usate, conto principale preselezionato, data subito visibile e dettagli facoltativi;
 - cronologia raggruppata per giorno, ricerca uniforme e filtri automatici, navigazione dal menu laterale;
 - assistente AI accessibile dal pulsante in basso a sinistra, con ritorno alla pagina precedente senza perdere i campi compilati;
@@ -22,7 +22,7 @@ L'interfaccia offre i temi Grafite (scuro) e Avorio (chiaro), con superfici arro
 
 Nell'inserimento dei movimenti, una sola riga mostra le categorie che entrano nello spazio disponibile, ordinate per frequenza negli ultimi 20 movimenti e, a parità, per utilizzo più recente. **Altre** espande sotto la riga le categorie rimanenti in ordine alfabetico, con ricerca anche senza accenti. Un tocco seleziona la categoria e richiude l'elenco; il nome scelto resta visibile accanto a **Categoria**. Importo, data e dettagli compilati vengono conservati.
 
-Nella Home, scorrendo verso la lista, la ciambella lascia posto a un riepilogo fisso con barra orizzontale proporzionale alle categorie. Risalendo torna la ciambella. Il pulsante con l'occhio accanto al saldo nasconde o mostra soltanto il saldo totale e ricorda la scelta sul dispositivo. Nelle Categorie, il riquadro **Crea** aggiunge una categoria del tipo della scheda selezionata. La data del movimento è sempre disponibile sotto l'importo; ora, descrizione e note si aprono nei dettagli, prima dei pulsanti di salvataggio.
+Nella Home, scorrendo verso la lista, la ciambella lascia posto a un riepilogo fisso con barra orizzontale proporzionale alle categorie. Risalendo torna la ciambella. Il pulsante con l'occhio ricorda la visibilità dei saldi in Home, nel menu e in Conti. Nelle Categorie, il riquadro **Crea** aggiunge una categoria del tipo della scheda selezionata. La data del movimento è sempre disponibile sotto l'importo. Ora, descrizione e note si aprono nei dettagli, prima dei pulsanti di salvataggio.
 
 ## Architettura
 
@@ -49,16 +49,16 @@ Pacchetti principali:
 
 ## Database
 
-Il file `expense-tracker.db3` viene creato in `FileSystem.AppDataDirectory`. Lo schema versione 6 contiene:
+Il file `expense-tracker.db3` viene creato in `FileSystem.AppDataDirectory`. Lo schema versione 7 contiene:
 
-- `Accounts`;
+- `Accounts`, con saldo iniziale, valuta e icona;
 - `Categories`, con tipo, colore e icona;
 - `Transactions`, collegata a `Accounts` e `Categories`, con collegamento dei trasferimenti;
 - `AppState`, per budget e ricorrenze.
 
 Gli importi sono salvati in centesimi interi e convertiti in `decimal` nel dominio. Le relazioni usano foreign key con eliminazione protetta. Un indice univoco parziale garantisce al massimo un conto principale. `PRAGMA user_version` abilita migrazioni incrementali future senza cancellare il database.
 
-L'inizializzazione aggiunge soltanto le categorie predefinite mancanti, riconoscendole per identificativi stabili anche dopo una rinomina. I database precedenti vengono migrati automaticamente: ogni categoria conserva lo storico e acquisisce tipo e colore dal vecchio gruppo.
+La migrazione alla versione 7 aggiunge l'icona del portafoglio ai conti esistenti e inizializza il catalogo italiano. L'inizializzazione delle categorie avviene una volta per database, quindi le categorie eliminate restano assenti al riavvio. L'aggiornamento conserva le categorie già salvate e i relativi movimenti.
 
 La migrazione alla versione 3 ripara i database nei quali i movimenti fanno ancora riferimento alla tabella temporanea `CategoriesV2`. Conserva i movimenti, verifica le relazioni e annulla la riparazione in caso di dati incoerenti. Le migrazioni 2 e 3 sono transazionali. Per aggiornare un dispositivo interessato, installare la nuova versione sopra quella esistente, senza disinstallare l'app.
 

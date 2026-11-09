@@ -19,6 +19,7 @@ public sealed class ChoiceLabelFormatterTests
         var account = new AccountSummary(new Account(Guid.NewGuid(), "Principale", 10m), 10m);
         Assert.Equal(account.DisplayName, ChoiceLabelFormatter.Format(account, "DisplayName", "Conto"));
         Assert.Equal("Stipendio", ChoiceLabelFormatter.Format(new Category(Guid.NewGuid(), "Stipendio", TransactionType.Income, "#123456"), "Name", "Categoria"));
+        Assert.Equal("Banca", ChoiceLabelFormatter.Format(new CategoryIcon("bank", "Banca"), "Label", "Icona del conto"));
         Assert.Equal("EUR", ChoiceLabelFormatter.Format("EUR", "", "Valuta"));
     }
 }

@@ -25,10 +25,11 @@ public partial class TransactionEditorViewModel(
     [ObservableProperty] public partial string? CategoryError { get; set; }
     [ObservableProperty] public partial string? AccountError { get; set; }
     [ObservableProperty] public partial bool RememberAccount { get; set; } = preferences.Get("remember-account", false);
+    [ObservableProperty] public partial bool IsFormReady { get; set; }
     partial void OnRememberAccountChanged(bool value) => preferences.Set("remember-account", value);
     public void StoreDraft()
     {
-        if (!initialized || IsBusy) return;
+        if (!initialized || !IsFormReady || IsBusy) return;
         if (!HasDraft)
         { preferences.Remove("transaction-draft"); return; }
         preferences.Set("transaction-draft", TransactionDraftSerializer.Serialize(new TransactionEditorDraft(EditingId, SelectedType.Value!.Value,
@@ -154,6 +155,7 @@ public partial class TransactionEditorViewModel(
 
     public async Task LoadAsync(Guid? transactionId = null, bool duplicate = false, TransactionType? initialType = null)
     {
+        var openingExisting = transactionId.HasValue;
         await RunAsync(async () =>
         {
             TransactionEditorDraft? draft = initialized && HasDraft && transactionId is null
@@ -161,6 +163,9 @@ public partial class TransactionEditorViewModel(
                 : null;
             if (initialized && transactionId.HasValue && !string.IsNullOrWhiteSpace(Amount)
                 && !await dialogs.ConfirmAsync("Bozza in corso", "Aprire il movimento sostituirà la bozza attuale.", "Continua", "Annulla")) return;
+            IsFormReady = false;
+            StatusMessage = null;
+            if (openingExisting) Title = duplicate ? "Duplica movimento" : "Modifica movimento";
             if (!transactionId.HasValue)
             {
                 try { draft ??= TransactionDraftSerializer.Deserialize(preferences.Get("transaction-draft", "null")); }
@@ -171,6 +176,7 @@ public partial class TransactionEditorViewModel(
             var original = transactionId.HasValue ? await transactionService.GetTransactionAsync(transactionId.Value) : null;
             if (transactionId.HasValue && original is null)
             {
+                if (openingExisting) throw new DomainValidationException("Il movimento selezionato non esiste più.");
                 preferences.Remove("transaction-draft");
                 draft = null; transactionId = null; EditingId = null; originalCategoryId = null;
                 StatusMessage = "Il movimento non esiste più. Puoi inserirne uno nuovo.";
@@ -191,8 +197,7 @@ public partial class TransactionEditorViewModel(
 
             if (transactionId.HasValue)
             {
-                var item = await transactionService.GetTransactionAsync(transactionId.Value)
-                    ?? throw new DomainValidationException("Il movimento selezionato non esiste.");
+                var item = original!;
                 var localDate = item.OccurredAtUtc.ToLocalTime();
                 SelectedType = Types.Single(option => option.Value == item.Type);
                 SelectedAccount = Accounts.SingleOrDefault(account => account.Account.Id == item.AccountId);
@@ -219,6 +224,7 @@ public partial class TransactionEditorViewModel(
                 StatusMessage = "Bozza ripristinata.";
             }
             initialized = true;
+            IsFormReady = true;
         });
         StoreDraft();
     }
@@ -237,6 +243,7 @@ public partial class TransactionEditorViewModel(
     });
     private async Task SaveCoreAsync(bool addAnother)
     {
+        if (!IsFormReady) throw new DomainValidationException("Apri un movimento valido prima di salvare.");
         AmountError = CategoryError = AccountError = null; StatusMessage = null;
         if (SelectedAccount is null)
         {

@@ -14,7 +14,8 @@
                 <VerticalStackLayout Spacing="6" Padding="20,30,20,22">
                     <Label Text="Saldo totale" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" FontSize="16"/>
                     <Label AutomationId="Accounts.TotalBalance" Style="{StaticResource HeroValue}" HorizontalTextAlignment="Center">
-                        <Label.Text><MultiBinding Converter="{StaticResource MoneyConverter}"><Binding Path="TotalBalance"/><Binding Path="BalanceCurrency"/></MultiBinding></Label.Text>
+                        <Label.Text><MultiBinding Converter="{StaticResource MoneyConverter}"><Binding Path="TotalBalance"/><Binding Path="BalanceCurrency"/><Binding Path="IsBalanceHidden"/></MultiBinding></Label.Text>
+                        <Label.Triggers><DataTrigger TargetType="Label" Binding="{Binding IsBalanceHidden}" Value="True"><Setter Property="SemanticProperties.Description" Value="Saldo totale nascosto"/></DataTrigger></Label.Triggers>
                     </Label>
                 </VerticalStackLayout>
 
@@ -24,8 +25,8 @@
                     <Border Style="{StaticResource Card}" IsVisible="{Binding IsEditorVisible}" Stroke="{StaticResource Primary}">
                         <VerticalStackLayout Spacing="12">
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                <Border WidthRequest="42" HeightRequest="42" Padding="0" BackgroundColor="{DynamicResource CanvasColor}" StrokeThickness="0" StrokeShape="RoundRectangle 13">
-                                    <Label Text="¤" TextColor="{DynamicResource AccentTextColor}" FontSize="23" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                <Border WidthRequest="42" HeightRequest="42" Padding="0" BackgroundColor="{StaticResource DarkBackground}" StrokeThickness="0" StrokeShape="RoundRectangle 13">
+                                    <Image Source="{Binding SelectedIcon.ImageSource}" WidthRequest="25" HeightRequest="25" />
                                 </Border>
                                 <VerticalStackLayout Grid.Column="1">
                                     <Label Text="Dati del conto" FontSize="19" FontAttributes="Bold" />
@@ -34,10 +35,13 @@
                             </Grid>
                             <Label Text="Nome" FontAttributes="Bold" FontSize="12" />
                             <Border Style="{StaticResource InputCard}"><Entry AutomationId="Accounts.Name" Placeholder="Es. Conto principale" Text="{Binding Name}" /></Border>
+                            <Label Text="Icona" FontAttributes="Bold" FontSize="12" />
+                            <controls:ChoiceField AutomationId="Accounts.Icon" Title="Icona del conto" ItemsSource="{Binding Icons}" SelectedItem="{Binding SelectedIcon}" DisplayMemberPath="Label" />
                             <Grid ColumnDefinitions="2*,*" ColumnSpacing="10">
                                 <VerticalStackLayout Spacing="5">
                                     <Label Text="Saldo iniziale" FontAttributes="Bold" FontSize="12" />
-                                    <Border Style="{StaticResource InputCard}"><Entry AutomationId="Accounts.OpeningBalance" Placeholder="0,00" Text="{Binding OpeningBalance}" Keyboard="Numeric" /></Border>
+                                    <Border Style="{StaticResource InputCard}" IsVisible="{Binding CanEditOpeningBalance}"><Entry AutomationId="Accounts.OpeningBalance" Placeholder="0,00" Text="{Binding OpeningBalance}" Keyboard="Numeric" /></Border>
+                                    <Button Text="Mostra saldo iniziale" Style="{StaticResource SecondaryButton}" IsVisible="{Binding CanRevealOpeningBalance}" Command="{Binding RevealOpeningBalanceCommand}" />
                                 </VerticalStackLayout>
                                 <VerticalStackLayout Grid.Column="1" Spacing="5">
                                     <Label Text="Valuta" FontAttributes="Bold" FontSize="12" />
@@ -64,8 +68,8 @@
                                 <Border Style="{StaticResource Card}">
                                     <VerticalStackLayout Spacing="12">
                                         <Grid ColumnDefinitions="50,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="3">
-                                            <Border Grid.RowSpan="2" WidthRequest="50" HeightRequest="50" Padding="0" BackgroundColor="{DynamicResource CanvasColor}" StrokeThickness="0" StrokeShape="Ellipse">
-                                                <Image Source="category_wallet.png" WidthRequest="27" HeightRequest="27"/>
+                                            <Border Grid.RowSpan="2" WidthRequest="50" HeightRequest="50" Padding="0" BackgroundColor="{StaticResource DarkBackground}" StrokeThickness="0" StrokeShape="Ellipse">
+                                                <Image Source="{Binding Account.IconSource}" WidthRequest="27" HeightRequest="27"/>
                                             </Border>
                                             <Label AutomationId="Accounts.RowName" Grid.Column="1" Text="{Binding DisplayName}" FontSize="17" FontAttributes="Bold" LineBreakMode="TailTruncation" VerticalTextAlignment="Center" />
                                             <Label Grid.Column="2" FontSize="17" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalTextAlignment="Center" LineBreakMode="TailTruncation" >
@@ -73,8 +77,10 @@
                             <MultiBinding Converter="{StaticResource MoneyConverter}">
                                 <Binding Path="CurrentBalance" />
                                 <Binding Path="Account.Currency" />
+                                <Binding Source="{x:Reference Page}" Path="BindingContext.IsBalanceHidden" />
                             </MultiBinding>
                         </Label.Text>
+                        <Label.Triggers><DataTrigger TargetType="Label" Binding="{Binding Source={x:Reference Page}, Path=BindingContext.IsBalanceHidden}" Value="True"><Setter Property="SemanticProperties.Description" Value="Saldo del conto nascosto"/></DataTrigger></Label.Triggers>
                     </Label>
                                             <Label Grid.Row="1" Grid.Column="1" Text="{Binding Account.Currency, StringFormat='Valuta {0}'}" Style="{StaticResource MutedLabel}" FontSize="12" />
                                             <Label Grid.Row="1" Grid.Column="2" Text="Non attivo" TextColor="{DynamicResource ExpenseColor}" FontSize="12" IsVisible="{Binding IsInactive}" />

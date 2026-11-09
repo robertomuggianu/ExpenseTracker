@@ -10,7 +10,8 @@ public sealed class Account
         bool isPrimary = false,
         bool isActive = true,
         DateTime? createdAtUtc = null,
-        DateTime? updatedAtUtc = null)
+        DateTime? updatedAtUtc = null,
+        string? icon = null)
     {
         if (id == Guid.Empty)
         {
@@ -18,7 +19,7 @@ public sealed class Account
         }
 
         Id = id;
-        Update(name, openingBalance, currency);
+        Update(name, openingBalance, currency, icon);
         IsPrimary = isPrimary;
         IsActive = isActive;
         CreatedAtUtc = createdAtUtc ?? DateTime.UtcNow;
@@ -33,6 +34,9 @@ public sealed class Account
 
     public string Currency { get; private set; } = "EUR";
 
+    public string Icon { get; private set; } = "wallet";
+    public string IconSource => $"category_{Icon}.png";
+
     public bool IsPrimary { get; private set; }
 
     public bool IsActive { get; private set; }
@@ -41,7 +45,7 @@ public sealed class Account
 
     public DateTime UpdatedAtUtc { get; private set; }
 
-    public void Update(string name, decimal openingBalance, string currency)
+    public void Update(string name, decimal openingBalance, string currency, string? icon = null)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -53,9 +57,13 @@ public sealed class Account
             throw new DomainValidationException("La valuta deve essere un codice di tre lettere.");
         }
 
+        if (icon is not null && !CategoryAppearance.Icons.Any(option => option.Key == icon))
+            throw new DomainValidationException("Scegli un'icona valida per il conto.");
+
         Name = name.Trim();
         OpeningBalance = decimal.Round(openingBalance, 2, MidpointRounding.AwayFromZero);
         Currency = currency.Trim().ToUpperInvariant();
+        Icon = icon ?? Icon;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ExpenseTracker.Application;
@@ -13,6 +14,7 @@ namespace ExpenseTracker.Presentation.ViewModels;
 
 public partial class StatisticsViewModel(ReportingService reportingService, AccountService accountService, IAppNavigationService navigation) : ViewModelBase
 {
+    private static readonly CultureInfo ReportCulture = CultureInfo.GetCultureInfo("it-IT");
     public ObservableCollection<string> Currencies { get; } = [];
     [ObservableProperty] public partial string SelectedCurrency { get; set; } = "EUR";
     [ObservableProperty] public partial DateTime ReferenceDate { get; set; } = DateTime.Today;
@@ -94,11 +96,23 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
     [ObservableProperty]
     public partial IEnumerable<ISeries> TrendSeries { get; set; } = [];
 
-    [ObservableProperty]
-    public partial IEnumerable<Axis> XAxes { get; set; } = [new Axis()];
+    // Keep the axis instances when the report changes so LiveCharts can remove its previous ticks.
+    public IReadOnlyList<Axis> XAxes { get; } = [new Axis
+    {
+        LabelsPaint = new SolidColorPaint(SKColor.Parse("#B4B2AC")),
+        MinStep = 1,
+        MinLimit = -0.5,
+        SeparatorsPaint = null
+    }];
 
-    [ObservableProperty]
-    public partial IEnumerable<Axis> YAxes { get; set; } = [];
+    public IReadOnlyList<Axis> YAxes { get; } = [new Axis
+    {
+        LabelsPaint = new SolidColorPaint(SKColor.Parse("#B4B2AC")),
+        TextSize = 11,
+        SeparatorsPaint = new SolidColorPaint(SKColor.Parse("#3C3D42")),
+        ZeroPaint = new SolidColorPaint(SKColor.Parse("#B4B2AC"), 1.5f),
+        Labeler = value => value.ToString(Math.Abs(value) >= 1_000_000 ? "0,,.##' M'" : Math.Abs(value) >= 1_000 ? "0,.##' k'" : "0.##", ReportCulture)
+    }];
 
     [ObservableProperty]
     public partial string TrendCaption { get; set; } = string.Empty;
@@ -180,29 +194,23 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
         var buckets = new List<TrendPoint>();
         for (var date = BucketDate(from); date < to; date = monthly ? date.AddMonths(1) : date.AddDays(weekly ? 7 : 1))
             buckets.Add(values.GetValueOrDefault(date) ?? new TrendPoint(date, 0, 0));
-        var culture = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
+        var culture = ReportCulture;
         var shortPeriod = (to - from).TotalDays <= 7;
         var labels = buckets.Select(t => monthly ? t.Date.ToString(from.Year == to.AddDays(-1).Year ? "MMM" : "MMM yy", culture)
             : weekly ? $"{t.Date:dd}–{(t.Date.AddDays(6) < to ? t.Date.AddDays(6) : to.AddDays(-1)):dd}"
             : t.Date.ToString(shortPeriod ? "ddd" : "dd/MM", culture)).ToArray();
         TrendCaption = $"Totali {(monthly ? "mensili" : weekly ? "settimanali" : "giornalieri")} · {from.ToString("dd MMM yyyy", culture)} – {to.AddDays(-1).ToString("dd MMM yyyy", culture)} · {ReportCurrency}";
-        HasTrendData = buckets.Any(t => t.Income != 0 || t.Expense != 0);
+        var xAxis = XAxes[0];
+        xAxis.TextSize = buckets.Count > 7 ? 9 : 12;
+        xAxis.Labels = labels;
+        xAxis.ForceStepToMin = buckets.Count <= 7 || monthly && buckets.Count <= 12;
+        xAxis.MaxLimit = buckets.Count - 0.5;
+        YAxes[0].MinLimit = buckets.Any(t => t.Difference < 0) ? null : 0;
         TrendSeries = [
-            new ColumnSeries<decimal> { Name = "Entrate", Values = buckets.Select(t => t.Income).ToArray(),
-                MaxBarWidth = 32, Padding = 3, Rx = 4, Ry = 4,
-                YToolTipLabelFormatter = point => MoneyFormatter.Format(point.Model, ReportCurrency),
-                Fill = new SolidColorPaint(SKColor.Parse("#A7C38A")) },
-            new ColumnSeries<decimal> { Name = "Spese", Values = buckets.Select(t => t.Expense).ToArray(),
-                MaxBarWidth = 32, Padding = 3, Rx = 4, Ry = 4,
-                YToolTipLabelFormatter = point => MoneyFormatter.Format(point.Model, ReportCurrency),
-                Fill = new SolidColorPaint(SKColor.Parse("#FFD21F")) }];
-        XAxes = [new Axis { LabelsPaint = new SolidColorPaint(SKColor.Parse("#B4B2AC")), TextSize = 12,
-            Labels = labels, MinStep = 1, ForceStepToMin = buckets.Count <= 7,
-            MinLimit = -0.5, MaxLimit = buckets.Count - 0.5, LabelsRotation = 0,
-            SeparatorsPaint = null }];
-        YAxes = [new Axis { LabelsPaint = new SolidColorPaint(SKColor.Parse("#B4B2AC")), TextSize = 11,
-            SeparatorsPaint = new SolidColorPaint(SKColor.Parse("#3C3D42")), MinLimit = 0,
-            Labeler = value => value.ToString(value >= 1000000 ? "0,,.##' M'" : value >= 1000 ? "0,.##' k'" : "0.##", culture) }];
+            TrendColumns("Entrate", buckets.Select(t => t.Income), "#A7C38A"),
+            TrendColumns("Spese", buckets.Select(t => t.Expense), "#FFD21F"),
+            TrendColumns("Differenza", buckets.Select(t => t.Difference), "#9BA9F4")];
+        HasTrendData = buckets.Any(t => t.Income != 0 || t.Expense != 0);
         ExpenseSeries = summary.ExpensesByCategory
             .Select(item => (ISeries)new PieSeries<decimal> { Name = item.Name, Values = [item.Total], InnerRadius = 75, MaxRadialColumnWidth = 42, Fill = new SolidColorPaint(SKColor.Parse(item.Color)), Stroke = new SolidColorPaint(SKColor.Parse("#25262A"), 3) })
             .ToArray();
@@ -210,6 +218,19 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
         CategoryBreakdown.Clear();
         foreach (var item in summary.ExpensesByCategory)
             CategoryBreakdown.Add(new CategoryBreakdownItem(item.Name, item.Color, $"category_{item.Icon}.png", item.Total,
-                Expense == 0 ? "0%" : (item.Total / Expense).ToString("P0", System.Globalization.CultureInfo.GetCultureInfo("it-IT")), ReportCurrency, item.CategoryId));
+                Expense == 0 ? "0%" : (item.Total / Expense).ToString("P0", culture), ReportCurrency, item.CategoryId));
     }
+
+    private ColumnSeries<decimal> TrendColumns(string name, IEnumerable<decimal> values, string color) => new()
+    {
+        Name = name,
+        Values = values.ToArray(),
+        MaxBarWidth = 26,
+        Padding = 1,
+        Rx = 2,
+        Ry = 2,
+        Pivot = 0,
+        YToolTipLabelFormatter = point => MoneyFormatter.Format(point.Model, ReportCurrency),
+        Fill = new SolidColorPaint(SKColor.Parse(color))
+    };
 }

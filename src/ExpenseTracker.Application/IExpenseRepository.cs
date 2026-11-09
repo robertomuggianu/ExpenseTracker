@@ -18,6 +18,11 @@ public interface IExpenseRepository
 
     Task SaveCategoryAsync(Category category, CancellationToken cancellationToken = default);
 
+    Task<CategoryDeletionImpact> GetCategoryDeletionImpactAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task DeleteCategoryAsync(Guid id, Guid? replacementId, CategoryDeletionImpact confirmedImpact,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Transaction>> GetTransactionsAsync(
         TransactionFilter? filter = null,
         CancellationToken cancellationToken = default);
