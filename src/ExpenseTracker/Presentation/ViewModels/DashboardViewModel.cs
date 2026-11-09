@@ -10,7 +10,7 @@ using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
 namespace ExpenseTracker.Presentation.ViewModels;
 public partial class DashboardViewModel(ReportingService reportingService, IAppNavigationService navigation,
-    AccountService accountService, IAppPreferences preferences) : ViewModelBase
+    AccountService accountService, IAppPreferences preferences, AccountSelection? accountSelection = null) : ViewModelBase(accountSelection)
 {
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(BalanceText), nameof(BalanceVisibilityIcon), nameof(BalanceVisibilityDescription), nameof(BalanceAccessibilityText))]
@@ -23,13 +23,14 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
     [RelayCommand] private void ToggleBalanceVisibility() => IsBalanceHidden = !IsBalanceHidden;
     [ObservableProperty] public partial string SelectedCurrency { get; set; } = "EUR";
     private bool refreshPending;
+    private Task? loadTask;
     private DateRange displayedRange;
     private int periodVersion;
     [ObservableProperty] public partial string? BalanceWarning { get; set; }
     [RelayCommand] private Task OpenCategoryAsync(CategoryBreakdownItem item)
     {
         var range = displayedRange;
-        return navigation.GoToTransactionsAsync(new(range.FromUtc, range.ToUtcExclusive,
+        return navigation.GoToTransactionsAsync(new(range.FromUtc, range.ToUtcExclusive, AccountScope.AccountId,
             Type: IsIncomeSelected ? ExpenseTracker.Domain.TransactionType.Income : ExpenseTracker.Domain.TransactionType.Expense,
             CategoryId: item.CategoryId, Currency: ReportCurrency));
     }
@@ -66,7 +67,7 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
                 ChartTotal == 0 ? "0%" : (item.Total / ChartTotal).ToString("P0", CultureInfo.GetCultureInfo("it-IT")), ReportCurrency, item.CategoryId));
         OnPropertyChanged(nameof(ChartTotal));
     }
-    [ObservableProperty] public partial DateTime SelectedMonth { get; set; } = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    [ObservableProperty] public partial DateTime SelectedMonth { get; set; } = DateTime.Today;
     public IReadOnlyList<PeriodOption> Periods { get; } =
     [new(DateRangePreset.CurrentWeek, "Settimana"), new(DateRangePreset.CurrentMonth, "Mese"),
      new(DateRangePreset.CurrentYear, "Anno"), new(DateRangePreset.Custom, "Periodo")];
@@ -96,6 +97,7 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
         ++periodVersion; refreshPending = true;
         _ = LoadAsync();
     }
+    protected override void OnAccountScopeChanged() => RefreshPeriod();
     partial void OnSelectedPeriodChanged(PeriodOption value)
     {
         OnPropertyChanged(nameof(IsCustomPeriod)); OnPropertyChanged(nameof(CanStepPeriod));
@@ -118,17 +120,21 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
     [ObservableProperty] public partial IEnumerable<ISeries> ChartSeries { get; set; } = [];
     [ObservableProperty] public partial bool HasChartData { get; set; }
     public bool HasNoChartData => !HasChartData;
-    [RelayCommand] public Task LoadAsync() => RunAsync(async () =>
+    [RelayCommand] public Task LoadAsync()
     {
-        var accounts = await accountService.GetAccountsAsync();
-        // The primary active account determines the Home currency; other currencies stay separate.
-        SelectedCurrency = accounts.Where(a => a.Account.IsActive)
-            .OrderByDescending(a => a.Account.IsPrimary).ThenBy(a => a.Account.CreatedAtUtc).ThenBy(a => a.Account.Id)
-            .Select(a => a.Account.Currency).FirstOrDefault() ?? "EUR";
-        do { refreshPending = false; await LoadCoreAsync(); } while (refreshPending);
-    });
+        refreshPending = true;
+        if (IsBusy) return loadTask ?? Task.CompletedTask;
+        return loadTask = RunAsync(async () =>
+        {
+            var accounts = await accountService.GetAccountsAsync();
+            AccountScope.UpdateAccounts(accounts);
+            do { refreshPending = false; await LoadCoreAsync(); } while (refreshPending);
+        });
+    }
     private async Task LoadCoreAsync()
     {
+        SelectedCurrency = AccountScope.Currency;
+        var accountId = AccountScope.AccountId;
         var month = SelectedMonth; var currency = SelectedCurrency; var version = periodVersion;
         DateRange range;
         try { range = GetRange(); }
@@ -137,13 +143,13 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
             Income = Expense = Difference = 0; expenseGroups = []; incomeGroups = [];
             ComparisonText = ""; UpdateChart(); throw;
         }
-        var summary = await reportingService.GetDashboardAsync(range, currency: currency);
+        var summary = await reportingService.GetDashboardAsync(range, currency: currency, accountId: accountId);
         if (version != periodVersion || month != SelectedMonth || currency != SelectedCurrency) { refreshPending = true; return; }
         if (SelectedPeriod.Value == DateRangePreset.CurrentMonth)
         {
             var comparison = MonthlyPeriods.Comparison(month, DateTime.Today);
-            var current = await reportingService.GetAnalyticsAsync(comparison.Current, currency: currency);
-            var previous = await reportingService.GetAnalyticsAsync(comparison.Previous, currency: currency);
+            var current = await reportingService.GetAnalyticsAsync(comparison.Current, accountId, currency: currency);
+            var previous = await reportingService.GetAnalyticsAsync(comparison.Previous, accountId, currency: currency);
             if (version != periodVersion || month != SelectedMonth || currency != SelectedCurrency) { refreshPending = true; return; }
             var delta = current.Totals.Expense - previous.Totals.Expense;
             var period = comparison.Partial ? "allo stesso punto del mese scorso" : "al mese precedente";
@@ -181,7 +187,7 @@ public partial class DashboardViewModel(ReportingService reportingService, IAppN
     [RelayCommand] private Task CurrentMonthAsync() { SelectedMonth = DateTime.Today; refreshPending = true; return LoadAsync(); }
     [RelayCommand] private Task NewTransactionAsync() => navigation.GoToTransactionEditorAsync(returnToHome: true,
         initialType: IsIncomeSelected ? ExpenseTracker.Domain.TransactionType.Income : ExpenseTracker.Domain.TransactionType.Expense);
-    partial void OnSelectedMonthChanged(DateTime value) => OnPropertyChanged(nameof(MonthLabel));
+    partial void OnSelectedMonthChanged(DateTime value) => RefreshPeriod();
     partial void OnHasChartDataChanged(bool value) => OnPropertyChanged(nameof(HasNoChartData));
 }
 

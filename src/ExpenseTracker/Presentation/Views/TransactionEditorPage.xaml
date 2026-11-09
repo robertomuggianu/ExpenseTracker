@@ -30,7 +30,7 @@
           <Label Text="Categoria" Style="{StaticResource SectionTitle}" VerticalTextAlignment="Center"/>
           <Label Grid.Column="1" Text="{Binding SelectedCategory.Name}" TextColor="{DynamicResource AccentTextColor}" FontSize="12" VerticalTextAlignment="Center" HorizontalTextAlignment="End" MaxLines="1" LineBreakMode="TailTruncation"/>
           <Button Grid.Column="2" Text="{Binding CategoryPickerToggleText}" Command="{Binding ToggleCategoryBrowserCommand}" IsVisible="{Binding HasOtherCategories}"
-                  Style="{StaticResource TextButton}" FontSize="13" MinimumHeightRequest="44" Padding="8,0"/>
+                  Style="{StaticResource SecondaryButton}" FontSize="13" MinimumHeightRequest="44" Padding="10,0"/>
         </Grid>
         <FlexLayout x:Name="QuickCategoryRow" Wrap="NoWrap" AlignItems="Start" SizeChanged="OnQuickCategoryRowSizeChanged" BindableLayout.ItemsSource="{Binding QuickCategories}">
           <BindableLayout.ItemTemplate>
@@ -97,7 +97,9 @@
         <Label Text="Ricorda l'ultimo conto" VerticalTextAlignment="Center"/>
         <Switch Grid.Column="1" IsToggled="{Binding RememberAccount}" SemanticProperties.Description="Ricorda l'ultimo conto"/>
       </Grid>
-      <Button AutomationId="Transaction.Details" Text="Descrizione, ora e altri dettagli ⌄" Style="{StaticResource TextButton}" Command="{Binding ToggleDetailsCommand}"/>
+      <Button AutomationId="Transaction.Details" Text="Descrizione, ora e altri dettagli" Style="{StaticResource SecondaryButton}" Command="{Binding ToggleDetailsCommand}">
+        <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding ShowDetails}" Value="True"><Setter Property="Text" Value="Chiudi dettagli" /></DataTrigger></Button.Triggers>
+      </Button>
       <Border Style="{StaticResource Card}" IsVisible="{Binding ShowDetails}">
         <VerticalStackLayout Spacing="12">
           <Border Style="{StaticResource InputCard}">

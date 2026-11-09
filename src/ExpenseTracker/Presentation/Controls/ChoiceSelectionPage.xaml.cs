@@ -1,19 +1,33 @@
 using System.Collections.ObjectModel;
 using ExpenseTracker.Domain;
+using ExpenseTracker.Application;
+using ExpenseTracker.Presentation.ViewModels;
 
 namespace ExpenseTracker.Presentation.Controls;
 
 public sealed record ChoiceSelectionItem(object Value, string Label, bool IsSelected)
 {
-    public string Indicator => IsSelected ? "●" : "○";
+    public string SelectionHint => IsSelected ? "Selezionato" : "Tocca per scegliere";
     public string? IconSource => Value switch
     {
         Category category => category.IconSource,
         CategoryIcon icon => icon.ImageSource,
+        AccountSummary account => account.Account.IconSource,
+        AccountFilterOption account => account.IconSource,
         _ => null
     };
     public string IconColor => Value is Category category ? category.Color : "#222A3C";
     public bool HasIcon => IconSource is not null;
+    public string? Subtitle => Value switch
+    {
+        AccountSummary account => AccountSubtitle(account.Account.Currency, account.Account.IsPrimary),
+        AccountFilterOption { Id: null } => "Vista complessiva",
+        AccountFilterOption account => AccountSubtitle(account.Currency, account.IsPrimary),
+        _ => null
+    };
+    public bool HasSubtitle => !string.IsNullOrEmpty(Subtitle);
+    public double RowHeight => HasSubtitle ? 76 : 58;
+    private static string? AccountSubtitle(string? currency, bool primary) => primary ? $"{currency} · Principale" : currency;
 }
 
 public partial class ChoiceSelectionPage : ContentPage
@@ -84,6 +98,6 @@ public partial class ChoiceSelectionPage : ContentPage
     {
         public ObservableCollection<ChoiceSelectionItem> Items { get; } = new(Source);
         // CollectionView needs a finite height inside the bottom-aligned sheet.
-        public double ListHeight => Math.Clamp(Source.Count * 64, 64, 384);
+        public double ListHeight => Math.Clamp(Source.Sum(item => item.RowHeight + 6), 64, 384);
     }
 }

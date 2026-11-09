@@ -8,6 +8,21 @@ public partial class DashboardPage : ContentPage
     private readonly DashboardViewModel _viewModel;
     private bool _isSummaryCompact;
     private bool _isShortLayout;
+    private bool _choosingAccount;
+
+    private async void OnChooseAccountClicked(object? sender, EventArgs e)
+    {
+        if (_choosingAccount || ChoiceSelectionPage.IsOpen) return;
+        _choosingAccount = true;
+        try
+        {
+            var scope = _viewModel.AccountScope;
+            var (accepted, selected) = await ChoiceSelectionPage.ShowAsync("Conto per tutta l’app",
+                scope.Options.Select(a => new ChoiceSelectionItem(a, a.Name, a.Id == scope.AccountId)).ToArray());
+            if (accepted && selected is AccountFilterOption account) scope.Select(account.Id);
+        }
+        finally { _choosingAccount = false; }
+    }
 
     public DashboardPage(DashboardViewModel viewModel)
     {

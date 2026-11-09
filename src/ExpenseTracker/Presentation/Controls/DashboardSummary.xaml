@@ -2,29 +2,24 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controls="clr-namespace:ExpenseTracker.Presentation.Controls"
              x:Class="ExpenseTracker.Presentation.Controls.DashboardSummary" x:Name="Root">
-  <Border Style="{StaticResource Card}" Padding="14,18">
+  <Border BackgroundColor="Transparent" StrokeThickness="0" Padding="0,14">
     <Border.Triggers>
       <DataTrigger TargetType="Border" Binding="{Binding IsCompact, Source={x:Reference Root}}" Value="True">
         <Setter Property="Padding" Value="14,10"/>
+        <Setter Property="BackgroundColor" Value="{DynamicResource CanvasColor}"/>
       </DataTrigger>
     </Border.Triggers>
     <VerticalStackLayout Spacing="14">
       <VerticalStackLayout IsVisible="{Binding IsExpanded, Source={x:Reference Root}}" Spacing="14">
-        <Grid ColumnDefinitions="Auto,*,Auto">
-          <controls:ChoiceField ItemsSource="{Binding Periods}" SelectedItem="{Binding SelectedPeriod}" DisplayMemberPath="Label" Title="Vista"/>
-          <Label Grid.Column="1" Text="Riepilogo per categoria" Style="{StaticResource MutedLabel}" FontSize="12" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
-          <Button Grid.Column="2" Text="Oggi" Command="{Binding CurrentMonthCommand}" IsVisible="{Binding CanStepPeriod}" Style="{StaticResource TextButton}"/>
-        </Grid>
-        <Grid ColumnDefinitions="*,*" ColumnSpacing="12" IsVisible="{Binding IsCustomPeriod}">
-          <VerticalStackLayout><Label Text="Dal"/><DatePicker Date="{Binding CustomFrom}"/></VerticalStackLayout>
-          <VerticalStackLayout Grid.Column="1"><Label Text="Al"/><DatePicker Date="{Binding CustomTo}"/></VerticalStackLayout>
-        </Grid>
+        <controls:PeriodFilterBar SelectedPeriod="{Binding SelectedPeriod}" ReferenceDate="{Binding SelectedMonth}" CustomFrom="{Binding CustomFrom}" CustomTo="{Binding CustomTo}"/>
       </VerticalStackLayout>
+      <VerticalStackLayout IsVisible="{Binding IsCompact, Source={x:Reference Root}}">
       <Grid ColumnDefinitions="44,*,44" IsVisible="{Binding CanStepPeriod}">
         <Button Text="‹" Command="{Binding PreviousMonthCommand}" Style="{StaticResource TextButton}" FontSize="30" Padding="0" SemanticProperties.Description="Periodo precedente"/>
         <Label Grid.Column="1" Text="{Binding MonthLabel}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="17" FontAttributes="Bold" TextTransform="None"/>
         <Button Grid.Column="2" Text="›" Command="{Binding NextMonthCommand}" Style="{StaticResource TextButton}" FontSize="30" Padding="0" SemanticProperties.Description="Periodo successivo"/>
       </Grid>
+      </VerticalStackLayout>
       <VerticalStackLayout IsVisible="{Binding IsExpanded, Source={x:Reference Root}}" Spacing="14">
         <controls:CategoryChart/>
         <Label Text="{Binding EmptyChartText}" IsVisible="{Binding HasNoChartData}" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center"/>

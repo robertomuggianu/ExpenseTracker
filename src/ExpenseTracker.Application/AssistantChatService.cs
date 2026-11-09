@@ -21,7 +21,7 @@ public sealed class AssistantChatService(IExpenseRepository repository)
     }
 
     public async Task<AssistantChatEvidence> ExecuteAsync(string question, AssistantChatPlan plan, string currency,
-        DateTime todayLocal, CancellationToken token = default)
+        DateTime todayLocal, CancellationToken token = default, Guid? accountId = null)
     {
         if (!AssistantChatPolicy.ValidQuestion(question) || !AssistantChatPolicy.ValidPlan(plan) || !AssistantChatPolicy.ValidCurrency(currency))
             throw new DomainValidationException("The question could not be interpreted. Please specify the period and the information you need.");
@@ -55,8 +55,8 @@ public sealed class AssistantChatService(IExpenseRepository repository)
         {
             DateTime Utc(DateOnly d) => DateTime.SpecifyKind(d.ToDateTime(TimeOnly.MinValue), DateTimeKind.Local).ToUniversalTime();
             var range = new DateRange(Utc(from), Utc(through.AddDays(1)));
-            var items = (await repository.GetTransactionsAsync(new(range.FromUtc, range.ToUtcExclusive, Currency: currency), token))
-                .Where(t => range.Contains(t.OccurredAtUtc) && t.Currency == currency && t.TransferId is null && categoryIds.Contains(t.CategoryId)).ToArray();
+            var items = (await repository.GetTransactionsAsync(new(range.FromUtc, range.ToUtcExclusive, AccountId: accountId, Currency: currency), token))
+                .Where(t => (!accountId.HasValue || t.AccountId == accountId) && range.Contains(t.OccurredAtUtc) && t.Currency == currency && t.TransferId is null && categoryIds.Contains(t.CategoryId)).ToArray();
             periods.Add((label, from, through, items));
         }
         if (plan.Period != AssistantChatPeriod.Previous) await ReadAsync("Current month", start, today);
@@ -67,7 +67,7 @@ public sealed class AssistantChatService(IExpenseRepository repository)
                 : DateTime.DaysInMonth(previousStart.Year, previousStart.Month);
             await ReadAsync("Previous month", previousStart, new(previousStart.Year, previousStart.Month, day));
         }
-        var facts = new List<string> { $"Currency: {currency}. Scope: all accounts; transfers excluded.",
+        var facts = new List<string> { $"Currency: {currency}. Scope: {(accountId.HasValue ? "selected account" : "all accounts")}; transfers excluded.",
             filterName is null ? "Categories: all." : $"Selected category: {Quote(filterName)}.",
             "Source: transactions recorded in the app. Income minus expenses is neither a bank balance nor a complete measure of savings.",
             "Periods and counts cover only the stated dates; these data do not establish the cause of a change.",

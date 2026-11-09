@@ -8,7 +8,8 @@ using ExpenseTracker.Presentation.Services;
 namespace ExpenseTracker.Presentation.ViewModels;
 
 public partial class TransactionsViewModel(TransactionService transactionService, AccountService accountService,
-    CategoryService categoryService, IUserDialogService dialogs, IAppNavigationService navigation, NavigationRequests requests) : ViewModelBase
+    CategoryService categoryService, IUserDialogService dialogs, IAppNavigationService navigation, NavigationRequests requests,
+    AccountSelection? accountSelection = null) : ViewModelBase(accountSelection)
 {
     private bool loadingFilters;
     private int filterVersion;
@@ -26,7 +27,14 @@ public partial class TransactionsViewModel(TransactionService transactionService
     public bool HasVisibleTotals => VisibleTotals.Count > 0;
     public bool HasStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
     public bool HasSearch => !string.IsNullOrWhiteSpace(SearchText);
-    public string FiltersToggleLabel => FiltersVisible ? "Chiudi filtri ⌃" : "Filtri ⌄";
+    public string FiltersToggleLabel => FiltersVisible ? "Chiudi filtri" : "Filtri";
+    public string ActiveFilterSummary => string.Join(" · ", new[]
+    {
+        AccountScope.Name,
+        SelectedType.Value.HasValue ? SelectedType.Label : null,
+        SelectedCategory?.Id.HasValue == true ? SelectedCategory.Name : null,
+        SelectedCurrency != "Tutte le valute" ? SelectedCurrency : null
+    }.Where(s => !string.IsNullOrWhiteSpace(s)));
     public string VisibleCountLabel => (Transactions.Count == 1 ? "1 movimento" : $"{Transactions.Count} movimenti")
         + (HasMore ? " · altri disponibili" : "");
     public bool IsFloatingActionsVisible => !HasSelectedTransaction;
@@ -59,7 +67,8 @@ public partial class TransactionsViewModel(TransactionService transactionService
         try
         {
             SelectedPeriod = Periods.Single(p => p.Value == DateRangePreset.CurrentMonth);
-            SelectedAccount = Accounts.FirstOrDefault(a => a.Id is null);
+            SelectedAccount = Accounts.FirstOrDefault(a => a.Id == AccountScope.AccountId);
+            ReferenceDate = DateTime.Today;
             SelectedCategory = Categories.FirstOrDefault(c => c.Id is null);
             SelectedType = Types[0]; SelectedCurrency = "Tutte le valute"; SearchText = "";
             SelectedTransaction = null; ++searchVersion;
@@ -75,13 +84,24 @@ public partial class TransactionsViewModel(TransactionService transactionService
     [RelayCommand] private Task NewTransactionAsync() => navigation.GoToTransactionEditorAsync(initialType: SelectedType.Value);
     partial void OnSelectedTransactionChanged(TransactionListItem? value) => HasSelectedTransaction = value is not null;
     partial void OnSelectedPeriodChanged(PeriodOption value) { OnPropertyChanged(nameof(IsCustomPeriod)); OnPropertyChanged(nameof(IsReferencePeriod)); RequestRefresh(); }
-    partial void OnSelectedAccountChanged(AccountFilterOption? value) => RequestRefresh();
+    partial void OnSelectedAccountChanged(AccountFilterOption? value)
+    {
+        if (!loadingFilters) AccountScope.Select(value?.Id);
+        RequestRefresh();
+    }
+    protected override void OnAccountScopeChanged()
+    {
+        SelectedTransaction = null;
+        SelectedCurrency = AccountScope.IsSingleAccount ? AccountScope.Currency : "Tutte le valute";
+        loadRequested = true;
+        RequestRefresh();
+    }
     partial void OnSelectedCategoryChanged(CategoryFilterOption? value) => RequestRefresh();
     partial void OnSelectedTypeChanged(TransactionTypeOption value) => RequestRefresh();
     partial void OnSelectedCurrencyChanged(string value) => RequestRefresh();
     partial void OnCustomFromChanged(DateTime value) { if (IsCustomPeriod) RequestRefresh(); }
     partial void OnCustomToChanged(DateTime value) { if (IsCustomPeriod) RequestRefresh(); }
-    partial void OnReferenceDateChanged(DateTime value) { if (IsReferencePeriod) RequestRefresh(); }
+    partial void OnReferenceDateChanged(DateTime value) { if (!IsCustomPeriod) RequestRefresh(); }
     partial void OnSearchTextChanged(string value) { OnPropertyChanged(nameof(HasSearch)); var version = ++searchVersion; _ = DebounceSearchAsync(version); }
     private async Task DebounceSearchAsync(int version) { await Task.Delay(250); if (version == searchVersion) RequestRefresh(); }
     private void RequestRefresh() { filterVersion++; visibleCount = 100; if (!loadingFilters) _ = ApplyFiltersAsync(); }
@@ -98,8 +118,10 @@ public partial class TransactionsViewModel(TransactionService transactionService
         loadingFilters = true;
         try
         {
-            var accountId = SelectedAccount?.Id; var categoryId = SelectedCategory?.Id;
+            var categoryId = SelectedCategory?.Id;
             var accountItems = await accountService.GetAccountsAsync();
+            AccountScope.UpdateAccounts(accountItems);
+            var accountId = AccountScope.AccountId;
             Accounts.Clear(); Accounts.Add(new(null, "Tutti i conti")); foreach (var a in accountItems) Accounts.Add(new(a.Account.Id, a.Account.Name));
             Categories.Clear(); Categories.Add(new(null, "Tutte le categorie")); foreach (var c in await categoryService.GetCategoriesAsync()) Categories.Add(new(c.Id, c.Name));
             SelectedAccount = Accounts.FirstOrDefault(a => a.Id == accountId) ?? Accounts[0]; SelectedCategory = Categories.FirstOrDefault(c => c.Id == categoryId) ?? Categories[0];
@@ -111,7 +133,8 @@ public partial class TransactionsViewModel(TransactionService transactionService
                 SelectedPeriod = Periods.Single(p => p.Value == DateRangePreset.Custom);
                 CustomFrom = pending.FromUtc?.ToLocalTime().Date ?? DateTime.Today;
                 CustomTo = pending.ToUtcExclusive?.ToLocalTime().AddDays(-1).Date ?? DateTime.Today;
-                SelectedAccount = Accounts.FirstOrDefault(a => a.Id == pending.AccountId) ?? Accounts[0];
+                if (pending.AccountId.HasValue) AccountScope.Select(pending.AccountId);
+                SelectedAccount = Accounts.FirstOrDefault(a => a.Id == AccountScope.AccountId) ?? Accounts[0];
                 SelectedCategory = Categories.FirstOrDefault(c => c.Id == pending.CategoryId) ?? Categories[0];
                 SelectedType = Types.First(t => t.Value == pending.Type); SelectedCurrency = pending.Currency ?? "Tutte le valute";
                 SearchText = pending.Search ?? "";
@@ -132,8 +155,8 @@ public partial class TransactionsViewModel(TransactionService transactionService
     {
         if (IsCustomPeriod && CustomFrom.Date > CustomTo.Date)
         { Groups.Clear(); Transactions.Clear(); VisibleTotals.Clear(); HasMore = false; OnPropertyChanged(nameof(HasVisibleTotals)); OnPropertyChanged(nameof(VisibleCountLabel)); SelectedTransaction = null; FilterSummary = "Intervallo non valido"; throw new DomainValidationException("La data iniziale deve precedere quella finale."); }
-        var range = DateRangeFactory.Create(SelectedPeriod.Value, IsReferencePeriod ? ReferenceDate : DateTime.Now, CustomFrom, CustomTo);
-        var filter = new TransactionFilter(range.FromUtc, range.ToUtcExclusive, SelectedAccount?.Id, SelectedType.Value, SelectedCategory?.Id,
+        var range = DateRangeFactory.Create(SelectedPeriod.Value, ReferenceDate, CustomFrom, CustomTo);
+        var filter = new TransactionFilter(range.FromUtc, range.ToUtcExclusive, AccountScope.AccountId, SelectedType.Value, SelectedCategory?.Id,
             SearchText, SelectedCurrency == "Tutte le valute" ? null : SelectedCurrency, visibleCount + 1);
         var items = await transactionService.GetTransactionsAsync(filter);
         if (version != filterVersion || loadRequested) return;
@@ -147,7 +170,7 @@ public partial class TransactionsViewModel(TransactionService transactionService
         VisibleTotals.Clear();
         foreach (var group in displayed.Where(i => i.Transaction.TransferId is null).GroupBy(i => i.Transaction.Currency).OrderBy(g => g.Key))
             VisibleTotals.Add(new(group.Key, group.Where(i => i.SignedAmount > 0).Sum(i => i.SignedAmount), -group.Where(i => i.SignedAmount < 0).Sum(i => i.SignedAmount)));
-        OnPropertyChanged(nameof(VisibleCountLabel)); OnPropertyChanged(nameof(HasVisibleTotals));
+        OnPropertyChanged(nameof(VisibleCountLabel)); OnPropertyChanged(nameof(HasVisibleTotals)); OnPropertyChanged(nameof(ActiveFilterSummary));
     }
     [RelayCommand] private Task DeleteAsync(TransactionListItem item) => RunAsync(async () =>
     {

@@ -23,17 +23,30 @@
                     </CollectionView.EmptyView>
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="controls:ChoiceSelectionItem">
-                            <Border Padding="0" Margin="0,0,0,6" HeightRequest="58" StrokeThickness="0"
-                                    BackgroundColor="{DynamicResource SurfaceAltColor}"
-                                    StrokeShape="RoundRectangle 14">
+                            <Border Padding="0" Margin="0,0,0,6" HeightRequest="{Binding RowHeight}" StrokeThickness="0"
+                                    BackgroundColor="{DynamicResource CanvasColor}"
+                                    Stroke="{DynamicResource BorderColor}" StrokeShape="RoundRectangle 18">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                        <Setter Property="BackgroundColor" Value="{DynamicResource SurfaceAltColor}" />
+                                        <Setter Property="StrokeThickness" Value="1" />
+                                    </DataTrigger>
+                                </Border.Triggers>
                                 <Grid>
-                                  <Button BackgroundColor="Transparent" BorderWidth="0" CornerRadius="14" Clicked="OnItemClicked"
-                                          SemanticProperties.Description="{Binding Label}" />
-                                  <Grid Padding="12,11" ColumnDefinitions="Auto,*,32" ColumnSpacing="10" InputTransparent="True">
-                                    <Border IsVisible="{Binding HasIcon}" WidthRequest="36" HeightRequest="36" Padding="8" BackgroundColor="{Binding IconColor}"><Image Source="{Binding IconSource}" /></Border>
-                                    <Label Grid.Column="2" Text="{Binding Indicator}" TextColor="{StaticResource Primary}" FontSize="20"
-                                           VerticalTextAlignment="Center" HorizontalTextAlignment="Center" />
-                                    <Label Grid.Column="1" Text="{Binding Label}" FontSize="16" VerticalTextAlignment="Center" MaxLines="2" LineBreakMode="TailTruncation" />
+                                  <Button BackgroundColor="Transparent" BorderWidth="0" CornerRadius="18" Clicked="OnItemClicked"
+                                          SemanticProperties.Description="{Binding Label}" SemanticProperties.Hint="{Binding SelectionHint}" />
+                                  <Grid Padding="14,9" ColumnDefinitions="Auto,*,24" ColumnSpacing="12" InputTransparent="True">
+                                    <Border IsVisible="{Binding HasIcon}" WidthRequest="40" HeightRequest="40" Padding="9" VerticalOptions="Center"
+                                            StrokeShape="RoundRectangle 13" BackgroundColor="{Binding IconColor}"><Image Source="{Binding IconSource}" /></Border>
+                                    <Path Grid.Column="2" IsVisible="{Binding IsSelected}" Data="M 2,9 L 7,14 L 17,3"
+                                          Stroke="{DynamicResource TextColor}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round"
+                                          WidthRequest="20" HeightRequest="18" VerticalOptions="Center" HorizontalOptions="Center" />
+                                    <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                        <Label Text="{Binding Label}" FontSize="16" MaxLines="2" LineBreakMode="TailTruncation">
+                                            <Label.Triggers><DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True"><Setter Property="FontAttributes" Value="Bold" /></DataTrigger></Label.Triggers>
+                                        </Label>
+                                        <Label Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" FontSize="12" Style="{StaticResource MutedLabel}" MaxLines="1" LineBreakMode="TailTruncation" />
+                                    </VerticalStackLayout>
                                   </Grid>
                                 </Grid>
                             </Border>

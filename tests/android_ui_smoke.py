@@ -121,8 +121,8 @@ def main():
     try:
         for page, slug, expected in [
             ("Conti", "accounts", "Saldo totale"),
-            ("Movimenti", "transactions", "Filtri ⌄"),
-            ("Statistiche", "statistics", "Intervallo di analisi"),
+            ("Movimenti", "transactions", "Filtri"),
+            ("Statistiche", "statistics", "Mese, selezionato"),
             ("Categorie", "categories", "Cerca una categoria"),
             ("Esporta e importa", "export", "Scegli file e importa"),
             ("Pianifica", "planning", "Budget"),
@@ -142,19 +142,31 @@ def main():
         device.wait(lambda r: device.has(r, "Mostra saldo totale" if original_hidden else "Nascondi saldo totale"), "balance restored")
         passed("home/balance-visibility-restored")
 
-        root = device.tree()
-        current_period = next(n.get("content-desc") for n in root.iter("node") if n.get("content-desc", "").startswith("Vista:"))
-        device.tap(current_period)
+        device.tap("Cambia conto per tutta l'app")
         device.tap("Cerca")
         device.run("shell", "input", "text", "zzznomatchQA")
         device.wait(lambda r: device.has(r, "Nessun risultato. Prova un altro nome."), "empty search feedback")
         device.capture("choice-empty")
         device.tap("Cancella ricerca")
-        device.wait(lambda r: device.has(r, "Settimana") and device.has(r, "Anno"), "choices restored")
+        device.wait(lambda r: device.has(r, "Tutti i conti"), "choices restored")
         device.tap("Annulla")
-        device.wait(lambda r: device.has(r, current_period), "period unchanged after cancel")
+        device.wait(lambda r: device.has(r, "Cambia conto per tutta l'app"), "account unchanged after cancel")
         device.capture("home")
         passed("choice/search-clear-cancel")
+
+        for page in ("Home", "Movimenti", "Statistiche"):
+            device.navigate(page)
+            device.tap("Anno")
+            device.wait(lambda r: device.has(r, "Anno, selezionato"), "year selected")
+            device.tap("Periodo")
+            device.wait(lambda r: device.has(r, "Dal") and device.has(r, "Al"), "custom dates")
+            device.tap("Mese")
+            root = device.wait(lambda r: device.has(r, "Mese, selezionato"), "month restored")
+            if page == "Statistiche":
+                assert not device.has(root, "Aggiorna"), "Manual refresh must be removed"
+                assert not any(n.get("content-desc", "").startswith("Valuta del report:") for n in root.iter("node"))
+            device.capture("period-" + page.lower())
+            passed("periods/" + page.lower())
 
         device.navigate("Pianifica")
         device.tap("Ricorrenze")

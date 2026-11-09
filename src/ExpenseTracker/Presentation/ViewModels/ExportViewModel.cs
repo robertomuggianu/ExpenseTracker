@@ -14,7 +14,7 @@ public partial class ExportViewModel(
     IImportFilePickerService importFilePicker,
     AccountService accountService,
     CategoryService categoryService,
-    IUserDialogService dialogs) : ViewModelBase
+    IUserDialogService dialogs, AccountSelection? accountSelection = null) : ViewModelBase(accountSelection)
 {
     public IReadOnlyList<PeriodOption> Periods { get; } = PeriodOption.All.Where(p => p.Value is not DateRangePreset.SelectedMonth and not DateRangePreset.SelectedYear).ToArray();
 
@@ -28,6 +28,21 @@ public partial class ExportViewModel(
     public partial bool ExportAll { get; set; } = true;
 
     public bool UseExportFilters => !ExportAll;
+    public string ExportScopeDescription => AccountScope.IsSingleAccount
+        ? $"Tutto lo storico di {AccountScope.Name}. Per un backup completo scegli Tutti i conti nella Home."
+        : "Tutto lo storico di tutti i conti. Disattiva per scegliere periodo, tipo e categoria.";
+    private bool loadingOptions;
+    partial void OnSelectedAccountChanged(AccountFilterOption? value)
+    {
+        if (!loadingOptions) AccountScope.Select(value?.Id);
+    }
+    protected override void OnAccountScopeChanged()
+    {
+        var wasLoading = loadingOptions; loadingOptions = true;
+        try { SelectedAccount = Accounts.FirstOrDefault(a => a.Id == AccountScope.AccountId); }
+        finally { loadingOptions = wasLoading; }
+        OnPropertyChanged(nameof(ExportScopeDescription));
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCustomPeriod))]
@@ -58,37 +73,45 @@ public partial class ExportViewModel(
 
     private async Task LoadOptionsAsync()
     {
-        var accountId = SelectedAccount?.Id;
-        var categoryId = SelectedCategory?.Id;
-        Accounts.Clear();
-        Accounts.Add(new AccountFilterOption(null, "Tutti i conti"));
-        foreach (var item in await accountService.GetAccountsAsync())
+        loadingOptions = true;
+        try
         {
-            Accounts.Add(new AccountFilterOption(item.Account.Id, item.Account.Name));
-        }
+            var accountItems = await accountService.GetAccountsAsync();
+            AccountScope.UpdateAccounts(accountItems);
+            var accountId = AccountScope.AccountId;
+            var categoryId = SelectedCategory?.Id;
+            SelectedAccount = null;
+            Accounts.Clear();
+            Accounts.Add(new AccountFilterOption(null, "Tutti i conti"));
+            foreach (var item in accountItems)
+            {
+                Accounts.Add(new AccountFilterOption(item.Account.Id, item.Account.Name));
+            }
 
-        SelectedAccount = Accounts.FirstOrDefault(account => account.Id == accountId) ?? Accounts[0];
-        Categories.Clear();
-        Categories.Add(new CategoryFilterOption(null, "Tutte le categorie"));
-        foreach (var item in await categoryService.GetCategoriesAsync())
-        {
-            Categories.Add(new CategoryFilterOption(item.Id, item.Name));
-        }
+            SelectedAccount = Accounts.FirstOrDefault(account => account.Id == accountId) ?? Accounts[0];
+            Categories.Clear();
+            Categories.Add(new CategoryFilterOption(null, "Tutte le categorie"));
+            foreach (var item in await categoryService.GetCategoriesAsync())
+            {
+                Categories.Add(new CategoryFilterOption(item.Id, item.Name));
+            }
 
-        SelectedCategory = Categories.FirstOrDefault(category => category.Id == categoryId) ?? Categories[0];
+            SelectedCategory = Categories.FirstOrDefault(category => category.Id == categoryId) ?? Categories[0];
+        }
+        finally { loadingOptions = false; }
     }
 
     [RelayCommand]
     private Task ExportAsync() => RunAsync(async () =>
     {
-        TransactionFilter? filter = null;
+        TransactionFilter? filter = AccountScope.IsSingleAccount ? new(AccountId: AccountScope.AccountId) : null;
         if (!ExportAll)
         {
             var range = DateRangeFactory.Create(SelectedPeriod.Value, DateTime.Now, CustomFrom, CustomTo);
             filter = new TransactionFilter(
                 range.FromUtc,
                 range.ToUtcExclusive,
-                SelectedAccount?.Id,
+                AccountScope.AccountId,
                 SelectedType.Value,
                 SelectedCategory?.Id);
         }

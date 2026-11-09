@@ -2,6 +2,7 @@
   <ScrollView><VerticalStackLayout Spacing="0">
     <controls:PageHeader Heading="Pianifica"/>
     <VerticalStackLayout Padding="18,18,18,100" Spacing="16">
+    <Label Text="{Binding AccountScope.Summary}" Style="{StaticResource MutedLabel}" FontSize="13"/>
     <Border Padding="4" BackgroundColor="{DynamicResource SurfaceAltColor}" StrokeShape="RoundRectangle 18">
       <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
         <Button Text="Budget" Style="{StaticResource PlanningTab}" Command="{Binding SelectBudgetsCommand}">
@@ -24,7 +25,7 @@
         <Label Grid.Column="1" Text="{Binding MonthLabel}" FontSize="18" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
         <Button Grid.Column="2" Text="›" Style="{StaticResource TextButton}" FontSize="28" Padding="0" Command="{Binding NextMonthCommand}" SemanticProperties.Description="Mese successivo"/>
       </Grid>
-      <Label Text="Il budget riguarda il mese selezionato. Le ricorrenze non confermate non sono incluse nello speso." Style="{StaticResource MutedLabel}"/>
+      <Label Text="Il budget riguarda il mese e il conto selezionati. I budget generali restano in Tutti i conti. Le ricorrenze non confermate non sono incluse nello speso." Style="{StaticResource MutedLabel}"/>
       <Border Style="{StaticResource Card}"><VerticalStackLayout Spacing="10">
         <controls:ChoiceField Title="Categoria di spesa" ItemsSource="{Binding ExpenseCategories}" SelectedItem="{Binding BudgetCategory}" DisplayMemberPath="Name"/>
         <controls:ChoiceField Title="Valuta" ItemsSource="{Binding Currencies}" SelectedItem="{Binding BudgetCurrency}"/>

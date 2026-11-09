@@ -24,9 +24,17 @@ public sealed record BudgetItem(BudgetProgress Item)
     public double Progress => Item.Progress;
 }
 public partial class PlanningViewModel(PlanningService planning, TransferService transfers, AccountService accounts,
-    CategoryService categories, IUserDialogService dialogs) : ViewModelBase
+    CategoryService categories, IUserDialogService dialogs, AccountSelection? accountSelection = null) : ViewModelBase(accountSelection)
 {
     public bool CanInteract => !IsBusy;
+    protected override void OnAccountScopeChanged()
+    {
+        BudgetCategory = null; BudgetAmount = "";
+        BudgetCurrency = AccountScope.Currency;
+        if (!IsRuleEditorVisible) RuleAccount = Accounts.FirstOrDefault(a => a.Account.Id == AccountScope.AccountId);
+        SourceAccount = Accounts.FirstOrDefault(a => a.Account.Id == AccountScope.AccountId);
+        _ = LoadAsync();
+    }
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
@@ -74,14 +82,16 @@ public partial class PlanningViewModel(PlanningService planning, TransferService
         var accountId = RuleAccount?.Account.Id;
         var sourceId = SourceAccount?.Account.Id;
         var destinationId = DestinationAccount?.Account.Id;
-        Accounts.Clear(); foreach (var a in await accounts.GetAccountsAsync()) if (a.Account.IsActive) Accounts.Add(a);
+        var accountItems = await accounts.GetAccountsAsync();
+        AccountScope.UpdateAccounts(accountItems);
+        Accounts.Clear(); foreach (var a in accountItems) if (a.Account.IsActive) Accounts.Add(a);
         RuleAccount = accountId.HasValue ? Accounts.FirstOrDefault(a => a.Account.Id == accountId)
             : editingRule is not null ? Accounts.FirstOrDefault(a => a.Account.Id == editingRule.AccountId)
-            : Accounts.FirstOrDefault(a => a.Account.IsPrimary) ?? Accounts.FirstOrDefault();
+            : Accounts.FirstOrDefault(a => a.Account.Id == AccountScope.AccountId) ?? Accounts.FirstOrDefault(a => a.Account.IsPrimary) ?? Accounts.FirstOrDefault();
         SourceAccount = sourceId.HasValue ? Accounts.FirstOrDefault(a => a.Account.Id == sourceId) : RuleAccount;
         DestinationAccount = destinationId.HasValue ? Accounts.FirstOrDefault(a => a.Account.Id == destinationId) : null;
         Currencies.Clear(); foreach (var code in Accounts.Select(a => a.Account.Currency).Distinct()) Currencies.Add(code);
-        if (!Currencies.Contains(BudgetCurrency)) BudgetCurrency = Currencies.FirstOrDefault() ?? "EUR";
+        if (AccountScope.IsSingleAccount || !Currencies.Contains(BudgetCurrency)) BudgetCurrency = AccountScope.Currency;
         var categoryId = RuleCategory?.Id; var budgetCategoryId = BudgetCategory?.Id;
         allCategories = await categories.GetCategoriesAsync(activeOnly: true); RefreshCategories();
         RuleCategory = Categories.FirstOrDefault(c => c.Id == categoryId);
@@ -92,8 +102,12 @@ public partial class PlanningViewModel(PlanningService planning, TransferService
     });
     private async Task RefreshAsync()
     {
-        Rules.Clear(); foreach (var rule in (await planning.GetAsync()).Rules.OrderBy(r => !r.IsActive).ThenBy(r => r.NextDate)) Rules.Add(new(rule));
-        Budgets.Clear(); foreach (var item in await planning.GetBudgetsAsync(Month)) Budgets.Add(new(item));
+        var accountId = AccountScope.AccountId;
+        var rules = (await planning.GetAsync()).Rules.Where(r => !accountId.HasValue || r.AccountId == accountId).OrderBy(r => !r.IsActive).ThenBy(r => r.NextDate).ToArray();
+        var budgets = await planning.GetBudgetsAsync(Month, accountId);
+        if (accountId != AccountScope.AccountId) { await RefreshAsync(); return; }
+        Rules.Clear(); foreach (var rule in rules) Rules.Add(new(rule));
+        Budgets.Clear(); foreach (var item in budgets) Budgets.Add(new(item));
     }
     partial void OnRuleTypeChanged(TransactionTypeOption value) => RefreshCategories();
     private void RefreshCategories() { Categories.Clear(); foreach (var c in allCategories.Where(c => c.Type == RuleType.Value)) Categories.Add(c); RuleCategory = null; }
@@ -111,7 +125,7 @@ public partial class PlanningViewModel(PlanningService planning, TransferService
     [RelayCommand] private Task SaveBudgetAsync() => RunAsync(async () =>
     {
         if (BudgetCategory is null || !AmountParser.TryParse(BudgetAmount, out var amount)) throw new DomainValidationException("Scegli categoria e importo del budget.");
-        await planning.SaveBudgetAsync(BudgetCategory.Id, BudgetCurrency, Month, amount); BudgetAmount = ""; StatusMessage = "Budget salvato."; await RefreshAsync();
+        await planning.SaveBudgetAsync(BudgetCategory.Id, BudgetCurrency, Month, amount, AccountScope.AccountId); BudgetAmount = ""; StatusMessage = "Budget salvato."; await RefreshAsync();
     });
     [RelayCommand] private void EditBudget(BudgetItem item) { BudgetCategory = ExpenseCategories.FirstOrDefault(c => c.Id == item.Item.Budget.CategoryId); BudgetCurrency = item.Item.Budget.Currency; BudgetAmount = item.Item.Budget.Limit.ToString("0.00", System.Globalization.CultureInfo.GetCultureInfo("it-IT")); }
     [RelayCommand] private Task RemoveBudgetAsync(BudgetItem item) => RunAsync(async () => { if (await dialogs.ConfirmAsync("Elimina budget", "I movimenti resteranno invariati.", "Elimina", "Annulla")) { await planning.RemoveBudgetAsync(item.Item.Budget.Id); await RefreshAsync(); } });
@@ -120,7 +134,7 @@ public partial class PlanningViewModel(PlanningService planning, TransferService
         editingRule = null;
         RuleName = RuleAmount = "";
         RuleType = Types.Single(t => t.Value == TransactionType.Expense);
-        RuleAccount = Accounts.FirstOrDefault(a => a.Account.IsPrimary) ?? Accounts.FirstOrDefault();
+        RuleAccount = Accounts.FirstOrDefault(a => a.Account.Id == AccountScope.AccountId) ?? Accounts.FirstOrDefault(a => a.Account.IsPrimary) ?? Accounts.FirstOrDefault();
         RuleCategory = null;
         StartDate = DateTime.Today;
         Frequency = Frequencies[0];

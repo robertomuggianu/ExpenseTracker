@@ -11,15 +11,24 @@ using Microsoft.Extensions.Logging;
 namespace ExpenseTracker.Presentation.ViewModels;
 
 public sealed partial class AssistantViewModel(AssistantReportService reports, AccountService accounts,
-    IAssistantClient client, IAssistantSettings settings, AssistantChatService chat, ILogger<AssistantViewModel>? logger = null) : ViewModelBase
+    IAssistantClient client, IAssistantSettings settings, AssistantChatService chat, ILogger<AssistantViewModel>? logger = null,
+    AccountSelection? accountSelection = null) : ViewModelBase(accountSelection)
 {
     private string requestStage = "operation";
     private CancellationTokenSource? pending;
     private AssistantMessage? awaitingMessage;
     private bool settingsLoaded;
+    private bool loadingScope;
     private AssistantChatPlan? context;
     private string? previousQuestion;
     private DateOnly? contextMonth;
+    protected override void OnAccountScopeChanged()
+    {
+        if (!loadingScope) pending?.Cancel();
+        ResetContext();
+        Messages.Clear();
+        SelectedCurrency = AccountScope.Currency;
+    }
     public ObservableCollection<string> Currencies { get; } = [];
     public ObservableCollection<AssistantMessage> Messages { get; } = [];
     public bool CanInteract => !IsBusy;
@@ -55,10 +64,12 @@ public sealed partial class AssistantViewModel(AssistantReportService reports, A
             if (!ConnectionSettingsVisible) StatusMessage = "Ask about this month or last month. Your PC must be running.";
         }
         var available = await accounts.GetAccountsAsync(token);
-        var selected = SelectedCurrency;
+        loadingScope = true;
+        try { AccountScope.UpdateAccounts(available); }
+        finally { loadingScope = false; }
         var codes = available.Select(a => a.Account.Currency).Distinct().Order().ToArray();
         Currencies.Clear(); foreach (var code in codes.DefaultIfEmpty("EUR")) Currencies.Add(code);
-        SelectedCurrency = Currencies.Contains(selected) ? selected : available.FirstOrDefault(a => a.Account.IsPrimary)?.Account.Currency ?? Currencies[0];
+        SelectedCurrency = AccountScope.Currency;
     });
 
     [RelayCommand]
@@ -88,6 +99,7 @@ public sealed partial class AssistantViewModel(AssistantReportService reports, A
         var connection = Connection();
         connection.GetBaseUri();
         var currency = SelectedCurrency;
+        var accountId = AccountScope.AccountId;
         if (!Currencies.Contains(currency)) throw new DomainValidationException("Select an available currency.");
         var today = DateTime.Now;
         var month = new DateOnly(today.Year, today.Month, 1);
@@ -116,7 +128,7 @@ public sealed partial class AssistantViewModel(AssistantReportService reports, A
                 throw new DomainValidationException("Invalid interpretation. Please clarify your question.");
             StatusMessage = "Calculating the figures and preparing your answer…";
             requestStage = "calculate-evidence";
-            var evidence = await chat.ExecuteAsync(question, interpretation.Plan!, currency, today, token);
+            var evidence = await chat.ExecuteAsync(question, interpretation.Plan!, currency, today, token, accountId);
             requestStage = "generate-answer";
             var answer = await client.AnswerAsync(connection, evidence, token);
             token.ThrowIfCancellationRequested();
@@ -139,7 +151,7 @@ public sealed partial class AssistantViewModel(AssistantReportService reports, A
         var connection = Connection();
         if (!Currencies.Contains(SelectedCurrency)) throw new DomainValidationException("Select an available currency.");
         await settings.SaveAsync(connection);
-        var report = await reports.CreateAsync(kind, SelectedCurrency, DateTime.Now, token);
+        var report = await reports.CreateAsync(kind, SelectedCurrency, DateTime.Now, token, AccountScope.AccountId);
         if (report.Current.MovementCount == 0 && (report.Previous is null || report.Previous.MovementCount == 0))
         {
             Add(new("Assistant", "No transactions recorded in the selected periods. Add or import transactions to prepare a summary.", Facts(report), ""));

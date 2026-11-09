@@ -12,7 +12,8 @@ using SkiaSharp;
 
 namespace ExpenseTracker.Presentation.ViewModels;
 
-public partial class StatisticsViewModel(ReportingService reportingService, AccountService accountService, IAppNavigationService navigation) : ViewModelBase
+public partial class StatisticsViewModel(ReportingService reportingService, AccountService accountService, IAppNavigationService navigation,
+    AccountSelection? accountSelection = null) : ViewModelBase(accountSelection)
 {
     private static readonly CultureInfo ReportCulture = CultureInfo.GetCultureInfo("it-IT");
     public ObservableCollection<string> Currencies { get; } = [];
@@ -25,7 +26,7 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
     partial void OnExpenseSeriesChanged(IEnumerable<ISeries> value) => OnPropertyChanged(nameof(ChartSeries));
     partial void OnExpenseChanged(decimal value) => OnPropertyChanged(nameof(ChartTotal));
     partial void OnSelectedCurrencyChanged(string value) => RequestRefresh();
-    partial void OnReferenceDateChanged(DateTime value) { if (IsReferencePeriod) RequestRefresh(); }
+    partial void OnReferenceDateChanged(DateTime value) { if (!IsCustomPeriod) RequestRefresh(); }
     private DateRange displayedRange;
     private Guid? displayedAccount;
     [RelayCommand] private Task OpenCategoryAsync(CategoryBreakdownItem item) => navigation.GoToTransactionsAsync(
@@ -72,7 +73,20 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
     }
     partial void OnSelectedAccountChanged(AccountFilterOption? value)
     {
+        if (!loadingAccounts) AccountScope.Select(value?.Id);
         if (value?.Id is Guid id && accountCurrencies.TryGetValue(id, out var currency)) SelectedCurrency = currency;
+        RequestRefresh();
+    }
+    protected override void OnAccountScopeChanged()
+    {
+        var wasLoading = loadingAccounts;
+        loadingAccounts = true;
+        try
+        {
+            SelectedAccount = Accounts.FirstOrDefault(a => a.Id == AccountScope.AccountId);
+            SelectedCurrency = AccountScope.Currency;
+        }
+        finally { loadingAccounts = wasLoading; }
         RequestRefresh();
     }
     partial void OnCustomFromChanged(DateTime value) { if (IsCustomPeriod) RequestRefresh(); }
@@ -132,13 +146,14 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
         loadingAccounts = true;
         try
         {
-            var accountId = SelectedAccount?.Id;
             Accounts.Clear();
             Accounts.Add(new AccountFilterOption(null, "Tutti i conti"));
             var accountItems = await accountService.GetAccountsAsync();
+            AccountScope.UpdateAccounts(accountItems);
+            var accountId = AccountScope.AccountId;
             accountCurrencies.Clear(); foreach (var account in accountItems) accountCurrencies[account.Account.Id] = account.Account.Currency;
             Currencies.Clear(); foreach (var code in accountItems.Select(a => a.Account.Currency).Distinct()) Currencies.Add(code);
-            if (!Currencies.Contains(SelectedCurrency)) SelectedCurrency = Currencies.FirstOrDefault() ?? "EUR";
+            SelectedCurrency = AccountScope.Currency;
             foreach (var account in accountItems)
             {
                 Accounts.Add(new AccountFilterOption(account.Account.Id, account.Account.Name));
@@ -174,8 +189,8 @@ public partial class StatisticsViewModel(ReportingService reportingService, Acco
             throw new ExpenseTracker.Domain.DomainValidationException("La data iniziale deve precedere quella finale.");
         }
         var version = filterVersion;
-        var range = DateRangeFactory.Create(period, IsReferencePeriod ? ReferenceDate : DateTime.Now, CustomFrom, CustomTo);
-        var accountId = SelectedAccount?.Id;
+        var range = DateRangeFactory.Create(period, ReferenceDate, CustomFrom, CustomTo);
+        var accountId = AccountScope.AccountId;
         var summary = await reportingService.GetAnalyticsAsync(range, accountId, currency: SelectedCurrency);
         if (version != filterVersion) return;
         displayedRange = range; displayedAccount = accountId;

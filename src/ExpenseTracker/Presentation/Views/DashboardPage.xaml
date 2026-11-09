@@ -3,12 +3,14 @@
   <Grid x:Name="HomeLayout" RowDefinitions="Auto,*">
     <Border x:Name="HomeHeader" Style="{StaticResource HeaderCard}" Padding="18,8,18,16">
       <VerticalStackLayout Spacing="10">
-        <Label Text="{Binding BalanceCurrency, StringFormat='Saldo conti in {0}'}" TextColor="{DynamicResource MutedColor}" FontSize="13" HorizontalTextAlignment="Center" Margin="0,4,0,-4"/>
-        <Grid ColumnDefinitions="46,*,44" ColumnSpacing="6">
+        <Label Text="{Binding AccountScope.Summary}" TextColor="{DynamicResource MutedColor}" FontSize="13" HorizontalTextAlignment="Center" Margin="0,4,0,-4"/>
+        <Grid ColumnDefinitions="44,*,44,44" ColumnSpacing="2">
           <Button AutomationId="Navigation.Menu" Style="{StaticResource HeaderMenuButton}" Command="{Binding OpenMenuCommand}" SemanticProperties.Description="Apri menu"/>
-          <Label AutomationId="Home.Balance" Grid.Column="1" Text="{Binding BalanceText}" Style="{StaticResource HeroValue}" FontSize="38" HorizontalTextAlignment="Center"
+          <Label AutomationId="Home.Balance" Grid.Column="1" Text="{Binding BalanceText}" Style="{StaticResource HeroValue}" FontSize="30" HorizontalTextAlignment="Center"
                  VerticalTextAlignment="Center" SemanticProperties.Description="{Binding BalanceAccessibilityText}"/>
-          <Button Grid.Column="2" ImageSource="{DynamicResource ui_eyeSource}" Command="{Binding ToggleBalanceVisibilityCommand}"
+          <Button Grid.Column="2" AutomationId="Home.Account" ImageSource="{DynamicResource menu_walletSource}" Clicked="OnChooseAccountClicked"
+                  Style="{StaticResource TextButton}" WidthRequest="44" HeightRequest="44" Padding="10" SemanticProperties.Description="Cambia conto per tutta l'app"/>
+          <Button Grid.Column="3" ImageSource="{DynamicResource ui_eyeSource}" Command="{Binding ToggleBalanceVisibilityCommand}"
                   Style="{StaticResource TextButton}" WidthRequest="44" HeightRequest="44" Padding="10" TextColor="{DynamicResource TextColor}"
                   SemanticProperties.Description="{Binding BalanceVisibilityDescription}">
             <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding IsBalanceHidden}" Value="True"><Setter Property="ImageSource" Value="{DynamicResource ui_eye_offSource}"/></DataTrigger></Button.Triggers>
